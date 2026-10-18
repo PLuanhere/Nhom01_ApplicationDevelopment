@@ -1,12 +1,12 @@
-package vn.nhom01.app.service;
+package nhom01.app.service;
 
 import java.time.LocalDate;
 import java.util.List;
 
-import vn.nhom01.app.model.TechnicalDashboardData;
-import vn.nhom01.app.model.TechnicalDashboardData.CompletionDetail;
-import vn.nhom01.app.model.TechnicalDashboardData.DailyCompletion;
-import vn.nhom01.app.model.TechnicalDashboardData.WorkGroupStat;
+import nhom01.app.model.TechnicalDashboardData;
+import nhom01.app.model.TechnicalDashboardData.CompletionDetail;
+import nhom01.app.model.TechnicalDashboardData.DailyCompletion;
+import nhom01.app.model.TechnicalDashboardData.WorkGroupStat;
 
 public class TechnicalDashboardService {
 

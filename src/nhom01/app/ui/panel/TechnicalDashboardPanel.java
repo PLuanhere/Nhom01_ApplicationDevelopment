@@ -1,4 +1,4 @@
-package vn.nhom01.app.ui.panel;
+package nhom01.app.ui.panel;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -36,11 +36,11 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
-import vn.nhom01.app.model.TechnicalDashboardData;
-import vn.nhom01.app.model.TechnicalDashboardData.CompletionDetail;
-import vn.nhom01.app.model.TechnicalDashboardData.DailyCompletion;
-import vn.nhom01.app.model.TechnicalDashboardData.WorkGroupStat;
-import vn.nhom01.app.service.TechnicalDashboardService;
+import nhom01.app.model.TechnicalDashboardData;
+import nhom01.app.model.TechnicalDashboardData.CompletionDetail;
+import nhom01.app.model.TechnicalDashboardData.DailyCompletion;
+import nhom01.app.model.TechnicalDashboardData.WorkGroupStat;
+import nhom01.app.service.TechnicalDashboardService;
 
 public class TechnicalDashboardPanel extends JPanel {
     private static final long serialVersionUID = 1L;

@@ -1,4 +1,4 @@
-package vn.nhom01.app.model;
+package nhom01.app.model;
 
 import java.time.LocalDate;
 import java.util.List;
