@@ -1,0 +1,40 @@
+# Eclipse build output and local workspace state
+/bin/
+/bin-test/
+/.metadata/
+*.class
+
+# Local configuration and credentials
+/config/*.properties
+!/config/*.properties.example
+.env
+.env.*
+!.env.example
+
+# Generated documents, logs, builds and database backups
+/output/
+/github-ready/
+*.log
+*.bak
+*.trn
+*.mdf
+*.ldf
+
+# Temporary local files
+*.tmp
+*.swp
+~$*
+
+# Local IDE/machine settings
+/.idea/
+/.vscode/
+*.iml
+/config/*.local.*
+Thumbs.db
+.DS_Store
+
+/skills
+/QUY_DINH_DU_AN.md
+.gitattributes
+/config
+README.md
