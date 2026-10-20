@@ -42,28 +42,29 @@ Các nguyên tắc nghiệp vụ cần giữ khi triển khai:
 
 ## 3. Những phần đã triển khai
 
+Phạm vi bàn giao hiện tại chỉ là **layout chung**, làm nền để các thành viên gắn màn hình của mình.
+
 | Thành phần | Hiện trạng |
 | --- | --- |
-| Khởi chạy | Có `app.App`, mở giao diện trên Event Dispatch Thread (EDT). |
-| Khung giao diện | Có `MainFrame`, menu, sidebar, thanh trạng thái và điều hướng bằng `CardLayout`. |
-| Các trang nội dung | Có sáu trang giữ chỗ: Trang chủ, Nhân viên, Tài khoản và phân quyền, Dịch vụ và bảng giá, Phụ tùng, Lịch sử thao tác. Chưa có biểu mẫu hay dữ liệu nghiệp vụ. |
-| Tài khoản | Hiển thị nhãn demo `demo.nhom01`, vai trò `Quản lý`; chưa có đăng nhập hoặc kiểm tra quyền. |
-| Dữ liệu | `dao`, `entity`, `connectDB` mới có thư mục giữ chỗ; chưa có lớp xử lý, JDBC driver hoặc script tạo database. |
+| Khởi chạy | `app.App` áp dụng theme và mở `MainFrame` trên Event Dispatch Thread (EDT). |
+| Header | Thanh tiêu đề trắng 32 px, icon vuông cam, nút thu nhỏ/phóng to/đóng; hàng nhãn menu cao 26 px, mỗi nhãn rộng 92 px và cách nhau 16 px. Nhãn menu chỉ hiển thị, chưa có mục con hoặc hành động. |
+| Sidebar | Rộng 180 px, nền xanh xám, nhãn ĐỨC DŨNG; phần điều hướng để trống. |
+| Nội dung | Vùng trống co giãn theo cửa sổ, lề 16 px; chưa có dashboard, trang chức năng hoặc dữ liệu mẫu. |
+| Thanh trạng thái | Hiển thị “Sẵn sàng”; có API cập nhật thông báo khi tích hợp. |
+| Đăng nhập và dữ liệu | Chưa triển khai. Chưa có tài khoản mock, phiên đăng nhập, phân quyền hoặc kết nối database. |
 
-Các mục chưa triển khai như nhập kho, thống kê, đổi vai trò và đăng xuất đang bị vô hiệu hóa. Trang Lịch sử thao tác cũng chỉ là trang giữ chỗ, chưa ghi nhận hoạt động người dùng.
-
-**Có thể mở khung giao diện mà không cần SQL Server hoặc thư viện ngoài JDK.**
+Ứng dụng mở thẳng layout trống, **không cần SQL Server hoặc thư viện ngoài JDK**. Phần đăng nhập mock bốn vai trò sẽ làm ở đầu việc sau.
 
 ## 4. Công nghệ và môi trường
 
 | Thành phần | Yêu cầu |
 | --- | --- |
-| Ngôn ngữ | Java, **JDK 21**, không bật tính năng preview. |
-| IDE chuẩn | Eclipse IDE có hỗ trợ Java 21. |
+| Ngôn ngữ | Java, **JDK 17**, không bật tính năng preview. |
+| IDE chuẩn | Eclipse IDE có hỗ trợ Java 17. |
 | Giao diện | Java Swing/AWT. |
 | Encoding | UTF-8 cho mã nguồn và tài liệu. |
 | Cơ sở dữ liệu khi tích hợp | SQL Server 2022. |
-| Kết nối khi tích hợp | Microsoft JDBC Driver for SQL Server tương thích JDK 21; nhóm chưa chốt phiên bản. |
+| Kết nối khi tích hợp | Microsoft JDBC Driver for SQL Server tương thích JDK 17; nhóm chưa chốt phiên bản. |
 | Quản trị database | SQL Server Management Studio (SSMS); dùng để quản trị và chạy SQL, ứng dụng kết nối trực tiếp đến SQL Server qua JDBC. |
 | Quản lý mã nguồn | Git. |
 
@@ -72,59 +73,61 @@ Dự án hiện dùng cấu hình Java của Eclipse, chưa có Maven hoặc Gra
 ## 5. Cấu trúc dự án
 
 ```text
-Nhom01_ApplicationDevelopment/
-├── src/
-│   ├── module-info.java
-│   ├── app/
-│   │   └── App.java
-│   ├── ui/
-│   │   ├── MainFrame.java
-│   │   ├── screen/
-│   │   │   ├── ShellPage.java
-│   │   │   └── PlaceholderPanel.java
-│   │   ├── dialog/             # Chưa có lớp
-│   │   └── component/
-│   │       ├── SidebarPanel.java
-│   │       └── UiTheme.java
-│   ├── dao/                    # Chưa có lớp
-│   ├── entity/                 # Chưa có lớp
-│   └── connectDB/              # Chưa có lớp
-├── lib/
-│   └── README.md               # Hướng dẫn bổ sung thư viện
-├── .settings/                  # Cấu hình Java 21 và UTF-8
-├── .classpath
-├── .project
-├── .gitignore
-└── README.md
+src/
+├── module-info.java
+├── app/
+│   └── App.java
+├── ui/
+│   ├── MainFrame.java
+│   └── component/
+│       ├── SidebarPanel.java
+│       ├── UiTheme.java
+│       ├── WindowTitlePanel.java
+│       ├── WindowMouseHandler.java
+│       └── font/               # Noto Sans Regular/Bold và giấy phép OFL.txt
+├── dao/                        # Chưa có lớp
+├── entity/                     # Chưa có lớp
+└── connectDB/                  # Chưa có lớp
 ```
 
-Trách nhiệm các package khi phát triển tiếp:
+`MainFrame` chỉ quản lý bố cục bằng `BorderLayout`. `SidebarPanel` quản lý vùng điều hướng; `UiTheme` tập trung màu, font và khoảng cách. Các thành phần giữ trạng thái riêng bằng thuộc tính private, không dùng dữ liệu giao diện static dùng chung.
 
-| Package | Trách nhiệm |
-| --- | --- |
-| `app` | Điểm chạy và khởi tạo ứng dụng; giữ `main()` ngắn. |
-| `ui`, `ui.screen`, `ui.dialog`, `ui.component` | Khung chính, màn hình, hộp thoại và thành phần dùng chung; kiểm tra nhập liệu và hiển thị kết quả, không chứa SQL. |
-| `dao` | Truy vấn, ánh xạ dữ liệu, kiểm tra quyền và điều kiện nghiệp vụ; điều phối transaction, không phụ thuộc Swing. |
-| `entity` | Đối tượng dữ liệu và enum nghiệp vụ; không truy vấn database hoặc chứa thành phần giao diện. |
-| `connectDB` | Đọc cấu hình và cung cấp kết nối cho DAO; không chứa nghiệp vụ. |
+`WindowTitlePanel` vẽ thanh tiêu đề trắng theo Figma, thay thanh tiêu đề có màu nhấn của Windows. `WindowMouseHandler` hỗ trợ kéo tiêu đề, nhấp đôi để phóng to/khôi phục và kéo các cạnh/góc để đổi kích thước, giữ tối thiểu 960×600. Các nút cửa sổ hoạt động độc lập với chức năng nghiệp vụ.
 
-Luồng xử lý khi tích hợp: **UI → DAO → SQL Server → DAO → UI**. DAO lấy kết nối từ `connectDB`, nhận và trả dữ liệu qua `entity`. Dự án hiện không có tầng service; DAO chịu trách nhiệm cho các thao tác nghiệp vụ cần transaction. Giữ đúng tên `connectDB`; `dao` và `entity` chưa chia package con.
+Khung dùng Noto Sans đóng gói cùng source: menu/tiêu đề 13 pt, thương hiệu 14 pt đậm, trạng thái 11 pt. Font mặc định cho màn hình chức năng vẫn là 14 pt theo QUY_DINH. Nguồn font: [kho Noto chính thức](https://github.com/notofonts/noto-fonts/tree/main/hinted/ttf/NotoSans); giữ giấy phép `src/ui/component/font/OFL.txt` khi phân phối. Eclipse tự sao chép các tài nguyên font sang `bin/`, không cần cài font trên Windows hoặc thêm thư viện JAR.
+
+Khi phát triển tiếp, đặt màn hình tại `ui.screen`, hộp thoại tại `ui.dialog`, thành phần dùng chung tại `ui.component`. Giữ luồng **UI → DAO → SQL Server**; `entity` chứa đối tượng dữ liệu, `connectDB` cung cấp kết nối. Không đặt SQL trong UI hoặc tạo package theo tên thành viên. Chưa tạo lớp DAO/entity khi chưa có nhu cầu.
+
+### Gắn màn hình của thành viên
+
+Các API sau gọi trên EDT, sau khi tạo `MainFrame`:
+
+```java
+// pnlChucNang là JPanel của thành viên, tự quản lý nội dung và JScrollPane nếu cần.
+winChinh.setScreen(pnlChucNang);
+
+// pnlDieuHuong là JPanel chứa các mục điều hướng do nhóm bổ sung sau.
+winChinh.setSidebarContent(pnlDieuHuong);
+winChinh.setStatus("Sẵn sàng");
+```
+
+`setScreen()` và `setSidebarContent()` thay panel cũ, cập nhật layout và vẽ lại. Không cần sửa bố cục khung chính để gắn một màn hình. Panel điều hướng nên đặt `setOpaque(false)` để giữ màu sidebar. Nếu một phân hệ có nhiều màn hình, thành viên có thể dùng `CardLayout` bên trong panel của mình; layout hiện tại chưa có trang giả hoặc điều hướng nghiệp vụ.
 
 ## 6. Cài đặt và chạy
 
 ### Chạy bằng Eclipse
 
-1. Cài **JDK 21**. Trong Eclipse, vào **Window → Preferences → Java → Installed JREs**, thêm JDK và cấu hình execution environment **JavaSE-21**.
+1. Cài **JDK 17**. Trong Eclipse, vào **Window → Preferences → Java → Installed JREs**, thêm JDK và cấu hình execution environment **JavaSE-17**.
 2. Chọn **File → Import → General → Existing Projects into Workspace**, trỏ đến thư mục dự án có file `.project`.
-3. Kiểm tra **Java Build Path**: JRE System Library là **JavaSE-21**, source là `src/`, output là `bin/`. Trong **Properties → Resource**, chọn encoding **UTF-8**.
+3. Kiểm tra **Java Build Path**: JRE System Library là **JavaSE-17**, source là `src/`, output là `bin/`. Trong **Properties → Resource**, chọn encoding **UTF-8**.
 4. Refresh dự án bằng **F5**. Nếu còn lỗi cấu hình cũ, chọn **Project → Clean** để build lại.
 5. Mở `src/app/App.java`, chọn **Run As → Java Application**. Main class là **`app.App`**.
 
-Khi chạy, ứng dụng mở thẳng khung Quản lý với tài khoản demo, chưa yêu cầu đăng nhập. Giữ `module-info.java` với hai khai báo `requires java.desktop;` và `requires java.sql;`.
+Khi chạy, ứng dụng mở thẳng layout trống, chưa có đăng nhập hoặc tài khoản demo. Giữ `module-info.java` với hai khai báo `requires java.desktop;` và `requires java.sql;`.
 
 ### Chạy bằng PowerShell
 
-Mở PowerShell tại thư mục gốc dự án. Kiểm tra cả `java` và `javac` đều trỏ tới **JDK 21**; chỉ cài JRE sẽ không có trình biên dịch `javac`.
+Mở PowerShell tại thư mục gốc dự án. Kiểm tra cả `java` và `javac` đều trỏ tới **JDK 17**; chỉ cài JRE sẽ không có trình biên dịch `javac`.
 
 ```powershell
 java -version
@@ -136,8 +139,10 @@ Biên dịch mã nguồn và chạy module:
 ```powershell
 $sourceFiles = @(Get-ChildItem -LiteralPath src -Recurse -Filter '*.java' | ForEach-Object FullName)
 New-Item -ItemType Directory -Path bin -Force | Out-Null
-javac --release 21 -encoding UTF-8 -d bin $sourceFiles
+javac --release 17 -encoding UTF-8 -d bin $sourceFiles
 if ($LASTEXITCODE -ne 0) { throw 'Biên dịch thất bại. Kiểm tra lỗi trước khi chạy.' }
+New-Item -ItemType Directory -Path bin/ui/component/font -Force | Out-Null
+Copy-Item -Path src/ui/component/font/* -Destination bin/ui/component/font -Force
 java --module-path bin -m Nhom01_ApplicationDevelopment/app.App
 ```
 
@@ -145,20 +150,33 @@ Lệnh trên áp dụng cho khung UI hiện tại, chưa có thư viện ngoài.
 
 ### Kiểm tra nhanh sau khi chạy
 
-- Cửa sổ có menu, sidebar, vùng nội dung và thanh trạng thái hiển thị `demo.nhom01` cùng vai trò `Quản lý`.
-- Chọn sáu mục điều hướng trên sidebar hoặc menu để kiểm tra tiêu đề trang và mục đang được chọn. Mỗi trang hiện hiển thị “Nội dung đang được chuẩn bị.”
-- Các chức năng chưa triển khai vẫn bị vô hiệu hóa.
-- Thử thay đổi kích thước ở màn hình 1366×768 và mức tối thiểu 960×600; kiểm tra tiếng Việt, vùng cuộn và thông tin tài khoản.
-- Chọn **Hệ thống → Thoát** để đóng cửa sổ.
+- Cửa sổ có thanh menu, sidebar màu xanh xám với nhãn ĐỨC DŨNG, vùng nội dung trống và trạng thái “Sẵn sàng”.
+- Sidebar không có nút; nhãn menu màu chữ chính, không có mục con và không thực hiện hành động.
+- Chưa có dashboard, chỉ số mẫu, tài khoản hoặc thông tin vai trò.
+- Thử thay đổi kích thước ở 1366×768 và mức tối thiểu 960×600; sidebar giữ chiều rộng 180 px, vùng nội dung co giãn, thanh trạng thái nằm dưới cùng.
+- Kéo thanh tiêu đề để di chuyển, kéo cạnh/góc để đổi kích thước; kiểm tra nút thu nhỏ, phóng to/khôi phục và đóng ở góc trên phải.
 
-Dự án hiện chưa có thư mục `test/` hoặc bộ kiểm thử tự động. Các bước trên kiểm tra khung giao diện; nghiệp vụ và kết nối dữ liệu cần được kiểm thử khi triển khai.
+Đầu việc này chỉ kiểm tra khung Swing; đăng nhập, phân quyền, nghiệp vụ và database chưa triển khai. Chưa có bộ kiểm thử tự động trong repository.
+
+Kết quả kiểm tra layout ngày 20/10/2026:
+
+- **PASS:** biên dịch toàn bộ source bằng JDK 17.0.18 với `--release 17 -encoding UTF-8 -Xlint:all`.
+- **PASS:** rà soát package, đóng gói, EDT, tên biến Swing; kiểm tra JavaDoc, import tường minh, thụt lề 4 space và dòng không quá 120 ký tự.
+- **PASS:** render Swing ở 1280×800, 1366×768 và 960×600; sidebar rộng 180 px, vùng nội dung trống co giãn, menu chưa có hành động.
+- **PASS:** font Noto Sans nạp từ classpath; header cao 58 px (32 + 26), thanh trạng thái 22 px, đối chiếu ảnh render với Figma.
+- **PASS:** gắn và thay panel nội dung/điều hướng, cập nhật trạng thái trên EDT bằng chương trình kiểm tra tạm.
+- **PASS:** chương trình kiểm tra tạm gọi handler kéo tiêu đề, kiểm tra con trỏ và đổi kích thước tại bốn cạnh/bốn góc, giới hạn 960×600, các nút phóng to/khôi phục/thu nhỏ/đóng. Đây là kiểm tra chương trình, chưa thay thế thao tác chuột thủ công trên máy người dùng.
+- **PASS:** ảnh render 1280×800 trước/sau lần rút gọn code giống hệt nhau (SHA-256 trùng khớp).
+- **NOT_RUN:** thao tác thủ công trong Eclipse; đăng nhập, nghiệp vụ và database nằm ngoài phạm vi.
+
+Ảnh render và chương trình kiểm tra tạm nằm trong `output/`, được Git bỏ qua và không phải thành phần ứng dụng.
 
 ## 7. Chuẩn bị tích hợp cơ sở dữ liệu
 
 Phần này dành cho giai đoạn phát triển tiếp; khung UI hiện tại chưa đọc cấu hình hoặc mở kết nối database.
 
 1. **Chốt schema và dữ liệu mẫu** theo REPORT V3. Lưu các script SQL trong Git, ghi rõ thứ tự chạy bằng SSMS; có thể đặt ngay thư mục gốc khi số file còn ít.
-2. **Chốt JDBC driver** tương thích JDK 21. Ghi phiên bản, tên JAR, nguồn tải và cách thêm vào Modulepath trong `lib/README.md`; kiểm tra tên module thực tế trước khi thêm `requires`.
+2. **Chốt JDBC driver** tương thích JDK 17. Ghi phiên bản, tên JAR, nguồn tải và cách thêm vào Modulepath trong `lib/README.md`; kiểm tra tên module thực tế trước khi thêm `requires`.
 3. **Chuẩn bị cấu hình cục bộ.** Bản làm việc hiện có `config/database.properties.example`; sao chép thành `config/database.properties` và điền cấu hình riêng:
 
    ```powershell
@@ -187,9 +205,10 @@ Khi hoàn thiện, hệ thống cần đáp ứng các yêu cầu chất lượn
 ## 9. Tài liệu đối chiếu
 
 - **`Nhom01_REPORT_ApplicationDevelopment_V3.docx`**: căn cứ về phạm vi, tác nhân, Use Case và thiết kế nghiệp vụ; được cung cấp riêng, hiện chưa nằm trong repository.
-- **[QUY_DINH_DU_AN.md](skills/QUY_DINH_DU_AN.md)**, phiên bản 3.3 ngày 19/10/2026: quy định về package, dữ liệu, Swing, phân quyền, Git và kiểm thử. File đang nằm trong `skills/` của bản làm việc cục bộ; thư mục này bị Git bỏ qua nên cần được chia sẻ riêng nếu giữ cấu hình hiện tại.
+- **[QUY_DINH_DU_AN.md](skills/QUY_DINH_DU_AN.md)**, phiên bản 4.0 ngày 20/10/2026: quy định về package, dữ liệu, Swing, phân quyền, Git và kiểm thử. File đang nằm trong `skills/` của bản làm việc cục bộ; thư mục này bị Git bỏ qua nên cần được chia sẻ riêng nếu giữ cấu hình hiện tại.
 - **[lib/README.md](lib/README.md)**: hướng dẫn quản lý và bổ sung thư viện.
+- **[Figma layout chung](https://www.figma.com/design/XEDrqEs0dSe51rsn2PIQ6s/?node-id=2095-5572)**: đối chiếu màu, thanh menu, sidebar và thanh trạng thái; nội dung dashboard không thuộc đầu việc layout.
 
-Quyền bàn giao trong README áp dụng theo bảng Use Case của REPORT và mục 9.1 của QUY_DINH: **thu ngân xác nhận tiền, nhân viên tiếp nhận xác nhận bàn giao**. Các mô tả chưa thống nhất trong báo cáo cần được nhóm chốt và cập nhật khi triển khai.
+Quyền bàn giao trong README áp dụng theo bảng Use Case của REPORT và mục 11.1 của QUY_DINH: **thu ngân xác nhận tiền, nhân viên tiếp nhận xác nhận bàn giao**. Các mô tả chưa thống nhất trong báo cáo cần được nhóm chốt và cập nhật khi triển khai.
 
 Khi tham chiếu đặc tả chi tiết trong REPORT, dùng ánh xạ: `UC_01 → UC001` (hóa đơn), `UC_02 → UC019` (kiểm tra xe), `UC_03 → UC010` (tiếp nhận), `UC_04 → UC036` (doanh thu).
