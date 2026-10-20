@@ -75,7 +75,7 @@ public final class WindowMouseHandler extends MouseAdapter {
     /** {@inheritDoc} */
     @Override
     public void mouseClicked(MouseEvent event) {
-        if (SwingUtilities.isLeftMouseButton(event) && event.getClickCount() == 2
+        if (winChu.isResizable() && SwingUtilities.isLeftMouseButton(event) && event.getClickCount() == 2
                 && event.getY() <= UiTheme.TITLE_HEIGHT
                 && findEdge(event.getX(), winChu.getWidth()) == 0
                 && findEdge(event.getY(), winChu.getHeight()) == 0) {

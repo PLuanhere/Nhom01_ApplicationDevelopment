@@ -8,6 +8,8 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.UIManager;
 import javax.swing.plaf.FontUIResource;
 
@@ -28,12 +30,18 @@ public final class UiTheme {
     public static final Color BORDER = new Color(0xB8C2CF);
     /** Điểm nhấn thương hiệu trên thanh tiêu đề. */
     public static final Color ORANGE = new Color(0xF97316);
+    /** Màu nút chính theo Figma. */
+    public static final Color PRIMARY = new Color(0x245FA8);
+    /** Màu thông báo lỗi, luôn đi cùng nội dung hướng dẫn. */
+    public static final Color ERROR = new Color(0xB42318);
     /** Font mặc định 14 pt; nạp tài nguyên đóng gói cùng mã nguồn. */
     public static final Font BODY_FONT = loadFont("NotoSans-Regular.ttf", 14);
     /** Font 13 pt cho menu và tiêu đề cửa sổ, khớp Swing / Body trong Figma. */
     public static final Font SHELL_FONT = BODY_FONT.deriveFont(13.0f);
     /** Font nhãn thương hiệu trên sidebar. */
     public static final Font BRAND_FONT = loadFont("NotoSans-Bold.ttf", 14);
+    /** Font tiêu đề màn hình đăng nhập. */
+    public static final Font HEADING_FONT = BRAND_FONT.deriveFont(20.0f);
     /** Font nhỏ cho thanh trạng thái. */
     public static final Font CAPTION_FONT = BODY_FONT.deriveFont(11.0f);
     /** Khoảng cách nhỏ giữa các thành phần, tính bằng pixel. */
@@ -82,6 +90,21 @@ public final class UiTheme {
         graphics.fillRect(0, 0, 14, 14);
         graphics.dispose();
         return icon;
+    }
+
+    /**
+     * Áp dụng nút phẳng dùng chung cho đăng nhập, đăng xuất và thao tác phụ.
+     * @param btn nút cần định dạng
+     * @param primary true cho nút chính nền xanh, false cho nút phụ nền trắng
+     */
+    public static void styleButton(JButton btn, boolean primary) {
+        btn.setFont(SHELL_FONT);
+        btn.setBackground(primary ? PRIMARY : SURFACE);
+        btn.setForeground(primary ? SURFACE : TEXT);
+        btn.setBorder(BorderFactory.createLineBorder(primary ? PRIMARY : BORDER));
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(true);
+        btn.setFocusPainted(true);
     }
 
     /**

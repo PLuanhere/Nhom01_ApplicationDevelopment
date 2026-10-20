@@ -8,14 +8,15 @@ import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-/** Sidebar dùng chung, chỉ có thương hiệu; vùng điều hướng ban đầu để trống. */
+/** Sidebar dùng chung hiển thị thương hiệu, vai trò và vùng điều hướng để nhóm tích hợp. */
 public final class SidebarPanel extends JPanel {
 
-    /** Phiên bản tuần tự hóa theo lớp cha Swing; ứng dụng không lưu giao diện ra file. */
     private static final long serialVersionUID = 1L;
 
     /** Vùng dành cho các mục điều hướng do nhóm bổ sung sau. */
     private final JPanel pnlDieuHuong = new JPanel(new BorderLayout());
+    /** Vai trò của tài khoản đã đăng nhập, không tự chọn hoặc sửa trên sidebar. */
+    private final JLabel lblVaiTro = new JLabel();
 
     /** Tạo sidebar cố định chiều rộng, co giãn chiều cao theo khung chính. */
     public SidebarPanel() {
@@ -25,15 +26,29 @@ public final class SidebarPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(UiTheme.SIDEBAR_PADDING, UiTheme.SIDEBAR_PADDING,
                 UiTheme.SIDEBAR_PADDING, UiTheme.SIDEBAR_PADDING));
 
-        // Thương hiệu là nội dung tĩnh; chưa có vai trò hoặc nút chức năng.
         JLabel lblThuongHieu = new JLabel("ĐỨC DŨNG");
         lblThuongHieu.setFont(UiTheme.BRAND_FONT);
         lblThuongHieu.setForeground(UiTheme.TEXT);
         lblThuongHieu.setPreferredSize(new Dimension(0, 20));
-        add(lblThuongHieu, BorderLayout.NORTH);
+        JPanel pnlThuongHieu = new JPanel(new BorderLayout(0, 4));
+        pnlThuongHieu.setOpaque(false);
+        pnlThuongHieu.add(lblThuongHieu, BorderLayout.NORTH);
+        lblVaiTro.setFont(UiTheme.CAPTION_FONT);
+        lblVaiTro.setForeground(UiTheme.MUTED);
+        pnlThuongHieu.add(lblVaiTro, BorderLayout.CENTER);
+        add(pnlThuongHieu, BorderLayout.NORTH);
 
         pnlDieuHuong.setOpaque(false);
         add(pnlDieuHuong, BorderLayout.CENTER);
+    }
+
+    /**
+     * Hiển thị vai trò do khung chính cung cấp sau xác thực, gọi trên EDT.
+     * @param tenVaiTro nhãn tiếng Việt của vai trò
+     * @throws NullPointerException nếu nhãn là null
+     */
+    public void setRoleText(String tenVaiTro) {
+        lblVaiTro.setText(Objects.requireNonNull(tenVaiTro, "Tên vai trò không được null."));
     }
 
     /**
