@@ -6,11 +6,13 @@ import java.awt.FlowLayout;
 import java.util.Objects;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 
+import entity.TaiKhoan;
 import ui.component.SidebarPanel;
 import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
@@ -18,23 +20,33 @@ import ui.component.WindowTitlePanel;
 
 /**
  * Khung ứng dụng dùng chung gồm menu đầu trang, sidebar, nội dung và thanh trạng thái.
- * Chỉ quản lý bố cục; chưa có đăng nhập, dữ liệu hay chức năng nghiệp vụ.
+ * Nhận danh tính đã xác thực; chưa chứa màn hình hoặc dữ liệu nghiệp vụ.
  */
 public final class MainFrame extends JFrame {
 
     /** Phiên bản tuần tự hóa theo lớp cha Swing; không dùng để lưu phiên làm việc. */
     private static final long serialVersionUID = 1L;
 
-    /** Sidebar chỉ có thương hiệu và vùng điều hướng trống. */
+    /** Sidebar có thương hiệu, vai trò, đăng xuất và vùng điều hướng trống. */
     private final SidebarPanel pnlSidebar = new SidebarPanel();
     /** Vùng chứa một màn hình JPanel do thành viên phụ trách chức năng cung cấp. */
     private final JPanel pnlNoiDung = new JPanel(new BorderLayout());
-    /** Thông báo trạng thái chung, chưa hiển thị tài khoản hoặc vai trò giả. */
+    /** Thông báo trạng thái chung để các màn hình cập nhật. */
     private final JLabel lblTrangThai = new JLabel("Sẵn sàng");
+    /** Danh tính của phiên hiện tại; được xóa khi đăng xuất. */
+    private TaiKhoan taiKhoanDangNhap;
 
-    /** Tạo layout trống; cần khởi tạo và hiển thị trên EDT. */
-    public MainFrame() {
+    /**
+     * Tạo layout cho tài khoản đã đăng nhập; gọi trên EDT.
+     * @param taiKhoan danh tính do DAO xác thực trả về
+     * @param khiDangXuat thao tác mở lại trang đăng nhập
+     * @throws NullPointerException nếu tài khoản hoặc thao tác đăng xuất là null
+     */
+    public MainFrame(TaiKhoan taiKhoan, Runnable khiDangXuat) {
         super("Garage Ô tô Đức Dũng");
+        taiKhoanDangNhap = Objects.requireNonNull(taiKhoan, "Cần tài khoản đã đăng nhập.");
+        Objects.requireNonNull(khiDangXuat, "Cần thao tác quay lại trang đăng nhập.");
+        setTitle(getTitle() + " — " + taiKhoan.getVaiTro().getTenHienThi());
         setUndecorated(true);
         setIconImage(UiTheme.createWindowIcon());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -55,8 +67,22 @@ public final class MainFrame extends JFrame {
         pnlNoiDung.setBorder(BorderFactory.createEmptyBorder(UiTheme.CONTENT_PADDING, UiTheme.CONTENT_PADDING,
                 UiTheme.CONTENT_PADDING, UiTheme.CONTENT_PADDING));
         add(pnlSidebar, BorderLayout.WEST);
+        pnlSidebar.setRoleText(taiKhoan.getVaiTro().getTenHienThi());
+        pnlSidebar.add(createLogoutButton(khiDangXuat), BorderLayout.SOUTH);
         add(pnlNoiDung, BorderLayout.CENTER);
         add(createStatusBar(), BorderLayout.SOUTH);
+    }
+
+    /**
+     * Lấy danh tính của phiên hiện tại để các màn hình sử dụng khi tích hợp.
+     * @return tài khoản đã xác thực; không chứa mật khẩu
+     * @throws IllegalStateException nếu đã đăng xuất
+     */
+    public TaiKhoan getTaiKhoanDangNhap() {
+        if (taiKhoanDangNhap == null) {
+            throw new IllegalStateException("Phiên đăng nhập đã kết thúc.");
+        }
+        return taiKhoanDangNhap;
     }
 
     /**
@@ -126,7 +152,7 @@ public final class MainFrame extends JFrame {
     }
 
     /**
-     * Tạo thanh trạng thái đơn giản, không gắn dữ liệu người dùng.
+     * Tạo thanh trạng thái và hiển thị tài khoản, vai trò của phiên hiện tại.
      * @return panel trạng thái ở cạnh dưới cửa sổ
      */
     private JPanel createStatusBar() {
@@ -137,6 +163,32 @@ public final class MainFrame extends JFrame {
         lblTrangThai.setFont(UiTheme.CAPTION_FONT);
         lblTrangThai.setForeground(UiTheme.TEXT);
         pnlTrangThai.add(lblTrangThai, BorderLayout.CENTER);
+        // Thông tin phiên được lấy từ tài khoản đã xác thực, không gán vai trò mặc định.
+        JLabel lblTaiKhoan = new JLabel("Tài khoản: " + taiKhoanDangNhap.getTenDangNhap()
+                + "   |   Vai trò: " + taiKhoanDangNhap.getVaiTro().getTenHienThi());
+        lblTaiKhoan.setFont(UiTheme.CAPTION_FONT);
+        lblTaiKhoan.setForeground(UiTheme.MUTED);
+        pnlTrangThai.add(lblTaiKhoan, BorderLayout.EAST);
         return pnlTrangThai;
+    }
+
+    /**
+     * Tạo nút kết thúc phiên và quay lại trang đăng nhập để thử tài khoản khác.
+     * @param khiDangXuat thao tác mở lại trang đăng nhập
+     * @return nút đăng xuất đã gắn sự kiện
+     */
+    private JButton createLogoutButton(Runnable khiDangXuat) {
+        // Nút xác thực duy nhất trên sidebar; vùng chức năng vẫn để trống.
+        JButton btnDangXuat = new JButton("Đăng xuất");
+        btnDangXuat.setPreferredSize(new Dimension(0, 30));
+        UiTheme.styleButton(btnDangXuat, false);
+        btnDangXuat.addActionListener(event -> {
+            if (taiKhoanDangNhap != null) {
+                taiKhoanDangNhap = null;
+                dispose();
+                khiDangXuat.run();
+            }
+        });
+        return btnDangXuat;
     }
 }

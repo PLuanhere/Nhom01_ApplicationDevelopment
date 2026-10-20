@@ -25,13 +25,23 @@ public final class WindowTitlePanel extends JPanel {
      * @param winChu cửa sổ nhận thao tác; phải được khởi tạo trên EDT
      */
     public WindowTitlePanel(JFrame winChu) {
+        this(winChu, false);
+    }
+
+    /**
+     * Tạo thanh tiêu đề đầy đủ hoặc bản gọn cho màn hình đăng nhập.
+     * @param winChu cửa sổ nhận thao tác trên EDT
+     * @param thuGon true để chỉ hiện tên cửa sổ và nút đóng, false để hiện đủ điều khiển
+     */
+    public WindowTitlePanel(JFrame winChu, boolean thuGon) {
         super(new BorderLayout(UiTheme.SPACE_MEDIUM, 0));
         setBackground(UiTheme.SURFACE);
         setPreferredSize(new Dimension(0, UiTheme.TITLE_HEIGHT));
         setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
 
         // Icon và kiểu chữ giữ đúng tỷ lệ 14 px / 13 pt trong thanh tiêu đề Figma.
-        JLabel lblTieuDe = new JLabel(winChu.getTitle(), new ImageIcon(winChu.getIconImage()), JLabel.LEFT);
+        JLabel lblTieuDe = new JLabel(winChu.getTitle(),
+                thuGon ? null : new ImageIcon(winChu.getIconImage()), JLabel.LEFT);
         lblTieuDe.setFont(UiTheme.SHELL_FONT);
         lblTieuDe.setForeground(UiTheme.TEXT);
         lblTieuDe.setIconTextGap(UiTheme.SPACE_MEDIUM);
@@ -40,14 +50,23 @@ public final class WindowTitlePanel extends JPanel {
         // Đây là điều khiển cửa sổ, không phải các chức năng nghiệp vụ trong sidebar.
         JPanel pnlNutCuaSo = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         pnlNutCuaSo.setOpaque(false);
-        JButton btnThuNho = createWindowButton("—", "Thu nhỏ cửa sổ");
-        JButton btnPhongTo = createWindowButton("□", "Phóng to / khôi phục cửa sổ");
+        if (thuGon) {
+            // Giữ vị trí nút đóng theo hàng tiêu đề đăng nhập trong Figma.
+            pnlNutCuaSo.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            pnlNutCuaSo.setPreferredSize(new Dimension(58, 20));
+        }
+        if (!thuGon) {
+            // Bản đăng nhập cố định kích thước nên không có nút thu nhỏ/phóng to.
+            JButton btnThuNho = createWindowButton("—", "Thu nhỏ cửa sổ");
+            JButton btnPhongTo = createWindowButton("□", "Phóng to / khôi phục cửa sổ");
+            btnThuNho.addActionListener(event -> winChu.setExtendedState(winChu.getExtendedState() | Frame.ICONIFIED));
+            btnPhongTo.addActionListener(event -> toggleMaximized(winChu));
+            pnlNutCuaSo.add(btnThuNho);
+            pnlNutCuaSo.add(btnPhongTo);
+        }
+        // Nút đóng dùng chung cho cả hai kiểu tiêu đề.
         JButton btnDong = createWindowButton("×", "Đóng cửa sổ");
-        btnThuNho.addActionListener(event -> winChu.setExtendedState(winChu.getExtendedState() | Frame.ICONIFIED));
-        btnPhongTo.addActionListener(event -> toggleMaximized(winChu));
         btnDong.addActionListener(event -> winChu.dispatchEvent(new WindowEvent(winChu, WindowEvent.WINDOW_CLOSING)));
-        pnlNutCuaSo.add(btnThuNho);
-        pnlNutCuaSo.add(btnPhongTo);
         pnlNutCuaSo.add(btnDong);
         add(pnlNutCuaSo, BorderLayout.EAST);
     }

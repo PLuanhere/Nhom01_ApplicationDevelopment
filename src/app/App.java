@@ -2,10 +2,10 @@ package app;
 
 import javax.swing.SwingUtilities;
 
-import ui.MainFrame;
+import ui.LoginFrame;
 import ui.component.UiTheme;
 
-/** Điểm khởi chạy layout chung; chưa khởi tạo đăng nhập hoặc kết nối dữ liệu. */
+/** Điểm chạy ứng dụng: áp dụng theme và mở trang đăng nhập trên EDT. */
 public final class App {
 
     /** Ngăn tạo đối tượng vì lớp chỉ cung cấp điểm chạy ứng dụng. */
@@ -19,9 +19,8 @@ public final class App {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             UiTheme.apply();
-            // Khung chính là cửa sổ duy nhất của bản layout chung.
-            MainFrame winChinh = new MainFrame();
-            winChinh.setVisible(true);
+            LoginFrame winDangNhap = new LoginFrame();
+            winDangNhap.setVisible(true);
         });
     }
 }
