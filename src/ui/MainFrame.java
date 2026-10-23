@@ -3,9 +3,13 @@ package ui;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.Objects;
 
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.SwingConstants;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -13,6 +17,9 @@ import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 
 import entity.TaiKhoan;
+import entity.VaiTro;
+import ui.screen.PhieuSuaChuaPanel;
+import ui.component.SuaChuaUi;
 import ui.component.SidebarPanel;
 import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
@@ -54,6 +61,7 @@ public final class MainFrame extends JFrame {
         setMinimumSize(new Dimension(960, 600));
         setSize(1280, 800);
         setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout());
         getContentPane().setBackground(UiTheme.WINDOW);
         getRootPane().setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
@@ -71,6 +79,10 @@ public final class MainFrame extends JFrame {
         pnlSidebar.add(createLogoutButton(khiDangXuat), BorderLayout.SOUTH);
         add(pnlNoiDung, BorderLayout.CENTER);
         add(createStatusBar(), BorderLayout.SOUTH);
+        if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_TIEP_NHAN
+                || taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
+            ganNhanhSuaChua();
+        }
     }
 
     /**
@@ -190,5 +202,49 @@ public final class MainFrame extends JFrame {
             }
         });
         return btnDangXuat;
+    }
+
+    /** Gắn nhánh sửa chữa cho đúng vai trò đang đăng nhập. */
+    // Gắn màn hình và các lối vào nhánh 3, giữ nguyên layout và đăng xuất của leader.
+    private void ganNhanhSuaChua() {
+        final PhieuSuaChuaPanel pnlSuaChua = new PhieuSuaChuaPanel(this, getTaiKhoanDangNhap());
+        boolean kyThuat = getTaiKhoanDangNhap().getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT;
+        String[] nhan = kyThuat
+                ? new String[]{"Trang chủ", "Công việc được giao", "Báo cáo kiểm tra",
+                    "Tiến độ sửa chữa", "Phụ tùng sử dụng"}
+                : new String[]{"Trang chủ", "Khách hàng", "Phương tiện", "Phiếu tiếp nhận", "Báo giá", "Lệnh sửa chữa"};
+        JPanel pnlDieuHuong = new JPanel();
+        pnlDieuHuong.setOpaque(false);
+        pnlDieuHuong.setLayout(new BoxLayout(pnlDieuHuong, BoxLayout.Y_AXIS));
+        ActionListener xuLy = new ActionListener() {
+            /** {@inheritDoc} */
+            // Mở danh sách nhánh sửa chữa hoặc thông báo chức năng chưa được tích hợp.
+            @Override
+            public void actionPerformed(ActionEvent suKien) {
+                String mucChon = suKien.getActionCommand();
+                if ("Lệnh sửa chữa".equals(mucChon) || "Công việc được giao".equals(mucChon)
+                        || "Tiến độ sửa chữa".equals(mucChon)) {
+                    pnlSuaChua.actionPerformed(new ActionEvent(pnlSuaChua, ActionEvent.ACTION_PERFORMED, "DANH_SACH"));
+                } else {
+                    setStatus(mucChon + " thuộc nhánh khác, chưa tích hợp trong nhánh sửa chữa.");
+                }
+            }
+        };
+        for (String tenMuc : nhan) {
+            JButton btnMuc = SuaChuaUi.taoNut(tenMuc, tenMuc, false, xuLy);
+            btnMuc.setHorizontalAlignment(SwingConstants.LEFT);
+            btnMuc.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+            btnMuc.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+            btnMuc.setBackground((kyThuat ? "Công việc được giao" : "Lệnh sửa chữa").equals(tenMuc)
+                    ? new java.awt.Color(0xDCEAFE) : UiTheme.NAVIGATION);
+            pnlDieuHuong.add(btnMuc);
+            pnlDieuHuong.add(javax.swing.Box.createVerticalStrut(4));
+        }
+        JPanel pnlVung = new JPanel(new BorderLayout());
+        pnlVung.setOpaque(false);
+        pnlVung.add(pnlDieuHuong, BorderLayout.NORTH);
+        setSidebarContent(pnlVung);
+        setScreen(pnlSuaChua);
+        setStatus("Sửa chữa · Dữ liệu mẫu trong bộ nhớ");
     }
 }
