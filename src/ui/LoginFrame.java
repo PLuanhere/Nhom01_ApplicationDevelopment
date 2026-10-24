@@ -23,7 +23,9 @@ import javax.swing.SwingWorker;
 
 import dao.TaiKhoanDAO;
 import entity.TaiKhoan;
+import entity.VaiTro;
 import ui.component.UiTheme;
+import ui.screen.ThuNganShell;
 import ui.component.WindowMouseHandler;
 import ui.component.WindowTitlePanel;
 
@@ -240,14 +242,21 @@ public final class LoginFrame extends JFrame {
     }
 
     /**
-     * Mở khung chung với danh tính đã xác thực; đăng xuất tạo form trống mới.
+     * Mở khung chung với danh tính đã xác thực; khởi động shell theo vai trò.
+     * Đổi vai trò hoặc đăng xuất đều tạo form trống mới để chọn lại tài khoản.
+     *
      * @param taiKhoan tài khoản do DAO trả về sau đăng nhập thành công
      */
     private void moKhungChinh(TaiKhoan taiKhoan) {
         txtMatKhau.setText("");
         chkHienMatKhau.setSelected(false);
         txtMatKhau.setEchoChar('•');
-        MainFrame winChinh = new MainFrame(taiKhoan, () -> new LoginFrame().setVisible(true));
+        Runnable quayDangNhap = () -> new LoginFrame().setVisible(true);
+        MainFrame winChinh = new MainFrame(taiKhoan, quayDangNhap);
+        // Khởi động shell tương ứng với vai trò; bổ sung các vai trò khác tại đây.
+        if (taiKhoan.getVaiTro() == VaiTro.THU_NGAN) {
+            new ThuNganShell(winChinh, quayDangNhap).start();
+        }
         winChinh.setVisible(true);
         dispose();
     }
