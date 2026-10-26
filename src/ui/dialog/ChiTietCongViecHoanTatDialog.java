@@ -12,14 +12,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -28,12 +31,14 @@ import entity.ThongKeNgayKyThuat;
 import ui.component.KyThuatUi;
 import ui.component.UiTheme;
 
-// Hiển thị chi tiết công việc hoàn tất theo ngày; không truy vấn hoặc cập nhật dữ liệu.
+/** Chi tiết thống kê của ngày đã chọn; chỉ đọc, không thay đổi dữ liệu sửa chữa. */
 public final class ChiTietCongViecHoanTatDialog extends JDialog implements ActionListener {
+    /** Phiên bản tương thích Swing và nút kết thúc xem chi tiết. */
     private static final long serialVersionUID = 1L;
     private final JButton btnDong = KyThuatUi.taoNut("Đóng chi tiết", 152);
 
     /**
+     * Tạo dialog modal thuộc phiên đang mở; hỗ trợ Enter và Escape để đóng.
      * @param owner khung chung đang mở hộp thoại
      * @param tenKyThuatVien tên kỹ thuật viên
      * @param thongKe thống kê của ngày được chọn
@@ -46,13 +51,23 @@ public final class ChiTietCongViecHoanTatDialog extends JDialog implements Actio
         getRootPane().setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
         pack();
         Dimension kichThuocNoiDung = getSize();
-        setSize(Math.max(900, kichThuocNoiDung.width), Math.max(560, kichThuocNoiDung.height));
-        setLocationRelativeTo(owner);
+        setSize(Math.max(900, kichThuocNoiDung.width), Math.max(540, kichThuocNoiDung.height));
+        getRootPane().setDefaultButton(btnDong);
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke("ESCAPE"), "dongChiTiet");
+        getRootPane().getActionMap().put("dongChiTiet", new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+
+            /** {@inheritDoc} */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                dispose();
+            }
+        });
         setLocationRelativeTo(owner);
     }
 
-    /** {@inheritDoc} */
-    // Đóng hộp thoại khi người dùng bấm nút Đóng chi tiết.
+    /** Đóng dialog bằng nút chính, không ghi dữ liệu hoặc đổi trạng thái công việc. */
     @Override
     public void actionPerformed(ActionEvent event) {
         if (event.getSource() == btnDong) {
@@ -61,11 +76,11 @@ public final class ChiTietCongViecHoanTatDialog extends JDialog implements Actio
     }
 
     /**
+     * Ghép tiêu đề, dữ liệu chỉ đọc và nút đóng theo thiết kế.
      * @param tenKyThuatVien tên kỹ thuật viên được thống kê
      * @param thongKe thống kê của ngày được chọn
      * @return panel nội dung hộp thoại
      */
-    // Ghép tiêu đề, thống kê và nút đóng theo bố cục hộp thoại trong thiết kế.
     private JPanel taoNoiDung(String tenKyThuatVien, ThongKeNgayKyThuat thongKe) {
         Objects.requireNonNull(tenKyThuatVien, "Cần tên kỹ thuật viên.");
         Objects.requireNonNull(thongKe, "Cần thống kê theo ngày.");
@@ -89,11 +104,11 @@ public final class ChiTietCongViecHoanTatDialog extends JDialog implements Actio
     }
 
     /**
+     * Hiển thị cùng một ngày và cùng một tổng số trên toàn bộ dialog.
      * @param tenKyThuatVien tên kỹ thuật viên
      * @param thongKe thống kê của ngày được chọn
      * @return panel chứa mô tả, tổng số, bảng và kết luận
      */
-    // Hiển thị thống nhất ngày và tổng số công việc trong toàn bộ hộp thoại.
     private static JPanel taoDuLieu(String tenKyThuatVien, ThongKeNgayKyThuat thongKe) {
         JPanel pnlDuLieu = new JPanel(new BorderLayout(0, 8));
         pnlDuLieu.setBackground(UiTheme.WINDOW);
@@ -126,17 +141,16 @@ public final class ChiTietCongViecHoanTatDialog extends JDialog implements Actio
     }
 
     /**
+     * Tính tỷ trọng từ số lượng thực của từng nhóm, kể cả ngày có tổng bằng không.
      * @param thongKe thống kê của ngày được chọn
      * @return vùng cuộn chứa bảng thống kê chỉ đọc
      */
-    // Tạo bảng bằng DefaultTableModel và tính tỷ trọng từ số lượng của từng nhóm.
     private static JScrollPane taoBang(ThongKeNgayKyThuat thongKe) {
         DefaultTableModel modelChiTiet = new DefaultTableModel(
                 new Object[]{"Nhóm công việc", "Đã hoàn tất", "Tỷ trọng"}, 0) {
             private static final long serialVersionUID = 1L;
 
             /** {@inheritDoc} */
-            // Ngăn sửa trực tiếp dữ liệu thống kê trên bảng.
             @Override
             public boolean isCellEditable(int dong, int cot) {
                 return false;
@@ -159,13 +173,13 @@ public final class ChiTietCongViecHoanTatDialog extends JDialog implements Actio
         tblChiTiet.setGridColor(UiTheme.BORDER);
         tblChiTiet.setShowGrid(true);
         tblChiTiet.setRowSelectionAllowed(false);
+        // Bảng không có thao tác chọn/sửa; giữ điểm Tab ở nút đóng để Enter không bị bảng nhận mất.
+        tblChiTiet.setFocusable(false);
         tblChiTiet.getTableHeader().setReorderingAllowed(false);
-        // Renderer chỉ định dạng ô để bảng giữ màu và font giống thiết kế.
         tblChiTiet.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
             private static final long serialVersionUID = 1L;
 
             /** {@inheritDoc} */
-            // Định dạng ô tiêu đề bảng bằng font đậm, nền xám và viền mảnh.
             @Override
             public Component getTableCellRendererComponent(JTable tblBang, Object giaTri,
                     boolean duocChon, boolean coFocus, int dong, int cot) {
@@ -184,7 +198,6 @@ public final class ChiTietCongViecHoanTatDialog extends JDialog implements Actio
             private static final long serialVersionUID = 1L;
 
             /** {@inheritDoc} */
-            // Định dạng ô dữ liệu và căn phải cột số lượng theo quy định dự án.
             @Override
             public Component getTableCellRendererComponent(JTable tblBang, Object giaTri,
                     boolean duocChon, boolean coFocus, int dong, int cot) {

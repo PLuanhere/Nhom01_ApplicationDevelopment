@@ -52,6 +52,8 @@ public final class MainFrame extends JFrame implements ActionListener {
     private TaiKhoan taiKhoanDangNhap;
     /** Dashboard được tạo sau khi đăng nhập bằng vai trò kỹ thuật. */
     private TrangChuKyThuatPanel pnlTrangChuKyThuat;
+    /** Các mục của riêng kỹ thuật viên, dùng để cập nhật lựa chọn khi chuyển màn hình. */
+    private JButton[] btnDieuHuongKyThuat;
     /** Màn hình kiểm tra được tạo một lần khi mở chức năng. */
     private BaoCaoKiemTraPanel pnlKiemTra;
     /** Màn hình sửa chữa được giữ lại trong suốt phiên đăng nhập. */
@@ -108,17 +110,21 @@ public final class MainFrame extends JFrame implements ActionListener {
     // Nhận sự kiện từ các nút điều hướng và hiển thị màn hình hoặc trạng thái tương ứng.
     @Override
     public void actionPerformed(ActionEvent event) {
+        if (taiKhoanDangNhap == null) {
+            return;
+        }
         String tenManHinh = event.getActionCommand();
         if ("Trang chủ".equals(tenManHinh) && pnlTrangChuKyThuat != null) {
             setScreen(pnlTrangChuKyThuat);
             setStatus("Dashboard kỹ thuật • Dữ liệu mẫu theo Figma 05/10/2026");
-        } else if ("Báo cáo kiểm tra".equals(tenManHinh)) {
+        } else if ("Báo cáo kiểm tra".equals(tenManHinh) || "Xe chờ kiểm tra".equals(tenManHinh)) {
             if (pnlKiemTra == null) {
                 pnlKiemTra = new BaoCaoKiemTraPanel(this, getTaiKhoanDangNhap());
             }
             setScreen(pnlKiemTra);
             pnlKiemTra.actionPerformed(
-                    new ActionEvent(pnlKiemTra, ActionEvent.ACTION_PERFORMED, "DANH_SACH"));
+                    new ActionEvent(pnlKiemTra, ActionEvent.ACTION_PERFORMED,
+                            "Xe chờ kiểm tra".equals(tenManHinh) ? "CHO" : "DANH_SACH"));
             setStatus("Báo cáo kiểm tra · Dữ liệu mẫu trong bộ nhớ");
         } else if ("Lệnh sửa chữa".equals(tenManHinh)
                 || "Công việc được giao".equals(tenManHinh)
@@ -128,6 +134,10 @@ public final class MainFrame extends JFrame implements ActionListener {
             moDanhSachPhuTung();
         } else {
             dieuHuongKyThuat(tenManHinh);
+            return;
+        }
+        if (taiKhoanDangNhap.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
+            capNhatMucKyThuat("Xe chờ kiểm tra".equals(tenManHinh) ? "Báo cáo kiểm tra" : tenManHinh);
         }
     }
 
@@ -265,8 +275,7 @@ public final class MainFrame extends JFrame implements ActionListener {
         setStatus("Phụ tùng sử dụng · Dữ liệu mẫu trong bộ nhớ");
     }
 
-    /** Khởi tạo dashboard và các mục điều hướng dành cho tài khoản kỹ thuật. */
-    // Nạp dữ liệu mẫu và gắn dashboard cùng các mục điều hướng vào khung chung.
+    /** Khởi tạo dashboard một lần trong phiên và nối các mục kỹ thuật vào khung chung. */
     private void khoiTaoTrangChuKyThuat() {
         TrangChuKyThuatDAO trangChuDAO = new TrangChuKyThuatDAO();
         pnlTrangChuKyThuat = new TrangChuKyThuatPanel(
@@ -276,16 +285,19 @@ public final class MainFrame extends JFrame implements ActionListener {
         pnlDanhSach.setLayout(new BoxLayout(pnlDanhSach, BoxLayout.Y_AXIS));
         String[] mucDieuHuong = {"Trang chủ", "Công việc được giao", "Báo cáo kiểm tra",
                 "Tiến độ sửa chữa", "Phụ tùng sử dụng", "Đổi vai trò"};
-        for (String muc : mucDieuHuong) {
+        btnDieuHuongKyThuat = new JButton[mucDieuHuong.length];
+        for (int i = 0; i < mucDieuHuong.length; i++) {
+            String muc = mucDieuHuong[i];
             JButton btnMuc = KyThuatUi.taoNut(muc, 156);
+            btnDieuHuongKyThuat[i] = btnMuc;
             btnMuc.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
             btnMuc.setHorizontalAlignment(SwingConstants.LEFT);
             if (!"Đổi vai trò".equals(muc)) {
                 btnMuc.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
-                btnMuc.setBackground("Trang chủ".equals(muc) ? new Color(0xDCEAFE) : UiTheme.NAVIGATION);
-            }
-            if ("Trang chủ".equals(muc)) {
-                btnMuc.setFont(UiTheme.BRAND_FONT.deriveFont(13.0f));
+            } else {
+                // Phiên hiện tại chỉ có một vai trò; không cho đổi quyền bằng thao tác UI.
+                btnMuc.setEnabled(false);
+                btnMuc.setToolTipText("Đăng xuất để đăng nhập bằng tài khoản có vai trò khác.");
             }
             btnMuc.addActionListener(this);
             pnlDanhSach.add(btnMuc);
@@ -295,8 +307,27 @@ public final class MainFrame extends JFrame implements ActionListener {
         pnlDieuHuong.setOpaque(false);
         pnlDieuHuong.add(pnlDanhSach, BorderLayout.NORTH);
         setSidebarContent(pnlDieuHuong);
+        capNhatMucKyThuat("Trang chủ");
         setScreen(pnlTrangChuKyThuat);
         setStatus("Dashboard kỹ thuật • Dữ liệu mẫu theo Figma 05/10/2026");
+    }
+
+    /**
+     * Đồng bộ sidebar kể cả khi người dùng đi từ nút tắt trên dashboard.
+     * @param tenMuc tên mục đang hiển thị
+     */
+    private void capNhatMucKyThuat(String tenMuc) {
+        if (btnDieuHuongKyThuat == null) {
+            return;
+        }
+        for (JButton btnMuc : btnDieuHuongKyThuat) {
+            if (btnMuc.isEnabled()) {
+                boolean duocChon = btnMuc.getText().equals(tenMuc);
+                btnMuc.setBackground(duocChon ? UiTheme.SELECTION : UiTheme.NAVIGATION);
+                btnMuc.setFont(duocChon ? UiTheme.BRAND_FONT.deriveFont(13.0f) : UiTheme.SHELL_FONT);
+                btnMuc.getAccessibleContext().setAccessibleDescription(duocChon ? "Đang chọn" : "");
+            }
+        }
     }
 
     /** @param tenManHinh tên chức năng được chọn */
