@@ -19,6 +19,7 @@ import javax.swing.SwingConstants;
 import dao.TrangChuKyThuatDAO;
 import entity.TaiKhoan;
 import entity.VaiTro;
+import ui.screen.BaoCaoKiemTraPanel;
 import ui.component.KyThuatUi;
 import ui.component.SidebarPanel;
 import ui.component.UiTheme;
@@ -27,22 +28,24 @@ import ui.component.WindowTitlePanel;
 import ui.screen.TrangChuKyThuatPanel;
 
 /**
- * Khung ứng dụng dùng chung gồm thanh tiêu đề, menu, sidebar, nội dung và thanh trạng thái.
- * Nhận tài khoản đã xác thực và gắn màn hình chức năng theo vai trò.
+ * Khung ứng dụng dùng chung gồm menu đầu trang, sidebar, nội dung và thanh trạng thái.
+ * Nhận danh tính đã xác thực và tích hợp dashboard kỹ thuật cùng báo cáo kiểm tra.
  */
 public final class MainFrame extends JFrame implements ActionListener {
     /** Phiên bản tương thích Swing. */
     private static final long serialVersionUID = 1L;
     /** Sidebar dùng chung của leader. */
     private final SidebarPanel pnlSidebar = new SidebarPanel();
-    /** Vùng hiển thị màn hình chức năng. */
+    /** Vùng chứa màn hình chức năng. */
     private final JPanel pnlNoiDung = new JPanel(new BorderLayout());
-    /** Nội dung thông báo trên thanh trạng thái. */
+    /** Thông báo trạng thái chung. */
     private final JLabel lblTrangThai = new JLabel("Sẵn sàng");
     /** Tài khoản của phiên hiện tại; được xóa khi đăng xuất. */
     private TaiKhoan taiKhoanDangNhap;
     /** Dashboard được tạo sau khi đăng nhập bằng vai trò kỹ thuật. */
     private TrangChuKyThuatPanel pnlTrangChuKyThuat;
+    /** Màn hình kiểm tra được tạo một lần khi mở chức năng. */
+    private BaoCaoKiemTraPanel pnlKiemTra;
 
     /**
      * @param taiKhoan tài khoản đã được xác thực
@@ -60,6 +63,7 @@ public final class MainFrame extends JFrame implements ActionListener {
         setMinimumSize(new Dimension(960, 600));
         setSize(1280, 800);
         setLocationRelativeTo(null);
+        // Mở khung chính ở trạng thái phóng to ngay sau đăng nhập.
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout());
         getContentPane().setBackground(UiTheme.WINDOW);
@@ -89,6 +93,14 @@ public final class MainFrame extends JFrame implements ActionListener {
         if ("Trang chủ".equals(tenManHinh) && pnlTrangChuKyThuat != null) {
             setScreen(pnlTrangChuKyThuat);
             setStatus("Dashboard kỹ thuật • Dữ liệu mẫu theo Figma 05/10/2026");
+        } else if ("Báo cáo kiểm tra".equals(tenManHinh)) {
+            if (pnlKiemTra == null) {
+                pnlKiemTra = new BaoCaoKiemTraPanel(this, getTaiKhoanDangNhap());
+            }
+            setScreen(pnlKiemTra);
+            pnlKiemTra.actionPerformed(
+                    new ActionEvent(pnlKiemTra, ActionEvent.ACTION_PERFORMED, "DANH_SACH"));
+            setStatus("Báo cáo kiểm tra · Dữ liệu mẫu trong bộ nhớ");
         } else {
             dieuHuongKyThuat(tenManHinh);
         }
