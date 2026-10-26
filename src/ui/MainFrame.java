@@ -21,15 +21,17 @@ import entity.TaiKhoan;
 import entity.VaiTro;
 import ui.screen.BaoCaoKiemTraPanel;
 import ui.component.KyThuatUi;
+import ui.component.SuaChuaUi;
 import ui.component.SidebarPanel;
 import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
 import ui.component.WindowTitlePanel;
 import ui.screen.TrangChuKyThuatPanel;
+import ui.screen.PhieuSuaChuaPanel;
 
 /**
  * Khung ứng dụng dùng chung gồm menu đầu trang, sidebar, nội dung và thanh trạng thái.
- * Nhận danh tính đã xác thực và tích hợp dashboard kỹ thuật cùng báo cáo kiểm tra.
+ * Tích hợp dashboard kỹ thuật, báo cáo kiểm tra và sửa chữa theo vai trò đăng nhập.
  */
 public final class MainFrame extends JFrame implements ActionListener {
     /** Phiên bản tương thích Swing. */
@@ -46,6 +48,8 @@ public final class MainFrame extends JFrame implements ActionListener {
     private TrangChuKyThuatPanel pnlTrangChuKyThuat;
     /** Màn hình kiểm tra được tạo một lần khi mở chức năng. */
     private BaoCaoKiemTraPanel pnlKiemTra;
+    /** Màn hình sửa chữa được giữ lại trong suốt phiên đăng nhập. */
+    private PhieuSuaChuaPanel pnlSuaChua;
 
     /**
      * @param taiKhoan tài khoản đã được xác thực
@@ -82,6 +86,8 @@ public final class MainFrame extends JFrame implements ActionListener {
         add(createStatusBar(), BorderLayout.SOUTH);
         if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
             khoiTaoTrangChuKyThuat();
+        } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_TIEP_NHAN) {
+            ganNhanhSuaChua();
         }
     }
 
@@ -101,6 +107,10 @@ public final class MainFrame extends JFrame implements ActionListener {
             pnlKiemTra.actionPerformed(
                     new ActionEvent(pnlKiemTra, ActionEvent.ACTION_PERFORMED, "DANH_SACH"));
             setStatus("Báo cáo kiểm tra · Dữ liệu mẫu trong bộ nhớ");
+        } else if ("Lệnh sửa chữa".equals(tenManHinh)
+                || "Công việc được giao".equals(tenManHinh)
+                || "Tiến độ sửa chữa".equals(tenManHinh)) {
+            moDanhSachSuaChua();
         } else {
             dieuHuongKyThuat(tenManHinh);
         }
@@ -214,6 +224,40 @@ public final class MainFrame extends JFrame implements ActionListener {
             }
         });
         return btnDangXuat;
+    }
+
+    /** Gắn điều hướng sửa chữa cho nhân viên tiếp nhận. */
+    private void ganNhanhSuaChua() {
+        String[] nhan = {"Trang chủ", "Khách hàng", "Phương tiện", "Phiếu tiếp nhận", "Báo giá", "Lệnh sửa chữa"};
+        JPanel pnlDieuHuong = new JPanel();
+        pnlDieuHuong.setOpaque(false);
+        pnlDieuHuong.setLayout(new BoxLayout(pnlDieuHuong, BoxLayout.Y_AXIS));
+        for (String tenMuc : nhan) {
+            JButton btnMuc = SuaChuaUi.taoNut(tenMuc, tenMuc, false, this);
+            btnMuc.setHorizontalAlignment(SwingConstants.LEFT);
+            btnMuc.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+            btnMuc.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+            btnMuc.setBackground("Lệnh sửa chữa".equals(tenMuc)
+                    ? new java.awt.Color(0xDCEAFE) : UiTheme.NAVIGATION);
+            pnlDieuHuong.add(btnMuc);
+            pnlDieuHuong.add(javax.swing.Box.createVerticalStrut(4));
+        }
+        JPanel pnlVung = new JPanel(new BorderLayout());
+        pnlVung.setOpaque(false);
+        pnlVung.add(pnlDieuHuong, BorderLayout.NORTH);
+        setSidebarContent(pnlVung);
+        moDanhSachSuaChua();
+    }
+
+    /** Mở lại cùng màn hình để giữ dữ liệu mẫu và xử lý xác nhận thay đổi chưa lưu. */
+    private void moDanhSachSuaChua() {
+        if (pnlSuaChua == null) {
+            pnlSuaChua = new PhieuSuaChuaPanel(this, getTaiKhoanDangNhap());
+        }
+        setScreen(pnlSuaChua);
+        pnlSuaChua.actionPerformed(
+                new ActionEvent(pnlSuaChua, ActionEvent.ACTION_PERFORMED, "DANH_SACH"));
+        setStatus("Sửa chữa · Dữ liệu mẫu trong bộ nhớ");
     }
 
     /** Khởi tạo dashboard và các mục điều hướng dành cho tài khoản kỹ thuật. */
