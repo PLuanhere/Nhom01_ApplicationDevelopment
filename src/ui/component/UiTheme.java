@@ -20,6 +20,8 @@ public final class UiTheme {
     public static final Color WINDOW = new Color(0xF0F0F0);
     /** Nền sidebar theo thiết kế Figma. */
     public static final Color NAVIGATION = new Color(0xE9EEF4);
+    /** Nền xanh nhạt đánh dấu mục sidebar đang chọn. */
+    public static final Color NAVIGATION_SELECTED = new Color(0xDCEAFE);
     /** Màu chữ chính. */
     public static final Color TEXT = new Color(0x202B38);
     /** Màu chữ phụ. */
