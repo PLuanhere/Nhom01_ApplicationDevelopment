@@ -1,6 +1,7 @@
 package ui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
@@ -16,6 +17,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
+import dao.PhuTungSuDungDAO;
 import dao.TrangChuKyThuatDAO;
 import entity.TaiKhoan;
 import entity.VaiTro;
@@ -28,10 +30,11 @@ import ui.component.WindowMouseHandler;
 import ui.component.WindowTitlePanel;
 import ui.screen.TrangChuKyThuatPanel;
 import ui.screen.PhieuSuaChuaPanel;
+import ui.screen.PhuTungSuDungPanel;
 
 /**
  * Khung ứng dụng dùng chung gồm menu đầu trang, sidebar, nội dung và thanh trạng thái.
- * Tích hợp dashboard kỹ thuật, báo cáo kiểm tra và sửa chữa theo vai trò đăng nhập.
+ * Tích hợp dashboard kỹ thuật, kiểm tra, sửa chữa và phụ tùng sử dụng theo vai trò đăng nhập.
  */
 public final class MainFrame extends JFrame implements ActionListener {
     /** Phiên bản tương thích Swing. */
@@ -50,6 +53,8 @@ public final class MainFrame extends JFrame implements ActionListener {
     private BaoCaoKiemTraPanel pnlKiemTra;
     /** Màn hình sửa chữa được giữ lại trong suốt phiên đăng nhập. */
     private PhieuSuaChuaPanel pnlSuaChua;
+    /** Màn hình và DAO phụ tùng được giữ lại trong suốt phiên đăng nhập. */
+    private PhuTungSuDungPanel pnlPhuTung;
 
     /**
      * @param taiKhoan tài khoản đã được xác thực
@@ -77,7 +82,8 @@ public final class MainFrame extends JFrame implements ActionListener {
         addMouseListener(mouseHandler);
         addMouseMotionListener(mouseHandler);
         pnlNoiDung.setBackground(UiTheme.WINDOW);
-        pnlNoiDung.setBorder(BorderFactory.createEmptyBorder(UiTheme.CONTENT_PADDING, UiTheme.CONTENT_PADDING,
+        pnlNoiDung.setBorder(BorderFactory.createEmptyBorder(
+                UiTheme.CONTENT_PADDING, UiTheme.CONTENT_PADDING,
                 UiTheme.CONTENT_PADDING, UiTheme.CONTENT_PADDING));
         add(pnlSidebar, BorderLayout.WEST);
         pnlSidebar.setRoleText(taiKhoan.getVaiTro().getTenHienThi());
@@ -111,6 +117,8 @@ public final class MainFrame extends JFrame implements ActionListener {
                 || "Công việc được giao".equals(tenManHinh)
                 || "Tiến độ sửa chữa".equals(tenManHinh)) {
             moDanhSachSuaChua();
+        } else if ("Phụ tùng sử dụng".equals(tenManHinh)) {
+            moDanhSachPhuTung();
         } else {
             dieuHuongKyThuat(tenManHinh);
         }
@@ -162,7 +170,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     // Tạo các nhãn nhóm menu theo khung hiện có của leader.
     private JMenuBar createMenuBar() {
         JMenuBar mnuChinh = new JMenuBar();
-        String[] nhomMenu = {"Hệ thống", "Danh mục", "Nghiệp vụ", "Thống kê", "Trợ giúp"};
+        String[] nhomMenu = {"Hệ thống", "Danh mục", "Nghiệp vụ", "Báo cáo", "Trợ giúp"};
         mnuChinh.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
         mnuChinh.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
         mnuChinh.setPreferredSize(new Dimension(0, UiTheme.MENU_HEIGHT));
@@ -238,7 +246,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             btnMuc.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
             btnMuc.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
             btnMuc.setBackground("Lệnh sửa chữa".equals(tenMuc)
-                    ? new java.awt.Color(0xDCEAFE) : UiTheme.NAVIGATION);
+                    ? new Color(0xDCEAFE) : UiTheme.NAVIGATION);
             pnlDieuHuong.add(btnMuc);
             pnlDieuHuong.add(javax.swing.Box.createVerticalStrut(4));
         }
@@ -260,6 +268,17 @@ public final class MainFrame extends JFrame implements ActionListener {
         setStatus("Sửa chữa · Dữ liệu mẫu trong bộ nhớ");
     }
 
+    /** Mở phân hệ phụ tùng với cùng dữ liệu trong phiên đăng nhập kỹ thuật. */
+    private void moDanhSachPhuTung() {
+        if (pnlPhuTung == null) {
+            pnlPhuTung = new PhuTungSuDungPanel(
+                    getTaiKhoanDangNhap(), new PhuTungSuDungDAO());
+        }
+        pnlPhuTung.moDanhSach();
+        setScreen(pnlPhuTung);
+        setStatus("Phụ tùng sử dụng · Dữ liệu mẫu trong bộ nhớ");
+    }
+
     /** Khởi tạo dashboard và các mục điều hướng dành cho tài khoản kỹ thuật. */
     // Nạp dữ liệu mẫu và gắn dashboard cùng các mục điều hướng vào khung chung.
     private void khoiTaoTrangChuKyThuat() {
@@ -277,7 +296,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             btnMuc.setHorizontalAlignment(SwingConstants.LEFT);
             if (!"Đổi vai trò".equals(muc)) {
                 btnMuc.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
-                btnMuc.setBackground("Trang chủ".equals(muc) ? new java.awt.Color(0xDCEAFE) : UiTheme.NAVIGATION);
+                btnMuc.setBackground("Trang chủ".equals(muc) ? new Color(0xDCEAFE) : UiTheme.NAVIGATION);
             }
             if ("Trang chủ".equals(muc)) {
                 btnMuc.setFont(UiTheme.BRAND_FONT.deriveFont(13.0f));
