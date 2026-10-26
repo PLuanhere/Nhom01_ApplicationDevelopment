@@ -12,6 +12,7 @@
 !.env.example
 
 # Generated documents, logs, builds and database backups
+/doc/
 /output/
 /github-ready/
 *.log
