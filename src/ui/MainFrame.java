@@ -3,9 +3,9 @@ package ui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
 import java.util.Objects;
 
 import javax.swing.BorderFactory;
@@ -13,7 +13,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
@@ -22,6 +21,8 @@ import dao.TrangChuKyThuatDAO;
 import entity.TaiKhoan;
 import entity.VaiTro;
 import ui.screen.BaoCaoKiemTraPanel;
+import ui.component.AppMenuBar;
+import ui.component.QuanLyNavigationPanel;
 import ui.component.KyThuatUi;
 import ui.component.SuaChuaUi;
 import ui.component.SidebarPanel;
@@ -45,6 +46,8 @@ public final class MainFrame extends JFrame implements ActionListener {
     private final JPanel pnlNoiDung = new JPanel(new BorderLayout());
     /** Thông báo trạng thái chung. */
     private final JLabel lblTrangThai = new JLabel("Sẵn sàng");
+    /** Thao tác mở lại đăng nhập, dùng chung cho menu và sidebar. */
+    private final Runnable khiDangXuat;
     /** Tài khoản của phiên hiện tại; được xóa khi đăng xuất. */
     private TaiKhoan taiKhoanDangNhap;
     /** Dashboard được tạo sau khi đăng nhập bằng vai trò kỹ thuật. */
@@ -64,7 +67,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     public MainFrame(TaiKhoan taiKhoan, Runnable khiDangXuat) {
         super("Garage Ô tô Đức Dũng");
         taiKhoanDangNhap = Objects.requireNonNull(taiKhoan, "Cần tài khoản đã đăng nhập.");
-        Objects.requireNonNull(khiDangXuat, "Cần thao tác quay lại trang đăng nhập.");
+        this.khiDangXuat = Objects.requireNonNull(khiDangXuat, "Cần thao tác quay lại trang đăng nhập.");
         setTitle(getTitle() + " — " + taiKhoan.getVaiTro().getTenHienThi());
         setUndecorated(true);
         setIconImage(UiTheme.createWindowIcon());
@@ -87,10 +90,14 @@ public final class MainFrame extends JFrame implements ActionListener {
                 UiTheme.CONTENT_PADDING, UiTheme.CONTENT_PADDING));
         add(pnlSidebar, BorderLayout.WEST);
         pnlSidebar.setRoleText(taiKhoan.getVaiTro().getTenHienThi());
-        pnlSidebar.add(createLogoutButton(khiDangXuat), BorderLayout.SOUTH);
+        pnlSidebar.add(createLogoutButton(), BorderLayout.SOUTH);
         add(pnlNoiDung, BorderLayout.CENTER);
         add(createStatusBar(), BorderLayout.SOUTH);
-        if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
+        if (taiKhoan.getVaiTro() == VaiTro.QUAN_LY) {
+            setSidebarContent(new QuanLyNavigationPanel(tenMuc ->
+                    setStatus(tenMuc + ": chức năng chưa triển khai.")));
+            setStatus("Trang chủ: chức năng chưa triển khai.");
+        } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
             khoiTaoTrangChuKyThuat();
         } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_TIEP_NHAN) {
             ganNhanhSuaChua();
@@ -166,30 +173,15 @@ public final class MainFrame extends JFrame implements ActionListener {
         lblTrangThai.setText(Objects.requireNonNull(thongBao, "Thông báo không được null."));
     }
 
-    /** @return thanh nhãn nhóm menu của khung chung */
-    // Tạo các nhãn nhóm menu theo khung hiện có của leader.
-    private JMenuBar createMenuBar() {
-        JMenuBar mnuChinh = new JMenuBar();
-        String[] nhomMenu = {"Hệ thống", "Danh mục", "Nghiệp vụ", "Báo cáo", "Trợ giúp"};
-        mnuChinh.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        mnuChinh.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
-        mnuChinh.setPreferredSize(new Dimension(0, UiTheme.MENU_HEIGHT));
-        for (String tenNhom : nhomMenu) {
-            JLabel lblNhom = new JLabel(tenNhom);
-            lblNhom.setFont(UiTheme.SHELL_FONT);
-            lblNhom.setForeground(UiTheme.TEXT);
-            lblNhom.setPreferredSize(new Dimension(UiTheme.MENU_GROUP_WIDTH, 20));
-            mnuChinh.add(lblNhom);
-        }
-        return mnuChinh;
-    }
-
-    /** @return panel chứa thanh tiêu đề và thanh menu */
-    // Ghép thanh tiêu đề cửa sổ và thanh menu của leader.
+    /**
+     * Ghép thanh tiêu đề trắng và menu đầu trang thành header chung.
+     * @return header tự co giãn chiều ngang, giữ chiều cao theo Figma
+     */
     private JPanel createHeader() {
         JPanel pnlHeader = new JPanel(new BorderLayout());
         pnlHeader.add(new WindowTitlePanel(this), BorderLayout.NORTH);
-        pnlHeader.add(createMenuBar(), BorderLayout.CENTER);
+        pnlHeader.add(new AppMenuBar(this::dangXuat,
+                () -> dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING))), BorderLayout.CENTER);
         return pnlHeader;
     }
 
@@ -210,28 +202,22 @@ public final class MainFrame extends JFrame implements ActionListener {
         return pnlTrangThai;
     }
 
-    /**
-     * @param khiDangXuat thao tác mở lại màn hình đăng nhập
-     * @return nút đăng xuất đã đăng ký sự kiện
-     */
-    // Tạo nút kết thúc phiên và quay lại trang đăng nhập.
-    private JButton createLogoutButton(Runnable khiDangXuat) {
+    /** @return nút kết thúc phiên và mở lại trang đăng nhập */
+    private JButton createLogoutButton() {
         JButton btnDangXuat = new JButton("Đăng xuất");
         btnDangXuat.setPreferredSize(new Dimension(0, 30));
         UiTheme.styleButton(btnDangXuat, false);
-        btnDangXuat.addActionListener(new ActionListener() {
-            /** {@inheritDoc} */
-            // Xóa phiên hiện tại và gọi thao tác mở lại trang đăng nhập của leader.
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                if (taiKhoanDangNhap != null) {
-                    taiKhoanDangNhap = null;
-                    dispose();
-                    khiDangXuat.run();
-                }
-            }
-        });
+        btnDangXuat.addActionListener(event -> dangXuat());
         return btnDangXuat;
+    }
+
+    /** Kết thúc phiên một lần; menu và sidebar dùng chung thao tác này. */
+    private void dangXuat() {
+        if (taiKhoanDangNhap != null) {
+            taiKhoanDangNhap = null;
+            dispose();
+            khiDangXuat.run();
+        }
     }
 
     /** Gắn điều hướng sửa chữa cho nhân viên tiếp nhận. */

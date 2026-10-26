@@ -2,7 +2,7 @@
 
 Ứng dụng desktop nội bộ giúp Garage Ô tô Đức Dũng quản lý hồ sơ khách hàng và xe, tiếp nhận, kiểm tra, báo giá, sửa chữa, phụ tùng, thanh toán và bàn giao xe. Dự án do **Nhóm 01** thực hiện trong môn **Phát triển ứng dụng**, Khoa Công nghệ thông tin, Trường Đại học Công nghiệp TP.HCM, học kỳ 1 năm học 2026–2027.
 
-**Trạng thái hiện tại:** đã có khung giao diện Swing và đăng nhập/đăng xuất bằng bốn tài khoản tạo sẵn trong code. Chưa kết nối database. Các chức năng nghiệp vụ dưới đây là phạm vi cần xây dựng theo báo cáo, chưa phải các chức năng đã hoàn thành.
+**Trạng thái hiện tại:** đã có khung giao diện Swing, đăng nhập/đăng xuất bằng bốn tài khoản tạo sẵn trong code, sidebar Quản lý (HT01) và menu Hệ thống với Đăng xuất/Thoát. Sidebar cho chọn mục, chưa mở màn hình nghiệp vụ. Chưa kết nối database. Các chức năng nghiệp vụ dưới đây là phạm vi cần xây dựng theo báo cáo, chưa phải các chức năng đã hoàn thành.
 
 ## 1. Thành viên thực hiện
 
@@ -47,15 +47,15 @@ Phạm vi bàn giao hiện tại gồm **layout chung và đăng nhập**, làm 
 | Thành phần | Hiện trạng |
 | --- | --- |
 | Khởi chạy | `app.App` áp dụng theme và mở `LoginFrame` trên Event Dispatch Thread (EDT). Đăng nhập thành công mới mở `MainFrame`. |
-| Header | Thanh tiêu đề trắng 32 px, icon vuông cam, nút thu nhỏ/phóng to/đóng; hàng nhãn menu cao 26 px, mỗi nhãn rộng 92 px và cách nhau 16 px. Nhãn menu chỉ hiển thị, chưa có mục con hoặc hành động. |
-| Sidebar | Rộng 180 px, nền xanh xám, nhãn ĐỨC DŨNG, vai trò và nút đăng xuất; phần điều hướng để trống. |
+| Header | Thanh tiêu đề trắng 32 px, icon vuông cam, nút thu nhỏ/phóng to/đóng; hàng menu cao 26 px, mỗi nhóm chiếm 108 px. Hệ thống có Đăng xuất/Thoát; các nhóm còn lại chỉ hiển thị nhãn. |
+| Sidebar | Rộng 180 px, nền xanh xám, nhãn ĐỨC DŨNG, vai trò và nút đăng xuất. Quản lý có 8 mục chọn; các vai trò khác chưa có mục điều hướng. |
 | Nội dung | Vùng trống co giãn theo cửa sổ, lề 16 px; chưa có dashboard, trang chức năng hoặc dữ liệu mẫu. |
 | Thanh trạng thái | Hiển thị “Sẵn sàng”, tên đăng nhập và vai trò; có API cập nhật thông báo khi tích hợp. |
 | Đăng nhập | Form 600×404 theo Figma; kiểm tra trường trống, hiện/ẩn mật khẩu, nhấn Enter để đăng nhập, báo lỗi khi thông tin sai. DAO kiểm tra ở luồng nền bằng `SwingWorker`. |
 | Tài khoản và vai trò | Bốn tài khoản có sẵn trong `TaiKhoanDAO`, mỗi tài khoản một vai trò cố định. Danh tính bất biến, không chứa mật khẩu, được truyền cho khung chính sau xác thực. |
 | Đăng xuất | Xóa danh tính trong khung cũ, đóng khung và mở form đăng nhập mới với các trường trống, mật khẩu được che lại. |
 
-Ứng dụng **không cần SQL Server hoặc thư viện ngoài JDK**. Vùng nội dung và điều hướng nghiệp vụ vẫn trống. Nút “Quên mật khẩu?” trong Figma đang bị vô hiệu hóa vì chưa triển khai chức năng này.
+Ứng dụng **không cần SQL Server hoặc thư viện ngoài JDK**. Vùng nội dung vẫn trống; các mục sidebar Quản lý chưa mở màn hình nghiệp vụ. Nút “Quên mật khẩu?” trong Figma đang bị vô hiệu hóa vì chưa triển khai chức năng này.
 
 ### Tài khoản có sẵn
 
@@ -97,6 +97,8 @@ src/
 │   ├── LoginFrame.java
 │   └── component/
 │       ├── SidebarPanel.java
+│       ├── QuanLyNavigationPanel.java
+│       ├── AppMenuBar.java
 │       ├── UiTheme.java
 │       ├── WindowTitlePanel.java
 │       ├── WindowMouseHandler.java
@@ -114,6 +116,10 @@ test/
 ```
 
 `MainFrame` chỉ quản lý bố cục bằng `BorderLayout`. `SidebarPanel` quản lý vùng điều hướng; `UiTheme` tập trung màu, font và khoảng cách. Các thành phần giữ trạng thái riêng bằng thuộc tính private, không dùng dữ liệu giao diện static dùng chung.
+
+`QuanLyNavigationPanel` chứa các mục của Quản lý. `ButtonGroup` giữ duy nhất một mục được chọn; panel báo tên mục cho `MainFrame` để cập nhật thanh trạng thái. Chưa có màn hình nghiệp vụ hoặc truy cập DAO trong panel này.
+
+`AppMenuBar` hiển thị các nhóm menu. Menu Hệ thống nhận hai thao tác từ `MainFrame`: Đăng xuất gọi chung hàm `dangXuat()` với sidebar; Thoát phát sự kiện đóng cửa sổ như nút ×. Panel menu không tự quản lý phiên hoặc tạo form đăng nhập.
 
 Phần đăng nhập có bốn lớp, mỗi lớp một trách nhiệm:
 
@@ -147,7 +153,7 @@ winChinh.setSidebarContent(pnlDieuHuong);
 winChinh.setStatus("Sẵn sàng");
 ```
 
-`setScreen()` và `setSidebarContent()` thay panel cũ, cập nhật layout và vẽ lại. Không cần sửa bố cục khung chính để gắn một màn hình. Panel điều hướng nên đặt `setOpaque(false)` để giữ màu sidebar. Nếu một phân hệ có nhiều màn hình, thành viên có thể dùng `CardLayout` bên trong panel của mình; layout hiện tại chưa có trang giả hoặc điều hướng nghiệp vụ.
+`setScreen()` và `setSidebarContent()` thay panel cũ, cập nhật layout và vẽ lại. Không cần sửa bố cục khung chính để gắn một màn hình. Panel điều hướng nên đặt `setOpaque(false)` để giữ màu sidebar. Gọi `setSidebarContent()` sẽ thay toàn bộ danh sách mục hiện tại. Nếu một phân hệ có nhiều màn hình, thành viên có thể dùng `CardLayout` bên trong panel của mình; layout hiện tại chưa có trang giả hoặc điều hướng nghiệp vụ.
 
 ## 6. Cài đặt và chạy
 
@@ -189,7 +195,11 @@ Lệnh trên áp dụng cho khung UI hiện tại, chưa có thư viện ngoài.
 - Form đăng nhập bám Figma, hai ô nhập ban đầu trống. Thử thiếu thông tin, sai mật khẩu, hiện/ẩn mật khẩu và nhấn Enter.
 - Lần lượt đăng nhập bốn tài khoản có sẵn; tiêu đề, sidebar và thanh trạng thái hiển thị đúng tài khoản/vai trò.
 - Nhấn “Đăng xuất”: khung cũ đóng, form đăng nhập mới có hai ô trống và mật khẩu được che.
-- Khung chung có thanh menu, sidebar màu xanh xám với nhãn ĐỨC DŨNG, vùng nội dung trống và trạng thái “Sẵn sàng”. Nhãn menu chưa có hành động; sidebar chỉ có hành động đăng xuất.
+- Khung chung có thanh menu, sidebar màu xanh xám với nhãn ĐỨC DŨNG và vùng nội dung trống. Menu Hệ thống dùng được; các nhóm còn lại chỉ hiển thị nhãn.
+- Mở Hệ thống bằng chuột hoặc Alt+H. Chọn Đăng xuất bằng chuột hoặc phím D khi menu đang mở: phiên cũ kết thúc, form đăng nhập mới trống. Thử cả từ menu và nút sidebar.
+- Nhấn Esc hoặc bấm ra ngoài để đóng menu. Mở lại rồi chọn Thoát (hoặc phím T khi menu mở): ứng dụng đóng như nút ×, không mở lại form đăng nhập.
+- Đăng nhập `quanly`: sidebar có 8 mục theo Figma, mặc định chọn Trang chủ. Chọn bằng chuột hoặc Tab rồi Space: chỉ một mục được tô nền xanh nhạt và in đậm; thanh trạng thái báo mục đó chưa triển khai. Không mở màn hình nghiệp vụ.
+- Ba vai trò còn lại chưa có các mục điều hướng. Cả bốn vai trò vẫn có nút đăng xuất.
 - Chưa có dashboard hoặc dữ liệu nghiệp vụ mẫu.
 - Thử thay đổi kích thước ở 1366×768 và mức tối thiểu 960×600; sidebar giữ chiều rộng 180 px, vùng nội dung co giãn, thanh trạng thái nằm dưới cùng.
 - Kéo thanh tiêu đề để di chuyển, kéo cạnh/góc để đổi kích thước; kiểm tra nút thu nhỏ, phóng to/khôi phục và đóng ở góc trên phải.
@@ -205,6 +215,22 @@ javac --release 17 -encoding UTF-8 -Xlint:all -cp bin -d bin-test $testFiles
 if ($LASTEXITCODE -ne 0) { throw 'Biên dịch kiểm thử thất bại.' }
 java '-Dfile.encoding=UTF-8' -cp 'bin;bin-test' dao.TaiKhoanDAOTest
 ```
+
+Kết quả kiểm tra menu Hệ thống ngày 26/10/2026:
+
+- **PASS:** biên dịch Java 17 với `-Xlint:all`; kiểm tra sidebar HT01 vẫn đạt.
+- **PASS:** chương trình kiểm tra Swing tạm xác nhận Đăng xuất/Thoát ở cả bốn vai trò, đăng xuất từ menu/sidebar chỉ kết thúc phiên một lần và xóa danh tính cũ.
+- **PASS:** Thoát phát sự kiện đóng cửa sổ, không gọi thao tác mở lại đăng nhập; chính sách cửa sổ vẫn là `EXIT_ON_CLOSE`.
+- **PASS:** phím mở menu Alt+H được Swing đăng ký; mục Đăng xuất/Thoát có mnemonic D/T. Render menu ở ba kích thước; đã xem ảnh 1280×800.
+- **NOT_RUN:** thao tác chuột/bàn phím thủ công trong Eclipse, gồm mở/đóng popup và Esc; chưa đối chiếu trực tiếp được frame SYS_MENU trên Figma. Menu hiện chỉ nối hai thao tác đã có, chưa xác nhận đầy đủ các mục của thiết kế.
+
+Kết quả kiểm tra sidebar Quản lý (HT01) ngày 26/10/2026:
+
+- **PASS:** biên dịch bằng JDK 17 với `--release 17 -encoding UTF-8 -Xlint:all`.
+- **PASS:** chương trình kiểm tra Swing tạm xác nhận đủ 8 mục đúng thứ tự, mặc định Trang chủ, chọn độc quyền, màu/chữ và thông báo chưa triển khai; không sinh màn hình giả.
+- **PASS:** render ở 1280×800, 1366×768 và 960×600; sidebar rộng 180 px, hàng cao 32 px, nhãn không bị cắt. Đã xem ảnh render 1280×800.
+- **PASS:** ba vai trò khác không có các mục Quản lý; thay panel điều hướng và đăng xuất/xóa phiên vẫn hoạt động.
+- **NOT_RUN:** thao tác bàn phím/chuột thủ công trong Eclipse; chưa đối chiếu lại trực tiếp Figma vì liên kết không truy cập được qua công cụ.
 
 Kết quả kiểm tra đăng nhập sau khi rút gọn code ngày 20/10/2026:
 
