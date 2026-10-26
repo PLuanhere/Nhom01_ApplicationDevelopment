@@ -15,27 +15,52 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 
 import dao.PhuTungSuDungDAO;
+import dao.TrangChuKyThuatDAO;
 import entity.TaiKhoan;
 import entity.VaiTro;
-import ui.component.PhuTungUi;
+import ui.screen.BaoCaoKiemTraPanel;
+import ui.component.KyThuatUi;
+import ui.component.SuaChuaUi;
 import ui.component.SidebarPanel;
 import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
 import ui.component.WindowTitlePanel;
+import ui.screen.TrangChuKyThuatPanel;
+import ui.screen.PhieuSuaChuaPanel;
 import ui.screen.PhuTungSuDungPanel;
 
 /**
- * Khung ứng dụng chung nhận tài khoản đã đăng nhập và hiển thị màn chức năng.
+ * Khung ứng dụng dùng chung gồm menu đầu trang, sidebar, nội dung và thanh trạng thái.
+ * Tích hợp dashboard kỹ thuật, kiểm tra, sửa chữa và phụ tùng sử dụng theo vai trò đăng nhập.
  */
-public final class MainFrame extends JFrame {
+public final class MainFrame extends JFrame implements ActionListener {
+    /** Phiên bản tương thích Swing. */
     private static final long serialVersionUID = 1L;
+    /** Sidebar dùng chung của leader. */
     private final SidebarPanel pnlSidebar = new SidebarPanel();
+    /** Vùng chứa màn hình chức năng. */
     private final JPanel pnlNoiDung = new JPanel(new BorderLayout());
+    /** Thông báo trạng thái chung. */
     private final JLabel lblTrangThai = new JLabel("Sẵn sàng");
+    /** Tài khoản của phiên hiện tại; được xóa khi đăng xuất. */
     private TaiKhoan taiKhoanDangNhap;
+    /** Dashboard được tạo sau khi đăng nhập bằng vai trò kỹ thuật. */
+    private TrangChuKyThuatPanel pnlTrangChuKyThuat;
+    /** Màn hình kiểm tra được tạo một lần khi mở chức năng. */
+    private BaoCaoKiemTraPanel pnlKiemTra;
+    /** Màn hình sửa chữa được giữ lại trong suốt phiên đăng nhập. */
+    private PhieuSuaChuaPanel pnlSuaChua;
+    /** Màn hình và DAO phụ tùng được giữ lại trong suốt phiên đăng nhập. */
+    private PhuTungSuDungPanel pnlPhuTung;
 
+    /**
+     * @param taiKhoan tài khoản đã được xác thực
+     * @param khiDangXuat thao tác mở lại trang đăng nhập của leader
+     * @throws NullPointerException nếu tài khoản hoặc thao tác đăng xuất là null
+     */
     public MainFrame(TaiKhoan taiKhoan, Runnable khiDangXuat) {
         super("Garage Ô tô Đức Dũng");
         taiKhoanDangNhap = Objects.requireNonNull(taiKhoan, "Cần tài khoản đã đăng nhập.");
@@ -47,6 +72,8 @@ public final class MainFrame extends JFrame {
         setMinimumSize(new Dimension(960, 600));
         setSize(1280, 800);
         setLocationRelativeTo(null);
+        // Mở khung chính ở trạng thái phóng to ngay sau đăng nhập.
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout());
         getContentPane().setBackground(UiTheme.WINDOW);
         getRootPane().setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
@@ -63,10 +90,44 @@ public final class MainFrame extends JFrame {
         pnlSidebar.add(createLogoutButton(khiDangXuat), BorderLayout.SOUTH);
         add(pnlNoiDung, BorderLayout.CENTER);
         add(createStatusBar(), BorderLayout.SOUTH);
-        ganNhanhPhuTung();
-        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
+            khoiTaoTrangChuKyThuat();
+        } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_TIEP_NHAN) {
+            ganNhanhSuaChua();
+        }
     }
 
+    /** {@inheritDoc} */
+    // Nhận sự kiện từ các nút điều hướng và hiển thị màn hình hoặc trạng thái tương ứng.
+    @Override
+    public void actionPerformed(ActionEvent event) {
+        String tenManHinh = event.getActionCommand();
+        if ("Trang chủ".equals(tenManHinh) && pnlTrangChuKyThuat != null) {
+            setScreen(pnlTrangChuKyThuat);
+            setStatus("Dashboard kỹ thuật • Dữ liệu mẫu theo Figma 05/10/2026");
+        } else if ("Báo cáo kiểm tra".equals(tenManHinh)) {
+            if (pnlKiemTra == null) {
+                pnlKiemTra = new BaoCaoKiemTraPanel(this, getTaiKhoanDangNhap());
+            }
+            setScreen(pnlKiemTra);
+            pnlKiemTra.actionPerformed(
+                    new ActionEvent(pnlKiemTra, ActionEvent.ACTION_PERFORMED, "DANH_SACH"));
+            setStatus("Báo cáo kiểm tra · Dữ liệu mẫu trong bộ nhớ");
+        } else if ("Lệnh sửa chữa".equals(tenManHinh)
+                || "Công việc được giao".equals(tenManHinh)
+                || "Tiến độ sửa chữa".equals(tenManHinh)) {
+            moDanhSachSuaChua();
+        } else if ("Phụ tùng sử dụng".equals(tenManHinh)) {
+            moDanhSachPhuTung();
+        } else {
+            dieuHuongKyThuat(tenManHinh);
+        }
+    }
+
+    /**
+     * @return tài khoản của phiên hiện tại
+     * @throws IllegalStateException nếu phiên đã kết thúc
+     */
     public TaiKhoan getTaiKhoanDangNhap() {
         if (taiKhoanDangNhap == null) {
             throw new IllegalStateException("Phiên đăng nhập đã kết thúc.");
@@ -75,10 +136,10 @@ public final class MainFrame extends JFrame {
     }
 
     /**
-     * Gắn màn hình vào vùng nội dung chung.
-     * @param pnlManHinh panel cần hiển thị
+     * @param pnlManHinh panel chức năng cần hiển thị
+     * @throws NullPointerException nếu panel là null
      */
-    // Thay panel chức năng và giữ nguyên header, sidebar, trạng thái của khung chung.
+    // Thay panel chức năng trong vùng nội dung của khung chung.
     public void setScreen(JPanel pnlManHinh) {
         Objects.requireNonNull(pnlManHinh, "Màn hình không được null.");
         pnlNoiDung.removeAll();
@@ -88,24 +149,25 @@ public final class MainFrame extends JFrame {
     }
 
     /**
-     * Gắn điều hướng của phân hệ.
-     * @param pnlDieuHuong panel điều hướng
+     * @param pnlDieuHuong panel chứa các mục điều hướng
+     * @throws NullPointerException nếu panel là null
      */
-    // Đưa các mục chức năng vào vùng điều hướng có sẵn của leader.
+    // Gắn các mục điều hướng vào sidebar dùng chung.
     public void setSidebarContent(JPanel pnlDieuHuong) {
         pnlSidebar.setNavigation(pnlDieuHuong);
     }
 
     /**
-     * Cập nhật trạng thái của cửa sổ.
-     * @param thongBao nội dung trạng thái
+     * @param thongBao nội dung trạng thái cần hiển thị
+     * @throws NullPointerException nếu thông báo là null
      */
-    // Hiển thị thông báo tại thanh trạng thái chung.
+    // Cập nhật nội dung thông báo trên thanh trạng thái.
     public void setStatus(String thongBao) {
         lblTrangThai.setText(Objects.requireNonNull(thongBao, "Thông báo không được null."));
     }
 
-    // Tạo các nhóm menu theo khung giao diện có sẵn.
+    /** @return thanh nhãn nhóm menu của khung chung */
+    // Tạo các nhãn nhóm menu theo khung hiện có của leader.
     private JMenuBar createMenuBar() {
         JMenuBar mnuChinh = new JMenuBar();
         String[] nhomMenu = {"Hệ thống", "Danh mục", "Nghiệp vụ", "Báo cáo", "Trợ giúp"};
@@ -122,7 +184,8 @@ public final class MainFrame extends JFrame {
         return mnuChinh;
     }
 
-    // Ghép thanh tiêu đề và menu bằng component chung của leader.
+    /** @return panel chứa thanh tiêu đề và thanh menu */
+    // Ghép thanh tiêu đề cửa sổ và thanh menu của leader.
     private JPanel createHeader() {
         JPanel pnlHeader = new JPanel(new BorderLayout());
         pnlHeader.add(new WindowTitlePanel(this), BorderLayout.NORTH);
@@ -130,7 +193,8 @@ public final class MainFrame extends JFrame {
         return pnlHeader;
     }
 
-    // Hiển thị trạng thái và danh tính lấy từ phiên đăng nhập.
+    /** @return thanh trạng thái ở cạnh dưới cửa sổ */
+    // Hiển thị thông báo, tài khoản và vai trò của phiên hiện tại.
     private JPanel createStatusBar() {
         JPanel pnlTrangThai = new JPanel(new BorderLayout());
         pnlTrangThai.setPreferredSize(new Dimension(0, UiTheme.STATUS_HEIGHT));
@@ -146,106 +210,116 @@ public final class MainFrame extends JFrame {
         return pnlTrangThai;
     }
 
-    // Kết thúc phiên hiện tại và gọi lại màn đăng nhập của leader.
+    /**
+     * @param khiDangXuat thao tác mở lại màn hình đăng nhập
+     * @return nút đăng xuất đã đăng ký sự kiện
+     */
+    // Tạo nút kết thúc phiên và quay lại trang đăng nhập.
     private JButton createLogoutButton(Runnable khiDangXuat) {
         JButton btnDangXuat = new JButton("Đăng xuất");
         btnDangXuat.setPreferredSize(new Dimension(0, 30));
         UiTheme.styleButton(btnDangXuat, false);
-        btnDangXuat.addActionListener(event -> {
-            if (taiKhoanDangNhap != null) {
-                taiKhoanDangNhap = null;
-                dispose();
-                khiDangXuat.run();
+        btnDangXuat.addActionListener(new ActionListener() {
+            /** {@inheritDoc} */
+            // Xóa phiên hiện tại và gọi thao tác mở lại trang đăng nhập của leader.
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                if (taiKhoanDangNhap != null) {
+                    taiKhoanDangNhap = null;
+                    dispose();
+                    khiDangXuat.run();
+                }
             }
         });
         return btnDangXuat;
     }
 
-    // Gắn phân hệ và bố trí điều hướng, đổi vai trò, đăng xuất theo sidebar của thiết kế.
-    private void ganNhanhPhuTung() {
-        if (taiKhoanDangNhap.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT) {
-            return;
-        }
-        pnlSidebar.setRoleText("Kỹ thuật");
-        PhuTungSuDungPanel pnlPhuTung = new PhuTungSuDungPanel(
-                taiKhoanDangNhap, new PhuTungSuDungDAO());
+    /** Gắn điều hướng sửa chữa cho nhân viên tiếp nhận. */
+    private void ganNhanhSuaChua() {
+        String[] nhan = {"Trang chủ", "Khách hàng", "Phương tiện", "Phiếu tiếp nhận", "Báo giá", "Lệnh sửa chữa"};
         JPanel pnlDieuHuong = new JPanel();
-        pnlDieuHuong.setLayout(new BoxLayout(pnlDieuHuong, BoxLayout.Y_AXIS));
         pnlDieuHuong.setOpaque(false);
-        java.util.Map<String, JButton> cacNutDieuHuong = new java.util.LinkedHashMap<String, JButton>();
-        String[] cacMuc = {"Trang chủ", "Công việc được giao", "Báo cáo kiểm tra",
-                "Tiến độ sửa chữa", "Phụ tùng sử dụng"};
-        for (String tenMuc : cacMuc) {
-            JButton btnMuc = PhuTungUi.taoNut(tenMuc, false, false);
-            btnMuc.setPreferredSize(new Dimension(156, 30));
-            btnMuc.setMinimumSize(new Dimension(0, 30));
+        pnlDieuHuong.setLayout(new BoxLayout(pnlDieuHuong, BoxLayout.Y_AXIS));
+        for (String tenMuc : nhan) {
+            JButton btnMuc = SuaChuaUi.taoNut(tenMuc, tenMuc, false, this);
+            btnMuc.setHorizontalAlignment(SwingConstants.LEFT);
             btnMuc.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-            btnMuc.setAlignmentX(LEFT_ALIGNMENT);
-            btnMuc.setHorizontalAlignment(JButton.LEFT);
-            btnMuc.setBackground("Phụ tùng sử dụng".equals(tenMuc)
-                    ? PhuTungUi.MAU_CHON : UiTheme.NAVIGATION);
-            btnMuc.setFont("Phụ tùng sử dụng".equals(tenMuc)
-                    ? UiTheme.BRAND_FONT.deriveFont(13.0f) : UiTheme.SHELL_FONT.deriveFont(13.0f));
             btnMuc.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
-            cacNutDieuHuong.put(tenMuc, btnMuc);
-            btnMuc.addActionListener(new ActionListener() {
-                // Mở chức năng của nhánh hiện tại và cập nhật màu mục điều hướng được chọn.
-                @Override
-                public void actionPerformed(ActionEvent suKien) {
-                    if ("Phụ tùng sử dụng".equals(tenMuc) || "Tiến độ sửa chữa".equals(tenMuc)) {
-                        for (java.util.Map.Entry<String, JButton> muc : cacNutDieuHuong.entrySet()) {
-                            boolean daChon = muc.getKey().equals(tenMuc);
-                            muc.getValue().setBackground(daChon ? PhuTungUi.MAU_CHON : UiTheme.NAVIGATION);
-                            muc.getValue().setFont(daChon ? UiTheme.BRAND_FONT.deriveFont(13.0f)
-                                    : UiTheme.SHELL_FONT.deriveFont(13.0f));
-                        }
-                        if ("Phụ tùng sử dụng".equals(tenMuc)) {
-                            pnlPhuTung.moDanhSach();
-                        } else {
-                            pnlPhuTung.moLenhDangChon();
-                        }
-                        setScreen(pnlPhuTung);
-                    } else {
-                        PhuTungUi.hienHopThoai(MainFrame.this, tenMuc,
-                                "Màn hình này chưa được tích hợp vào nhánh phụ tùng.", "Đóng", false, false);
-                    }
-                }
-            });
+            btnMuc.setBackground("Lệnh sửa chữa".equals(tenMuc)
+                    ? new Color(0xDCEAFE) : UiTheme.NAVIGATION);
             pnlDieuHuong.add(btnMuc);
             pnlDieuHuong.add(javax.swing.Box.createVerticalStrut(4));
         }
-        JButton btnDoiVaiTro = PhuTungUi.taoNut("Đổi vai trò", false, false);
-        btnDoiVaiTro.setAlignmentX(LEFT_ALIGNMENT);
-        btnDoiVaiTro.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-        btnDoiVaiTro.addActionListener(new ActionListener() {
-            // Giữ quy trình đổi tài khoản thông qua đăng xuất và đăng nhập hiện có.
-            @Override
-            public void actionPerformed(ActionEvent suKien) {
-                PhuTungUi.hienHopThoai(MainFrame.this, "Đổi vai trò",
-                        "Hãy đăng xuất và đăng nhập bằng tài khoản khác.", "Đóng", false, false);
-            }
-        });
-        pnlDieuHuong.add(btnDoiVaiTro);
-        pnlDieuHuong.add(javax.swing.Box.createVerticalStrut(4));
-        BorderLayout boCucSidebar = (BorderLayout) pnlSidebar.getLayout();
-        java.awt.Component nutDangXuat = boCucSidebar.getLayoutComponent(BorderLayout.SOUTH);
-        if (nutDangXuat instanceof JButton) {
-            JButton btnDangXuat = (JButton) nutDangXuat;
-            pnlSidebar.remove(btnDangXuat);
-            btnDangXuat.setUI(new javax.swing.plaf.basic.BasicButtonUI());
-            btnDangXuat.setFont(UiTheme.SHELL_FONT.deriveFont(13.0f));
-            btnDangXuat.setBackground(UiTheme.SURFACE);
-            btnDangXuat.setForeground(UiTheme.TEXT);
-            btnDangXuat.setOpaque(true);
-            btnDangXuat.setContentAreaFilled(true);
-            btnDangXuat.setFocusPainted(false);
-            btnDangXuat.setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
-            btnDangXuat.setAlignmentX(LEFT_ALIGNMENT);
-            btnDangXuat.setPreferredSize(new Dimension(156, 30));
-            btnDangXuat.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-            pnlDieuHuong.add(btnDangXuat);
+        JPanel pnlVung = new JPanel(new BorderLayout());
+        pnlVung.setOpaque(false);
+        pnlVung.add(pnlDieuHuong, BorderLayout.NORTH);
+        setSidebarContent(pnlVung);
+        moDanhSachSuaChua();
+    }
+
+    /** Mở lại cùng màn hình để giữ dữ liệu mẫu và xử lý xác nhận thay đổi chưa lưu. */
+    private void moDanhSachSuaChua() {
+        if (pnlSuaChua == null) {
+            pnlSuaChua = new PhieuSuaChuaPanel(this, getTaiKhoanDangNhap());
         }
-        setSidebarContent(pnlDieuHuong);
+        setScreen(pnlSuaChua);
+        pnlSuaChua.actionPerformed(
+                new ActionEvent(pnlSuaChua, ActionEvent.ACTION_PERFORMED, "DANH_SACH"));
+        setStatus("Sửa chữa · Dữ liệu mẫu trong bộ nhớ");
+    }
+
+    /** Mở phân hệ phụ tùng với cùng dữ liệu trong phiên đăng nhập kỹ thuật. */
+    private void moDanhSachPhuTung() {
+        if (pnlPhuTung == null) {
+            pnlPhuTung = new PhuTungSuDungPanel(
+                    getTaiKhoanDangNhap(), new PhuTungSuDungDAO());
+        }
+        pnlPhuTung.moDanhSach();
         setScreen(pnlPhuTung);
+        setStatus("Phụ tùng sử dụng · Dữ liệu mẫu trong bộ nhớ");
+    }
+
+    /** Khởi tạo dashboard và các mục điều hướng dành cho tài khoản kỹ thuật. */
+    // Nạp dữ liệu mẫu và gắn dashboard cùng các mục điều hướng vào khung chung.
+    private void khoiTaoTrangChuKyThuat() {
+        TrangChuKyThuatDAO trangChuDAO = new TrangChuKyThuatDAO();
+        pnlTrangChuKyThuat = new TrangChuKyThuatPanel(
+                trangChuDAO.docDuLieuMau(getTaiKhoanDangNhap()), this, this);
+        JPanel pnlDanhSach = new JPanel();
+        pnlDanhSach.setOpaque(false);
+        pnlDanhSach.setLayout(new BoxLayout(pnlDanhSach, BoxLayout.Y_AXIS));
+        String[] mucDieuHuong = {"Trang chủ", "Công việc được giao", "Báo cáo kiểm tra",
+                "Tiến độ sửa chữa", "Phụ tùng sử dụng", "Đổi vai trò"};
+        for (String muc : mucDieuHuong) {
+            JButton btnMuc = KyThuatUi.taoNut(muc, 156);
+            btnMuc.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+            btnMuc.setHorizontalAlignment(SwingConstants.LEFT);
+            if (!"Đổi vai trò".equals(muc)) {
+                btnMuc.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+                btnMuc.setBackground("Trang chủ".equals(muc) ? new Color(0xDCEAFE) : UiTheme.NAVIGATION);
+            }
+            if ("Trang chủ".equals(muc)) {
+                btnMuc.setFont(UiTheme.BRAND_FONT.deriveFont(13.0f));
+            }
+            btnMuc.addActionListener(this);
+            pnlDanhSach.add(btnMuc);
+            pnlDanhSach.add(javax.swing.Box.createVerticalStrut(4));
+        }
+        JPanel pnlDieuHuong = new JPanel(new BorderLayout());
+        pnlDieuHuong.setOpaque(false);
+        pnlDieuHuong.add(pnlDanhSach, BorderLayout.NORTH);
+        setSidebarContent(pnlDieuHuong);
+        setScreen(pnlTrangChuKyThuat);
+        setStatus("Dashboard kỹ thuật • Dữ liệu mẫu theo Figma 05/10/2026");
+    }
+
+    /** @param tenManHinh tên chức năng được chọn */
+    // Báo trạng thái các chức năng chưa tích hợp và hướng dẫn đổi tài khoản.
+    private void dieuHuongKyThuat(String tenManHinh) {
+        if ("Đổi vai trò".equals(tenManHinh)) {
+            setStatus("Tài khoản chỉ có một vai trò. Đăng xuất để đăng nhập bằng tài khoản khác.");
+        } else {
+            setStatus(tenManHinh + " thuộc nhánh tiếp theo, chưa được tích hợp vào dashboard.");
+        }
     }
 }
