@@ -24,7 +24,8 @@ import ui.screen.BaoCaoKiemTraPanel;
 import ui.component.AppHeaderPanel;
 import ui.component.QuanLyNavigationPanel;
 import ui.component.KyThuatUi;
-import ui.component.SuaChuaUi;
+import ui.component.TiepNhanNavigationPanel;
+import ui.screen.TrangChuTiepNhanPanel;
 import ui.component.SidebarPanel;
 import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
@@ -52,6 +53,8 @@ public final class MainFrame extends JFrame implements ActionListener {
     private TaiKhoan taiKhoanDangNhap;
     /** Dashboard được tạo sau khi đăng nhập bằng vai trò kỹ thuật. */
     private TrangChuKyThuatPanel pnlTrangChuKyThuat;
+    private TrangChuTiepNhanPanel pnlTrangChuTiepNhan;
+    private TiepNhanNavigationPanel pnlDieuHuongTiepNhan;
     /** Màn hình kiểm tra được tạo một lần khi mở chức năng. */
     private BaoCaoKiemTraPanel pnlKiemTra;
     /** Màn hình sửa chữa được giữ lại trong suốt phiên đăng nhập. */
@@ -102,7 +105,7 @@ public final class MainFrame extends JFrame implements ActionListener {
         } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
             khoiTaoTrangChuKyThuat();
         } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_TIEP_NHAN) {
-            ganNhanhSuaChua();
+            khoiTaoTrangChuTiepNhan();
         }
     }
 
@@ -210,27 +213,32 @@ public final class MainFrame extends JFrame implements ActionListener {
         }
     }
 
-    /** Gắn điều hướng sửa chữa cho nhân viên tiếp nhận. */
-    private void ganNhanhSuaChua() {
-        String[] nhan = {"Trang chủ", "Khách hàng", "Phương tiện", "Phiếu tiếp nhận", "Báo giá", "Lệnh sửa chữa"};
-        JPanel pnlDieuHuong = new JPanel();
-        pnlDieuHuong.setOpaque(false);
-        pnlDieuHuong.setLayout(new BoxLayout(pnlDieuHuong, BoxLayout.Y_AXIS));
-        for (String tenMuc : nhan) {
-            JButton btnMuc = SuaChuaUi.taoNut(tenMuc, tenMuc, false, this);
-            btnMuc.setHorizontalAlignment(SwingConstants.LEFT);
-            btnMuc.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-            btnMuc.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
-            btnMuc.setBackground("Lệnh sửa chữa".equals(tenMuc)
-                    ? new Color(0xDCEAFE) : UiTheme.NAVIGATION);
-            pnlDieuHuong.add(btnMuc);
-            pnlDieuHuong.add(javax.swing.Box.createVerticalStrut(4));
+    /** Khởi tạo tổng quan riêng; không thay đổi dashboard của các vai trò khác. */
+    private void khoiTaoTrangChuTiepNhan() {
+        pnlDieuHuongTiepNhan = new TiepNhanNavigationPanel(this::dieuHuongTiepNhan);
+        pnlTrangChuTiepNhan = new TrangChuTiepNhanPanel(this::dieuHuongTiepNhan);
+        setSidebarContent(pnlDieuHuongTiepNhan);
+        dieuHuongTiepNhan("Tổng quan tiếp nhận");
+    }
+
+    /** Chỉ cập nhật mục chọn sau khi có màn hình tương ứng được mở. */
+    private void dieuHuongTiepNhan(String muc) {
+        if (getTaiKhoanDangNhap().getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN) {
+            throw new IllegalStateException("Chỉ dành cho nhân viên tiếp nhận.");
         }
-        JPanel pnlVung = new JPanel(new BorderLayout());
-        pnlVung.setOpaque(false);
-        pnlVung.add(pnlDieuHuong, BorderLayout.NORTH);
-        setSidebarContent(pnlVung);
-        moDanhSachSuaChua();
+        if ("Tổng quan tiếp nhận".equals(muc)) {
+            setScreen(pnlTrangChuTiepNhan);
+            pnlDieuHuongTiepNhan.chonMuc(muc);
+            setStatus("Tổng quan tiếp nhận · Dữ liệu minh họa, chưa nối nghiệp vụ");
+        } else if ("Lệnh sửa chữa".equals(muc)) {
+            moDanhSachSuaChua();
+            pnlDieuHuongTiepNhan.chonMuc(muc);
+        } else {
+            // Giữ màn hình hiện tại và mục chọn nhất quán khi chức năng chưa triển khai.
+            pnlDieuHuongTiepNhan.chonMuc(pnlNoiDung.getComponent(0) == pnlTrangChuTiepNhan
+                    ? "Tổng quan tiếp nhận" : "Lệnh sửa chữa");
+            setStatus(muc + ": chức năng chưa triển khai.");
+        }
     }
 
     /** Mở lại cùng màn hình để giữ dữ liệu mẫu và xử lý xác nhận thay đổi chưa lưu. */
