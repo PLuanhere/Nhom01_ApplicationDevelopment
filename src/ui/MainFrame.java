@@ -16,6 +16,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
+import dao.KhachHangDAO;
+import ui.screen.KhachHangPanel;
 import dao.PhuTungSuDungDAO;
 import dao.TrangChuKyThuatDAO;
 import entity.TaiKhoan;
@@ -53,6 +55,8 @@ public final class MainFrame extends JFrame implements ActionListener {
     private TaiKhoan taiKhoanDangNhap;
     /** Dashboard được tạo sau khi đăng nhập bằng vai trò kỹ thuật. */
     private TrangChuKyThuatPanel pnlTrangChuKyThuat;
+    private KhachHangPanel pnlKhachHang;
+    private String mucTiepNhanDangMo = "Tổng quan tiếp nhận";
     private TrangChuTiepNhanPanel pnlTrangChuTiepNhan;
     private TiepNhanNavigationPanel pnlDieuHuongTiepNhan;
     /** Màn hình kiểm tra được tạo một lần khi mở chức năng. */
@@ -207,6 +211,8 @@ public final class MainFrame extends JFrame implements ActionListener {
     /** Kết thúc phiên một lần từ menu Hệ thống và mở lại form đăng nhập trống. */
     private void dangXuat() {
         if (taiKhoanDangNhap != null) {
+            if (pnlKhachHang != null && "Khách hàng".equals(mucTiepNhanDangMo)
+                    && !pnlKhachHang.choPhepRoiManHinh()) return;
             taiKhoanDangNhap = null;
             dispose();
             khiDangXuat.run();
@@ -226,17 +232,35 @@ public final class MainFrame extends JFrame implements ActionListener {
         if (getTaiKhoanDangNhap().getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN) {
             throw new IllegalStateException("Chỉ dành cho nhân viên tiếp nhận.");
         }
-        if ("Tổng quan tiếp nhận".equals(muc)) {
+        if (pnlKhachHang != null && "Khách hàng".equals(mucTiepNhanDangMo)
+                && ("Tổng quan tiếp nhận".equals(muc) || "Lệnh sửa chữa".equals(muc))
+                && !pnlKhachHang.choPhepRoiManHinh()) {
+            pnlDieuHuongTiepNhan.chonMuc(mucTiepNhanDangMo);
+            return;
+        }
+        if (pnlKhachHang != null && "Khách hàng".equals(mucTiepNhanDangMo)
+                && ("Tổng quan tiếp nhận".equals(muc) || "Lệnh sửa chữa".equals(muc))) {
+            pnlKhachHang.moDanhSach();
+        }
+        if ("Khách hàng".equals(muc)) {
+            if (pnlKhachHang == null) pnlKhachHang = new KhachHangPanel(
+                    KhachHangDAO.taoDuLieuMau(), this::getTaiKhoanDangNhap);
+            setScreen(pnlKhachHang);
+            mucTiepNhanDangMo = muc;
+            pnlDieuHuongTiepNhan.chonMuc(muc);
+            setStatus("Khách hàng · Dữ liệu trong bộ nhớ, chưa lưu lâu dài");
+        } else if ("Tổng quan tiếp nhận".equals(muc)) {
             setScreen(pnlTrangChuTiepNhan);
+            mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
             setStatus("Tổng quan tiếp nhận · Dữ liệu minh họa, chưa nối nghiệp vụ");
         } else if ("Lệnh sửa chữa".equals(muc)) {
             moDanhSachSuaChua();
+            mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
         } else {
             // Giữ màn hình hiện tại và mục chọn nhất quán khi chức năng chưa triển khai.
-            pnlDieuHuongTiepNhan.chonMuc(pnlNoiDung.getComponent(0) == pnlTrangChuTiepNhan
-                    ? "Tổng quan tiếp nhận" : "Lệnh sửa chữa");
+            pnlDieuHuongTiepNhan.chonMuc(mucTiepNhanDangMo);
             setStatus(muc + ": chức năng chưa triển khai.");
         }
     }
