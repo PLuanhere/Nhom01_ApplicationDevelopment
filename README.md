@@ -2,7 +2,7 @@
 
 Ứng dụng desktop nội bộ giúp Garage Ô tô Đức Dũng quản lý hồ sơ khách hàng và xe, tiếp nhận, kiểm tra, báo giá, sửa chữa, phụ tùng, thanh toán và bàn giao xe. Dự án do **Nhóm 01** thực hiện trong môn **Phát triển ứng dụng**, Khoa Công nghệ thông tin, Trường Đại học Công nghiệp TP.HCM, học kỳ 1 năm học 2026–2027.
 
-**Trạng thái hiện tại:** đã có khung giao diện Swing, đăng nhập/đăng xuất bằng bốn tài khoản tạo sẵn trong code, sidebar Quản lý (HT01) và menu Hệ thống với Đăng xuất/Thoát. Sidebar cho chọn mục, chưa mở màn hình nghiệp vụ. Chưa kết nối database. Các chức năng nghiệp vụ dưới đây là phạm vi cần xây dựng theo báo cáo, chưa phải các chức năng đã hoàn thành.
+**Trạng thái hiện tại:** đã có khung Swing, đăng nhập/đăng xuất bằng bốn tài khoản tạo sẵn, menu Hệ thống và tổng quan Quản lý theo Page 3. Biểu đồ doanh thu hỗ trợ hover và mở chi tiết từng ngày. Tổng quan đọc dữ liệu tạo sẵn trong DAO, chưa kết nối database. Các chức năng trong bảng phạm vi dưới đây không đồng nghĩa đã hoàn thành.
 
 ## 1. Thành viên thực hiện
 
@@ -42,20 +42,23 @@ Các nguyên tắc nghiệp vụ cần giữ khi triển khai:
 
 ## 3. Những phần đã triển khai
 
-Phạm vi bàn giao hiện tại gồm **layout chung và đăng nhập**, làm nền để các thành viên gắn màn hình của mình.
+Phần Luân đã triển khai gồm **layout chung, đăng nhập và tổng quan Quản lý**, cùng các màn thành viên khác đã tích hợp.
 
 | Thành phần | Hiện trạng |
 | --- | --- |
 | Khởi chạy | `app.App` áp dụng theme và mở `LoginFrame` trên Event Dispatch Thread (EDT). Đăng nhập thành công mới mở `MainFrame`. |
 | Header | Thanh điều khiển cửa sổ 32 px; header Page 3 cao 66 px nằm bên phải sidebar, nền trắng, menu và danh tính hiện tại. Hệ thống có Đăng xuất/Thoát. Tìm nhanh/thông báo là vùng giữ chỗ, chưa có chức năng. |
 | Sidebar | Rộng 216 px, nền tối, logo/icon gốc từ Figma; vai trò ở trên và danh tính ở dưới. Quản lý có 7 mục theo Page 3. Các panel điều hướng đã tích hợp vẫn giữ listener riêng. |
-| Nội dung | Nền khung chung #F4F6F9, lề ngang 26 px. Vùng nội dung Quản lý còn trống; giữ các màn của thành viên khác đã tích hợp. |
+| Nội dung | Nền #F4F6F9, lề ngang 26 px. Quản lý mở tổng quan điều hành; giữ các màn thành viên khác đã tích hợp. |
+| Tổng quan Quản lý | Bốn chỉ số, nhắc việc, lệnh đến hạn trong ngày và doanh thu bảy ngày. Hover cột xem tiền/số hóa đơn; nhấn cột mở dialog chỉ đọc, có tổng tiền mặt/chuyển khoản và hóa đơn đúng ngày. |
 | Thanh trạng thái | Footer hiển thị tên garage và thông báo từ API setStatus; danh tính hiển thị ở header/sidebar. |
 | Đăng nhập | Cửa sổ ban đầu 1280×800, tối thiểu 960×600; thẻ 488×573 ở giữa ảnh garage Page 3, có cuộn khi cửa sổ thấp. Giữ kiểm tra nhập, hiện/ẩn mật khẩu, Enter và SwingWorker. |
 | Tài khoản và vai trò | Bốn tài khoản có sẵn trong `TaiKhoanDAO`, mỗi tài khoản một vai trò cố định. Danh tính bất biến, không chứa mật khẩu, được truyền cho khung chính sau xác thực. |
 | Đăng xuất | Xóa danh tính trong khung cũ, đóng khung và mở form đăng nhập mới với các trường trống, mật khẩu được che lại. |
 
-Ứng dụng **không cần SQL Server hoặc thư viện ngoài JDK**. Các mục sidebar Quản lý chưa mở màn hình nghiệp vụ. “Quên mật khẩu?” hiển thị hướng dẫn liên hệ Quản lý theo Page 3, không tự thêm quy trình OTP/email. Bốn tài khoản và nguồn xác thực hiện tại được giữ nguyên.
+Ứng dụng **không cần SQL Server hoặc thư viện ngoài JDK**. Sidebar Quản lý mở Tổng quan điều hành; các mục còn lại thông báo chưa triển khai, bốn đường tắt tương ứng đang khóa. “Quên mật khẩu?” hiển thị hướng dẫn liên hệ Quản lý theo Page 3. Bốn tài khoản và nguồn xác thực hiện tại được giữ nguyên.
+
+`TrangChuQuanLyDAO` cấp dữ liệu chỉ đọc cho vai trò Quản lý, chốt **27/10/2026 lúc 15:30**. Kỳ **21–27/10/2026** có **9 hóa đơn**, tổng **5.940.000đ** (tiền mặt 3.370.000đ, chuyển khoản 2.570.000đ). Chỉ số, biểu đồ và dialog dùng cùng nguồn; doanh thu tính theo thời điểm thanh toán. Chờ bàn giao thuộc Tiếp nhận sau khi Thu ngân xác nhận tiền. Bộ dữ liệu này chưa đồng bộ với các DAO nghiệp vụ khác.
 
 ### Tài khoản có sẵn
 
@@ -68,7 +71,7 @@ Phạm vi bàn giao hiện tại gồm **layout chung và đăng nhập**, làm 
 
 Đây là dữ liệu đăng nhập hiện tại của ứng dụng, được tạo sẵn trong code. Cả bốn tài khoản dùng mật khẩu `123` theo yêu cầu đã chốt. DAO đối chiếu bằng PBKDF2 có salt từ JDK theo QUY_DINH; không đưa mật khẩu vào entity hoặc log. Tên đăng nhập bỏ khoảng trắng hai đầu và phân biệt hoa/thường; mật khẩu giữ nguyên khoảng trắng.
 
-Vai trò được lấy từ tài khoản xác thực, không có lựa chọn tự đổi vai trò. Hiện mới cấp và hiển thị vai trò; kiểm tra quyền của từng thao tác nghiệp vụ sẽ bổ sung tại DAO khi triển khai chức năng tương ứng.
+Vai trò lấy từ tài khoản xác thực, không có lựa chọn tự đổi vai trò. DAO tổng quan kiểm tra quyền Quản lý cho cả đọc tổng và chi tiết ngày; các nghiệp vụ khác kiểm tra tại DAO tương ứng.
 
 ## 4. Công nghệ và môi trường
 
@@ -112,12 +115,15 @@ src/
 
 test/
 └── dao/
-    └── TaiKhoanDAOTest.java      # Chạy bằng main(), không cần JUnit
+    ├── TaiKhoanDAOTest.java      # Chạy bằng main(), không cần JUnit
+    └── TrangChuQuanLyDAOTest.java
 ```
 
 `MainFrame` chỉ quản lý bố cục bằng `BorderLayout`. `SidebarPanel` quản lý vùng điều hướng; `UiTheme` tập trung màu, font và khoảng cách. Các thành phần giữ trạng thái riêng bằng thuộc tính private, không dùng dữ liệu giao diện static dùng chung.
 
-`QuanLyNavigationPanel` chứa các mục của Quản lý. `ButtonGroup` giữ duy nhất một mục được chọn; panel báo tên mục cho `MainFrame` để cập nhật thanh trạng thái. Chưa có màn hình nghiệp vụ hoặc truy cập DAO trong panel này.
+`QuanLyNavigationPanel` chứa các mục của Quản lý. `ButtonGroup` giữ duy nhất một mục được chọn; panel báo tên mục cho `MainFrame` để mở lại tổng quan hoặc thông báo chức năng chưa triển khai.
+
+Tổng quan dùng `TrangChuQuanLyDAO` → `TongQuanQuanLy` (chứa `MucTongQuanQuanLy`, `HoaDonDoanhThu`) → `TrangChuQuanLyPanel`. `BieuDoDoanhThuPanel` vẽ các cột và báo ngày được chọn cho `MainFrame` để đọc DAO, mở `ChiTietDoanhThuDialog`. Tiền dùng `BigDecimal`; entity không phụ thuộc Swing, UI không tự tạo chứng từ. Nút “Tác vụ thường dùng” cuộn đến đường tắt. Trang chuyển thành một cột khi hẹp và cuộn dọc khi thiếu chiều cao.
 
 `AppMenuBar` hiển thị các nhóm menu. Menu Hệ thống nhận hai thao tác từ `MainFrame`: Đăng xuất gọi hàm `dangXuat()` để kết thúc phiên; Thoát phát sự kiện đóng cửa sổ như nút ×. Panel menu không tự quản lý phiên hoặc tạo form đăng nhập.
 
@@ -197,16 +203,17 @@ Lệnh trên áp dụng cho khung UI hiện tại, chưa có thư viện ngoài.
 - Form đăng nhập bám Figma, hai ô nhập ban đầu trống. Thử thiếu thông tin, sai mật khẩu, hiện/ẩn mật khẩu và nhấn Enter.
 - Lần lượt đăng nhập bốn tài khoản có sẵn; tiêu đề, sidebar và thanh trạng thái hiển thị đúng tài khoản/vai trò.
 - Nhấn “Đăng xuất”: khung cũ đóng, form đăng nhập mới có hai ô trống và mật khẩu được che.
-- Khung chung có sidebar tối 216 px, header trắng và danh tính ở header/sidebar. Nội dung Quản lý còn trống. Menu Hệ thống dùng được; các nhóm còn lại chỉ hiển thị nhãn.
+- Khung chung có sidebar tối 216 px, header trắng và danh tính ở header/sidebar. Quản lý mở tổng quan; menu Hệ thống dùng được, các nhóm còn lại chỉ hiển thị nhãn.
 - Mở Hệ thống bằng chuột hoặc Alt+H. Chọn Đăng xuất bằng chuột hoặc phím D khi menu đang mở: phiên cũ kết thúc, form đăng nhập mới trống. Đăng xuất nằm trong menu Hệ thống.
 - Nhấn Esc hoặc bấm ra ngoài để đóng menu. Mở lại rồi chọn Thoát (hoặc phím T khi menu mở): ứng dụng đóng như nút ×, không mở lại form đăng nhập.
-- Đăng nhập `quanly`: sidebar có 7 mục Page 3, mặc định Tổng quan điều hành. Chọn bằng chuột hoặc Tab/Space: chỉ một mục có nền xanh đậm và chữ đậm; footer báo chức năng chưa triển khai. Không tự tạo dashboard hoặc màn CRUD.
+- Đăng nhập `quanly`: sidebar có 7 mục Page 3, mặc định Tổng quan điều hành. Bốn chỉ số lần lượt 08/04/02/02; có 3 lệnh đến hạn ngày 27/10. Chọn mục khác báo chưa triển khai; chọn Tổng quan để trở lại trang.
+- Hover từng cột: tooltip hiện đủ ngày, tiền và số hóa đơn. Bấm cột (hoặc Tab rồi Enter/Space): dialog có đúng hóa đơn ngày đó, tổng khớp cột. Ngày 27/10 có 2 hóa đơn, tổng 1.450.000đ bằng chuyển khoản. Esc hoặc Đóng để trở về.
 - Bốn vai trò đều đăng xuất được từ Hệ thống. Các màn/điều hướng kỹ thuật và sửa chữa đã tích hợp của thành viên khác được giữ nguyên.
-- Lần cập nhật UI này không tạo thêm dữ liệu nghiệp vụ hoặc thay đổi DAO/entity.
+- Tổng quan chỉ đọc bộ dữ liệu có sẵn; không ghi hóa đơn, sửa chữa, bàn giao hoặc kho.
 - Kiểm tra 1920×1200, 1366×768 và tối thiểu 960×600; sidebar giữ 216 px. Khi hẹp, ẩn vùng giữ chỗ tìm kiếm/thông báo để menu và danh tính không chồng nhau.
 - Kéo thanh tiêu đề để di chuyển, kéo cạnh/góc để đổi kích thước; kiểm tra nút thu nhỏ, phóng to/khôi phục và đóng ở góc trên phải.
 
-### Chạy kiểm thử đăng nhập
+### Chạy kiểm thử dữ liệu
 
 Sau khi biên dịch ứng dụng, chạy các lệnh sau tại thư mục gốc bằng JDK 17. Kiểm thử không mở giao diện hoặc kết nối database, báo lỗi bằng `AssertionError` nếu kết quả sai.
 
@@ -216,9 +223,20 @@ New-Item -ItemType Directory -Path bin-test -Force | Out-Null
 javac --release 17 -encoding UTF-8 -Xlint:all -cp bin -d bin-test $testFiles
 if ($LASTEXITCODE -ne 0) { throw 'Biên dịch kiểm thử thất bại.' }
 java '-Dfile.encoding=UTF-8' -cp 'bin;bin-test' dao.TaiKhoanDAOTest
+java '-Dfile.encoding=UTF-8' -cp 'bin;bin-test' dao.TrangChuQuanLyDAOTest
 ```
 
-Kết quả cập nhật theo Page 3 ngày 28/10/2026:
+Kiểm thử tổng quan kiểm tra quyền theo vai trò, số lượng hồ sơ, tổng bảy ngày khớp từng hóa đơn, tiền mặt/chuyển khoản, dữ liệu rỗng, biên nửa đêm, hóa đơn ngoài kỳ, chứng từ trùng và thanh toán sau thời điểm chốt. Chương trình kiểm tra Swing và ảnh đối chiếu được lưu cục bộ trong `output/manager-overview/`.
+
+Kết quả tổng quan Quản lý ngày 28/10/2026:
+
+- **PASS:** biên dịch toàn bộ Java 17 với `-Xlint:all`; kiểm thử DAO tổng quan, đăng nhập và dữ liệu kỹ thuật hiện có.
+- **PASS:** kiểm tra Swing hover, tooltip và bấm cả 7 cột mở dialog đúng ngày; số dòng/tổng khớp DAO, bảng chỉ đọc; đóng bằng Esc/nút mặc định, ngày rỗng trả 0đ.
+- **PASS:** render và xem ảnh 1920×1234, 1366×768, 960×600; kiểm tra cuộn/đường tắt trên cửa sổ hẹp, bảng dialog có cuộn ngang khi thiếu chỗ.
+- **PASS:** kiểm tra Swing bốn luồng đăng nhập/đăng xuất, thông tin sai/thiếu, hiện mật khẩu và đóng khi đang xác thực.
+- **NOT_RUN:** thao tác thủ công trong Eclipse và đồng bộ dữ liệu nghiệp vụ/database.
+
+Kết quả cập nhật layout/đăng nhập theo Page 3 ngày 28/10/2026 (trước phần tổng quan):
 
 - **PASS:** Java 17 biên dịch toàn bộ source; kiểm thử DAO giữ nguyên bốn tài khoản/mật khẩu.
 - **PASS:** kiểm tra Swing đủ bốn luồng đăng nhập → khung chung → Hệ thống/Đăng xuất; xóa phiên và mở lại form trống.

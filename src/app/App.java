@@ -5,10 +5,8 @@ import javax.swing.SwingUtilities;
 import ui.LoginFrame;
 import ui.component.UiTheme;
 
-/** Điểm chạy ứng dụng: áp dụng theme và mở trang đăng nhập trên EDT. */
 public final class App {
 
-    /** Ngăn tạo đối tượng vì lớp chỉ cung cấp điểm chạy ứng dụng. */
     private App() {
     }
 
