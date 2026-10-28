@@ -18,6 +18,7 @@ import javax.swing.SwingConstants;
 
 import dao.XeDAO;
 import ui.screen.XePanel;
+import ui.screen.PhieuTiepNhanPanel;
 import dao.KhachHangDAO;
 import ui.screen.KhachHangPanel;
 import dao.PhuTungSuDungDAO;
@@ -59,6 +60,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     private TrangChuKyThuatPanel pnlTrangChuKyThuat;
     private KhachHangPanel pnlKhachHang;
     private XePanel pnlXe;
+    private PhieuTiepNhanPanel pnlTiepNhan;
     /** Các màn hình tiếp nhận cùng dùng một nguồn hồ sơ trong phiên. */
     private KhachHangDAO khachHangDAO;
     private XeDAO xeDAO;
@@ -240,7 +242,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             throw new IllegalStateException("Chỉ dành cho nhân viên tiếp nhận.");
         }
         boolean daTrienKhai = "Tổng quan tiếp nhận".equals(muc) || "Khách hàng".equals(muc)
-                || "Phương tiện".equals(muc) || "Lệnh sửa chữa".equals(muc);
+                || "Phương tiện".equals(muc) || "Phiếu tiếp nhận".equals(muc) || "Lệnh sửa chữa".equals(muc);
         if (daTrienKhai && !muc.equals(mucTiepNhanDangMo)) {
             if (!choPhepRoiTiepNhan()) {
                 pnlDieuHuongTiepNhan.chonMuc(mucTiepNhanDangMo);
@@ -248,6 +250,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             }
             if ("Khách hàng".equals(mucTiepNhanDangMo) && pnlKhachHang != null) pnlKhachHang.moDanhSach();
             if ("Phương tiện".equals(mucTiepNhanDangMo) && pnlXe != null) pnlXe.moDanhSach();
+            if ("Phiếu tiếp nhận".equals(mucTiepNhanDangMo) && pnlTiepNhan != null) pnlTiepNhan.moDanhSach();
         }
         if ("Khách hàng".equals(muc)) {
             if (pnlKhachHang == null) pnlKhachHang = new KhachHangPanel(
@@ -258,6 +261,12 @@ public final class MainFrame extends JFrame implements ActionListener {
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
             setStatus("Khách hàng · Dữ liệu trong bộ nhớ, chưa lưu lâu dài");
+        } else if ("Phiếu tiếp nhận".equals(muc)) {
+            if (pnlTiepNhan == null) pnlTiepNhan = new PhieuTiepNhanPanel(khachHangDAO, xeDAO, this::getTaiKhoanDangNhap);
+            setScreen(pnlTiepNhan);
+            mucTiepNhanDangMo = muc;
+            pnlDieuHuongTiepNhan.chonMuc(muc);
+            setStatus("UI tiếp nhận · Danh sách mẫu, chưa lưu phiếu");
         } else if ("Phương tiện".equals(muc)) {
             if (pnlXe == null) pnlXe = new XePanel(xeDAO, khachHangDAO, this::getTaiKhoanDangNhap);
             if (!"Phương tiện".equals(mucTiepNhanDangMo)) pnlXe.moDanhSach();
@@ -285,6 +294,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     private boolean choPhepRoiTiepNhan() {
         if ("Khách hàng".equals(mucTiepNhanDangMo) && pnlKhachHang != null) return pnlKhachHang.choPhepRoiManHinh();
         if ("Phương tiện".equals(mucTiepNhanDangMo) && pnlXe != null) return pnlXe.choPhepRoiManHinh();
+        if ("Phiếu tiếp nhận".equals(mucTiepNhanDangMo) && pnlTiepNhan != null) return pnlTiepNhan.choPhepRoiManHinh();
         return true;
     }
 
