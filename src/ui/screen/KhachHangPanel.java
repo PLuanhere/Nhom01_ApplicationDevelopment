@@ -5,6 +5,7 @@ import java.awt.event.*;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -19,6 +20,7 @@ import ui.component.UiTheme;
 public final class KhachHangPanel extends JPanel {
     private static final long serialVersionUID = 1L;
     private final KhachHangDAO dao;
+    private final ToIntFunction<String> demSoXe;
     private final Supplier<TaiKhoan> phien;
     private final CardLayout boCuc = new CardLayout();
     private final JPanel pnlThe = new JPanel(boCuc);
@@ -45,7 +47,13 @@ public final class KhachHangPanel extends JPanel {
 
     /** @param phien nguồn phiên hiện tại, từ chối thao tác sau đăng xuất */
     public KhachHangPanel(KhachHangDAO dao, Supplier<TaiKhoan> phien) {
+        this(dao, phien, ma -> -1);
+    }
+
+    /** Đếm từ kho xe chung; không lưu số xe trùng lặp vào hồ sơ khách hàng. */
+    public KhachHangPanel(KhachHangDAO dao, Supplier<TaiKhoan> phien, ToIntFunction<String> demSoXe) {
         super(new BorderLayout());
+        this.demSoXe = Objects.requireNonNull(demSoXe);
         this.dao = Objects.requireNonNull(dao);
         this.phien = Objects.requireNonNull(phien);
         setOpaque(false);
@@ -211,8 +219,11 @@ public final class KhachHangPanel extends JPanel {
         try {
             List<KhachHang> ketQua = dao.timKiem(phien.get(), txtTimKiem.getText());
             model.setRowCount(0);
-            for (KhachHang kh : ketQua) model.addRow(new Object[] {kh.getMaKH(), kh.getHoTen(),
-                    kh.getSoDienThoai(), kh.getDiaChi(), "—", "Xem chi tiết"});
+            for (KhachHang kh : ketQua) {
+                int soXe = demSoXe.applyAsInt(kh.getMaKH());
+                model.addRow(new Object[] {kh.getMaKH(), kh.getHoTen(), kh.getSoDienThoai(),
+                        kh.getDiaChi(), soXe < 0 ? "—" : String.valueOf(soXe), "Xem chi tiết"});
+            }
             lblKetQua.setText(ketQua.isEmpty() ? "Không tìm thấy khách hàng phù hợp." : ketQua.size() + " hồ sơ đang hiển thị");
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
             lblThongBao.setText(e.getMessage());
