@@ -47,15 +47,15 @@ Phạm vi bàn giao hiện tại gồm **layout chung và đăng nhập**, làm 
 | Thành phần | Hiện trạng |
 | --- | --- |
 | Khởi chạy | `app.App` áp dụng theme và mở `LoginFrame` trên Event Dispatch Thread (EDT). Đăng nhập thành công mới mở `MainFrame`. |
-| Header | Thanh tiêu đề trắng 32 px, icon vuông cam, nút thu nhỏ/phóng to/đóng; hàng menu cao 26 px, mỗi nhóm chiếm 108 px. Hệ thống có Đăng xuất/Thoát; các nhóm còn lại chỉ hiển thị nhãn. |
-| Sidebar | Rộng 180 px, nền xanh xám, nhãn ĐỨC DŨNG, vai trò và nút đăng xuất. Quản lý có 8 mục chọn; các vai trò khác chưa có mục điều hướng. |
-| Nội dung | Vùng trống co giãn theo cửa sổ, lề 16 px; chưa có dashboard, trang chức năng hoặc dữ liệu mẫu. |
-| Thanh trạng thái | Hiển thị “Sẵn sàng”, tên đăng nhập và vai trò; có API cập nhật thông báo khi tích hợp. |
-| Đăng nhập | Form 600×404 theo Figma; kiểm tra trường trống, hiện/ẩn mật khẩu, nhấn Enter để đăng nhập, báo lỗi khi thông tin sai. DAO kiểm tra ở luồng nền bằng `SwingWorker`. |
+| Header | Thanh điều khiển cửa sổ 32 px; header Page 3 cao 66 px nằm bên phải sidebar, nền trắng, menu và danh tính hiện tại. Hệ thống có Đăng xuất/Thoát. Tìm nhanh/thông báo là vùng giữ chỗ, chưa có chức năng. |
+| Sidebar | Rộng 216 px, nền tối, logo/icon gốc từ Figma; vai trò ở trên và danh tính ở dưới. Quản lý có 7 mục theo Page 3. Các panel điều hướng đã tích hợp vẫn giữ listener riêng. |
+| Nội dung | Nền khung chung #F4F6F9, lề ngang 26 px. Vùng nội dung Quản lý còn trống; giữ các màn của thành viên khác đã tích hợp. |
+| Thanh trạng thái | Footer hiển thị tên garage và thông báo từ API setStatus; danh tính hiển thị ở header/sidebar. |
+| Đăng nhập | Cửa sổ ban đầu 1280×800, tối thiểu 960×600; thẻ 488×573 ở giữa ảnh garage Page 3, có cuộn khi cửa sổ thấp. Giữ kiểm tra nhập, hiện/ẩn mật khẩu, Enter và SwingWorker. |
 | Tài khoản và vai trò | Bốn tài khoản có sẵn trong `TaiKhoanDAO`, mỗi tài khoản một vai trò cố định. Danh tính bất biến, không chứa mật khẩu, được truyền cho khung chính sau xác thực. |
 | Đăng xuất | Xóa danh tính trong khung cũ, đóng khung và mở form đăng nhập mới với các trường trống, mật khẩu được che lại. |
 
-Ứng dụng **không cần SQL Server hoặc thư viện ngoài JDK**. Vùng nội dung vẫn trống; các mục sidebar Quản lý chưa mở màn hình nghiệp vụ. Nút “Quên mật khẩu?” trong Figma đang bị vô hiệu hóa vì chưa triển khai chức năng này.
+Ứng dụng **không cần SQL Server hoặc thư viện ngoài JDK**. Các mục sidebar Quản lý chưa mở màn hình nghiệp vụ. “Quên mật khẩu?” hiển thị hướng dẫn liên hệ Quản lý theo Page 3, không tự thêm quy trình OTP/email. Bốn tài khoản và nguồn xác thực hiện tại được giữ nguyên.
 
 ### Tài khoản có sẵn
 
@@ -119,7 +119,7 @@ test/
 
 `QuanLyNavigationPanel` chứa các mục của Quản lý. `ButtonGroup` giữ duy nhất một mục được chọn; panel báo tên mục cho `MainFrame` để cập nhật thanh trạng thái. Chưa có màn hình nghiệp vụ hoặc truy cập DAO trong panel này.
 
-`AppMenuBar` hiển thị các nhóm menu. Menu Hệ thống nhận hai thao tác từ `MainFrame`: Đăng xuất gọi chung hàm `dangXuat()` với sidebar; Thoát phát sự kiện đóng cửa sổ như nút ×. Panel menu không tự quản lý phiên hoặc tạo form đăng nhập.
+`AppMenuBar` hiển thị các nhóm menu. Menu Hệ thống nhận hai thao tác từ `MainFrame`: Đăng xuất gọi hàm `dangXuat()` để kết thúc phiên; Thoát phát sự kiện đóng cửa sổ như nút ×. Panel menu không tự quản lý phiên hoặc tạo form đăng nhập.
 
 Phần đăng nhập có bốn lớp, mỗi lớp một trách nhiệm:
 
@@ -136,7 +136,7 @@ Khi tích hợp chức năng, dùng `winChinh.getTaiKhoanDangNhap()` để lấy
 
 `WindowTitlePanel` vẽ thanh tiêu đề trắng theo Figma, thay thanh tiêu đề có màu nhấn của Windows. `WindowMouseHandler` hỗ trợ kéo tiêu đề, nhấp đôi để phóng to/khôi phục và kéo các cạnh/góc để đổi kích thước, giữ tối thiểu 960×600. Các nút cửa sổ hoạt động độc lập với chức năng nghiệp vụ.
 
-Khung dùng Noto Sans đóng gói cùng source: menu/tiêu đề 13 pt, thương hiệu 14 pt đậm, trạng thái 11 pt. Font mặc định cho màn hình chức năng vẫn là 14 pt theo QUY_DINH. Nguồn font: [kho Noto chính thức](https://github.com/notofonts/noto-fonts/tree/main/hinted/ttf/NotoSans); giữ giấy phép `src/ui/component/font/OFL.txt` khi phân phối. Eclipse tự sao chép các tài nguyên font sang `bin/`, không cần cài font trên Windows hoặc thêm thư viện JAR.
+Layout và đăng nhập Page 3 dùng Segoe UI của Windows theo Design System. Theme Noto Sans cũ được giữ cho các màn nghiệp vụ đã tích hợp; Font mặc định cho màn hình chức năng vẫn là 14 pt theo QUY_DINH. Nguồn font: [kho Noto chính thức](https://github.com/notofonts/noto-fonts/tree/main/hinted/ttf/NotoSans); giữ giấy phép `src/ui/component/font/OFL.txt` khi phân phối. Eclipse tự sao chép các tài nguyên font sang `bin/`, không cần cài font trên Windows hoặc thêm thư viện JAR.
 
 Khi phát triển tiếp, đặt màn hình tại `ui.screen`, hộp thoại tại `ui.dialog`, thành phần dùng chung tại `ui.component`. Giữ luồng **UI → DAO → SQL Server**; `entity` chứa đối tượng dữ liệu, `connectDB` cung cấp kết nối. Không đặt SQL trong UI hoặc tạo package theo tên thành viên. Chưa tạo lớp DAO/entity khi chưa có nhu cầu.
 
@@ -185,6 +185,8 @@ javac --release 17 -encoding UTF-8 -d bin $sourceFiles
 if ($LASTEXITCODE -ne 0) { throw 'Biên dịch thất bại. Kiểm tra lỗi trước khi chạy.' }
 New-Item -ItemType Directory -Path bin/ui/component/font -Force | Out-Null
 Copy-Item -Path src/ui/component/font/* -Destination bin/ui/component/font -Force
+New-Item -ItemType Directory -Path bin/ui/component/image -Force | Out-Null
+Copy-Item -Path src/ui/component/image/* -Destination bin/ui/component/image -Force
 java --module-path bin -m Nhom01_ApplicationDevelopment/app.App
 ```
 
@@ -195,13 +197,13 @@ Lệnh trên áp dụng cho khung UI hiện tại, chưa có thư viện ngoài.
 - Form đăng nhập bám Figma, hai ô nhập ban đầu trống. Thử thiếu thông tin, sai mật khẩu, hiện/ẩn mật khẩu và nhấn Enter.
 - Lần lượt đăng nhập bốn tài khoản có sẵn; tiêu đề, sidebar và thanh trạng thái hiển thị đúng tài khoản/vai trò.
 - Nhấn “Đăng xuất”: khung cũ đóng, form đăng nhập mới có hai ô trống và mật khẩu được che.
-- Khung chung có thanh menu, sidebar màu xanh xám với nhãn ĐỨC DŨNG và vùng nội dung trống. Menu Hệ thống dùng được; các nhóm còn lại chỉ hiển thị nhãn.
-- Mở Hệ thống bằng chuột hoặc Alt+H. Chọn Đăng xuất bằng chuột hoặc phím D khi menu đang mở: phiên cũ kết thúc, form đăng nhập mới trống. Thử cả từ menu và nút sidebar.
+- Khung chung có sidebar tối 216 px, header trắng và danh tính ở header/sidebar. Nội dung Quản lý còn trống. Menu Hệ thống dùng được; các nhóm còn lại chỉ hiển thị nhãn.
+- Mở Hệ thống bằng chuột hoặc Alt+H. Chọn Đăng xuất bằng chuột hoặc phím D khi menu đang mở: phiên cũ kết thúc, form đăng nhập mới trống. Đăng xuất nằm trong menu Hệ thống.
 - Nhấn Esc hoặc bấm ra ngoài để đóng menu. Mở lại rồi chọn Thoát (hoặc phím T khi menu mở): ứng dụng đóng như nút ×, không mở lại form đăng nhập.
-- Đăng nhập `quanly`: sidebar có 8 mục theo Figma, mặc định chọn Trang chủ. Chọn bằng chuột hoặc Tab rồi Space: chỉ một mục được tô nền xanh nhạt và in đậm; thanh trạng thái báo mục đó chưa triển khai. Không mở màn hình nghiệp vụ.
-- Ba vai trò còn lại chưa có các mục điều hướng. Cả bốn vai trò vẫn có nút đăng xuất.
-- Chưa có dashboard hoặc dữ liệu nghiệp vụ mẫu.
-- Thử thay đổi kích thước ở 1366×768 và mức tối thiểu 960×600; sidebar giữ chiều rộng 180 px, vùng nội dung co giãn, thanh trạng thái nằm dưới cùng.
+- Đăng nhập `quanly`: sidebar có 7 mục Page 3, mặc định Tổng quan điều hành. Chọn bằng chuột hoặc Tab/Space: chỉ một mục có nền xanh đậm và chữ đậm; footer báo chức năng chưa triển khai. Không tự tạo dashboard hoặc màn CRUD.
+- Bốn vai trò đều đăng xuất được từ Hệ thống. Các màn/điều hướng kỹ thuật và sửa chữa đã tích hợp của thành viên khác được giữ nguyên.
+- Lần cập nhật UI này không tạo thêm dữ liệu nghiệp vụ hoặc thay đổi DAO/entity.
+- Kiểm tra 1920×1200, 1366×768 và tối thiểu 960×600; sidebar giữ 216 px. Khi hẹp, ẩn vùng giữ chỗ tìm kiếm/thông báo để menu và danh tính không chồng nhau.
 - Kéo thanh tiêu đề để di chuyển, kéo cạnh/góc để đổi kích thước; kiểm tra nút thu nhỏ, phóng to/khôi phục và đóng ở góc trên phải.
 
 ### Chạy kiểm thử đăng nhập
@@ -215,6 +217,18 @@ javac --release 17 -encoding UTF-8 -Xlint:all -cp bin -d bin-test $testFiles
 if ($LASTEXITCODE -ne 0) { throw 'Biên dịch kiểm thử thất bại.' }
 java '-Dfile.encoding=UTF-8' -cp 'bin;bin-test' dao.TaiKhoanDAOTest
 ```
+
+Kết quả cập nhật theo Page 3 ngày 28/10/2026:
+
+- **PASS:** Java 17 biên dịch toàn bộ source; kiểm thử DAO giữ nguyên bốn tài khoản/mật khẩu.
+- **PASS:** kiểm tra Swing đủ bốn luồng đăng nhập → khung chung → Hệ thống/Đăng xuất; xóa phiên và mở lại form trống.
+- **PASS:** trường thiếu/sai, giữ dữ liệu khi lỗi, hiện/ẩn mật khẩu, nút mặc định Enter, trạng thái chờ và đóng lúc đang xác thực.
+- **PASS:** render đăng nhập và layout Quản lý ở 1920, 1366 và 960 px; kiểm tra menu không đè danh tính, 7 mục chọn độc quyền.
+- **NOT_RUN:** thao tác chuột/bàn phím thủ công trong Eclipse và nghiệp vụ/database. Tìm nhanh/thông báo vẫn chưa triển khai.
+
+`AppHeaderPanel` ghép menu với danh tính; `UserInfoPanel` tái sử dụng ở hai vị trí; `LoginBackgroundPanel` chỉ trình bày ảnh nền và hỗ trợ cuộn. Ảnh/icon gốc và các layer Figma được ghi tại `src/ui/component/image/README.md`; Eclipse sao chép tài nguyên này sang `bin/`.
+
+Các kết quả bên dưới là lịch sử kiểm tra giao diện trước Page 3; kích thước và số mục cũ không còn mô tả bản hiện tại.
 
 Kết quả kiểm tra menu Hệ thống ngày 26/10/2026:
 

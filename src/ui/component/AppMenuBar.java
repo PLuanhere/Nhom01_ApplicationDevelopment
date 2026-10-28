@@ -27,18 +27,17 @@ public final class AppMenuBar extends JMenuBar {
         Objects.requireNonNull(khiDangXuat, "Cần thao tác đăng xuất.");
         Objects.requireNonNull(khiThoat, "Cần thao tác thoát ứng dụng.");
         setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
-        setBackground(UiTheme.WINDOW);
-        setPreferredSize(new Dimension(0, UiTheme.MENU_HEIGHT));
+        setBorder(BorderFactory.createEmptyBorder());
+        setBackground(UiTheme.SURFACE);
         add(taoMenuHeThong(khiDangXuat, khiThoat));
 
         // Giữ vị trí các nhóm còn lại, chưa tạo mục con khi chưa có chức năng.
-        String[] nhomMenu = {"Danh mục", "Nghiệp vụ", "Thống kê", "Trợ giúp"};
+        String[] nhomMenu = {"Danh mục", "Nghiệp vụ", "Báo cáo", "Trợ giúp"};
         for (String tenNhom : nhomMenu) {
             JLabel lblNhom = new JLabel(tenNhom);
-            lblNhom.setFont(UiTheme.SHELL_FONT);
-            lblNhom.setForeground(UiTheme.TEXT);
-            lblNhom.setPreferredSize(new Dimension(UiTheme.MENU_GROUP_WIDTH, 20));
+            lblNhom.setFont(UiTheme.APP_FONT);
+            lblNhom.setForeground(UiTheme.APP_TEXT);
+            lblNhom.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
             lblNhom.setToolTipText("Nhóm menu chưa triển khai.");
             add(lblNhom);
         }
@@ -54,10 +53,11 @@ public final class AppMenuBar extends JMenuBar {
         // Kích thước nhóm giữ nguyên để các nhãn bên cạnh không bị dịch chuyển.
         JMenu mnuHeThong = new JMenu("Hệ thống");
         mnuHeThong.setMnemonic(KeyEvent.VK_H);
-        mnuHeThong.setFont(UiTheme.SHELL_FONT);
-        mnuHeThong.setForeground(UiTheme.TEXT);
-        mnuHeThong.setBorder(BorderFactory.createEmptyBorder());
-        mnuHeThong.setPreferredSize(new Dimension(UiTheme.MENU_GROUP_WIDTH, 20));
+        mnuHeThong.setFont(UiTheme.APP_BOLD_FONT);
+        mnuHeThong.setForeground(UiTheme.APP_PRIMARY);
+        mnuHeThong.setBackground(new java.awt.Color(0xEEF4FA));
+        mnuHeThong.setOpaque(true);
+        mnuHeThong.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
         mnuHeThong.getPopupMenu().setBackground(UiTheme.SURFACE);
         mnuHeThong.getPopupMenu().setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
         mnuHeThong.add(taoMuc("Đăng xuất", KeyEvent.VK_D, khiDangXuat));
@@ -76,8 +76,8 @@ public final class AppMenuBar extends JMenuBar {
     private JMenuItem taoMuc(String tenMuc, int phimChon, Runnable thaoTac) {
         // Hai mục dùng chung kiểu chữ và kích thước, chỉ khác hành động.
         JMenuItem mniMuc = new JMenuItem(tenMuc, phimChon);
-        mniMuc.setFont(UiTheme.SHELL_FONT);
-        mniMuc.setForeground(UiTheme.TEXT);
+        mniMuc.setFont(UiTheme.APP_FONT);
+        mniMuc.setForeground(UiTheme.APP_TEXT);
         mniMuc.setBackground(UiTheme.SURFACE);
         mniMuc.setPreferredSize(new Dimension(180, 30));
         mniMuc.addActionListener(event -> thaoTac.run());

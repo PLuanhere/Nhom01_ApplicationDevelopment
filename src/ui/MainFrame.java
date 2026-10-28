@@ -21,7 +21,7 @@ import dao.TrangChuKyThuatDAO;
 import entity.TaiKhoan;
 import entity.VaiTro;
 import ui.screen.BaoCaoKiemTraPanel;
-import ui.component.AppMenuBar;
+import ui.component.AppHeaderPanel;
 import ui.component.QuanLyNavigationPanel;
 import ui.component.KyThuatUi;
 import ui.component.SuaChuaUi;
@@ -78,25 +78,27 @@ public final class MainFrame extends JFrame implements ActionListener {
         // Mở khung chính ở trạng thái phóng to ngay sau đăng nhập.
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout());
-        getContentPane().setBackground(UiTheme.WINDOW);
-        getRootPane().setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
-        add(createHeader(), BorderLayout.NORTH);
+        getContentPane().setBackground(UiTheme.APP_BACKGROUND);
+        getRootPane().setBorder(BorderFactory.createLineBorder(UiTheme.APP_BORDER));
+        add(new WindowTitlePanel(this), BorderLayout.NORTH);
         WindowMouseHandler mouseHandler = new WindowMouseHandler(this);
         addMouseListener(mouseHandler);
         addMouseMotionListener(mouseHandler);
-        pnlNoiDung.setBackground(UiTheme.WINDOW);
-        pnlNoiDung.setBorder(BorderFactory.createEmptyBorder(
-                UiTheme.CONTENT_PADDING, UiTheme.CONTENT_PADDING,
-                UiTheme.CONTENT_PADDING, UiTheme.CONTENT_PADDING));
+        pnlNoiDung.setBackground(UiTheme.APP_BACKGROUND);
+        pnlNoiDung.setBorder(BorderFactory.createEmptyBorder(23, 26, 16, 26));
         add(pnlSidebar, BorderLayout.WEST);
         pnlSidebar.setRoleText(taiKhoan.getVaiTro().getTenHienThi());
-        pnlSidebar.add(createLogoutButton(), BorderLayout.SOUTH);
-        add(pnlNoiDung, BorderLayout.CENTER);
-        add(createStatusBar(), BorderLayout.SOUTH);
+        pnlSidebar.setAccount(taiKhoan);
+        // Header và footer thuộc vùng làm việc; sidebar chạy suốt chiều cao bên trái.
+        JPanel pnlLamViec = new JPanel(new BorderLayout());
+        pnlLamViec.add(createHeader(), BorderLayout.NORTH);
+        pnlLamViec.add(pnlNoiDung, BorderLayout.CENTER);
+        pnlLamViec.add(createStatusBar(), BorderLayout.SOUTH);
+        add(pnlLamViec, BorderLayout.CENTER);
         if (taiKhoan.getVaiTro() == VaiTro.QUAN_LY) {
             setSidebarContent(new QuanLyNavigationPanel(tenMuc ->
                     setStatus(tenMuc + ": chức năng chưa triển khai.")));
-            setStatus("Trang chủ: chức năng chưa triển khai.");
+            setStatus("Tổng quan điều hành: chức năng chưa triển khai.");
         } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
             khoiTaoTrangChuKyThuat();
         } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_TIEP_NHAN) {
@@ -174,44 +176,32 @@ public final class MainFrame extends JFrame implements ActionListener {
     }
 
     /**
-     * Ghép thanh tiêu đề trắng và menu đầu trang thành header chung.
-     * @return header tự co giãn chiều ngang, giữ chiều cao theo Figma
+     * Tạo header Page 3, giữ nguyên thao tác đăng xuất và thoát.
+     * @return header nằm bên phải sidebar
      */
     private JPanel createHeader() {
-        JPanel pnlHeader = new JPanel(new BorderLayout());
-        pnlHeader.add(new WindowTitlePanel(this), BorderLayout.NORTH);
-        pnlHeader.add(new AppMenuBar(this::dangXuat,
-                () -> dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING))), BorderLayout.CENTER);
-        return pnlHeader;
+        return new AppHeaderPanel(taiKhoanDangNhap, this::dangXuat,
+                () -> dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING)));
     }
 
     /** @return thanh trạng thái ở cạnh dưới cửa sổ */
-    // Hiển thị thông báo, tài khoản và vai trò của phiên hiện tại.
+    // Giữ API thông báo cho các panel; danh tính đã hiển thị ở header và sidebar.
     private JPanel createStatusBar() {
         JPanel pnlTrangThai = new JPanel(new BorderLayout());
-        pnlTrangThai.setPreferredSize(new Dimension(0, UiTheme.STATUS_HEIGHT));
-        pnlTrangThai.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
-        lblTrangThai.setFont(UiTheme.CAPTION_FONT);
-        lblTrangThai.setForeground(UiTheme.TEXT);
+        pnlTrangThai.setBackground(UiTheme.APP_BACKGROUND);
+        pnlTrangThai.setBorder(BorderFactory.createEmptyBorder(10, 26, 16, 26));
+        JLabel lblGarage = new JLabel("Garage Đức Dũng · Nội bộ nhân viên");
+        lblGarage.setFont(UiTheme.APP_FONT.deriveFont(11.0f));
+        lblGarage.setForeground(UiTheme.APP_MUTED);
+        pnlTrangThai.add(lblGarage, BorderLayout.WEST);
+        lblTrangThai.setFont(UiTheme.APP_FONT.deriveFont(11.0f));
+        lblTrangThai.setForeground(UiTheme.APP_MUTED);
+        lblTrangThai.setHorizontalAlignment(SwingConstants.RIGHT);
         pnlTrangThai.add(lblTrangThai, BorderLayout.CENTER);
-        JLabel lblTaiKhoan = new JLabel("Tài khoản: " + taiKhoanDangNhap.getTenDangNhap()
-                + "   |   Vai trò: " + taiKhoanDangNhap.getVaiTro().getTenHienThi());
-        lblTaiKhoan.setFont(UiTheme.CAPTION_FONT);
-        lblTaiKhoan.setForeground(UiTheme.MUTED);
-        pnlTrangThai.add(lblTaiKhoan, BorderLayout.EAST);
         return pnlTrangThai;
     }
 
-    /** @return nút kết thúc phiên và mở lại trang đăng nhập */
-    private JButton createLogoutButton() {
-        JButton btnDangXuat = new JButton("Đăng xuất");
-        btnDangXuat.setPreferredSize(new Dimension(0, 30));
-        UiTheme.styleButton(btnDangXuat, false);
-        btnDangXuat.addActionListener(event -> dangXuat());
-        return btnDangXuat;
-    }
-
-    /** Kết thúc phiên một lần; menu và sidebar dùng chung thao tác này. */
+    /** Kết thúc phiên một lần từ menu Hệ thống và mở lại form đăng nhập trống. */
     private void dangXuat() {
         if (taiKhoanDangNhap != null) {
             taiKhoanDangNhap = null;
