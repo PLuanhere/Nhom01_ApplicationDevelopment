@@ -17,3 +17,7 @@
 | search.png | 2526:7293 | 14×14 |
 
 Icon là bản PNG do Figma xuất từ đúng layer vector để Swing dùng được bằng ImageIcon, không cần thư viện SVG.
+
+## Icon tiếp nhận
+
+`reception-home.png`, `reception-file.png`, `reception-wrench.png`, `reception-key.png` lấy từ asset SVG của frame Figma `2479:10018` (Page 3), chuyển PNG giữ kích thước gốc để Swing đọc bằng ImageIO. Các icon clipboard/users/car tái sử dụng tài nguyên chung.
