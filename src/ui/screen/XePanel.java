@@ -202,6 +202,13 @@ public final class XePanel extends JPanel {
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) { lblKetQua.setText(e.getMessage()); }
     }
 
+    /** Mở tra cứu từ phiếu tiếp nhận, không tự coi các dòng mẫu là lịch sử thật. */
+    public void moLichSuTheoBienSo(String bienSo) {
+        txtTraLichSu.setText(bienSo);
+        traLichSu();
+        boCuc.show(pnlThe, "LICH_SU");
+    }
+
     private void traLichSu() {
         lblXeLichSu.setText("Không tìm thấy phương tiện.");
         try {
