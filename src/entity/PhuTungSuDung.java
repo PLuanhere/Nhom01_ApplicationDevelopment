@@ -3,7 +3,7 @@ package entity;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-// Bản ghi phụ tùng bất biến; DAO tạo bản mới khi sửa hoặc xác nhận
+// Lưu phụ tùng thực dùng và hạng mục tương ứng bằng bản ghi bất biến.
 public final class PhuTungSuDung {
     private final String maGhiNhan;
     private final String maLenhSuaChua;
@@ -12,20 +12,15 @@ public final class PhuTungSuDung {
     private final String nguoiThucHien;
     private final String ghiChu;
     private final TrangThaiSuDung trangThai;
+    private final String hangMuc;
 
-    /**
-     * Tạo một bản ghi hợp lệ về giá trị nội tại.
-     * @param maGhiNhan mã ghi nhận không rỗng
-     * @param maLenhSuaChua mã lệnh không rỗng
-     * @param phuTung phụ tùng được dùng
-     * @param soLuong lượng dương đúng đơn vị
-     * @param nguoiThucHien tên người thực hiện
-     * @param ghiChu ghi chú, cho phép trống
-     * @param trangThai trạng thái ghi nhận
-     * @throws IllegalArgumentException nếu mã hoặc số lượng sai
-     */
     public PhuTungSuDung(String maGhiNhan, String maLenhSuaChua, PhuTung phuTung, BigDecimal soLuong,
             String nguoiThucHien, String ghiChu, TrangThaiSuDung trangThai) {
+        this(maGhiNhan, maLenhSuaChua, phuTung, soLuong, nguoiThucHien, ghiChu, trangThai, "");
+    }
+
+    public PhuTungSuDung(String maGhiNhan, String maLenhSuaChua, PhuTung phuTung, BigDecimal soLuong,
+            String nguoiThucHien, String ghiChu, TrangThaiSuDung trangThai, String hangMuc) {
         this.maGhiNhan = Objects.requireNonNull(maGhiNhan).trim();
         this.maLenhSuaChua = Objects.requireNonNull(maLenhSuaChua).trim();
         this.phuTung = Objects.requireNonNull(phuTung);
@@ -34,6 +29,7 @@ public final class PhuTungSuDung {
         this.nguoiThucHien = Objects.requireNonNull(nguoiThucHien);
         this.ghiChu = Objects.requireNonNull(ghiChu);
         this.trangThai = Objects.requireNonNull(trangThai);
+        this.hangMuc = Objects.requireNonNull(hangMuc);
         if (this.maGhiNhan.isEmpty() || this.maLenhSuaChua.isEmpty()) {
             throw new IllegalArgumentException("Thiếu mã ghi nhận hoặc mã lệnh.");
         }
@@ -65,5 +61,9 @@ public final class PhuTungSuDung {
 
     public TrangThaiSuDung getTrangThai() {
         return trangThai;
+    }
+
+    public String getHangMuc() {
+        return hangMuc;
     }
 }
