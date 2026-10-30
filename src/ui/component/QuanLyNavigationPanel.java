@@ -9,6 +9,7 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.GridLayout;
 import java.util.Objects;
+import java.util.Locale;
 import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
@@ -16,7 +17,7 @@ import javax.swing.ButtonGroup;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 
-/** Các mục Quản lý đã có trong Page 3; mới đổi trạng thái chọn, chưa tạo màn nghiệp vụ. */
+/** Điều hướng Quản lý theo Page 3; báo mục được chọn để MainFrame mở màn hình đã triển khai. */
 public final class QuanLyNavigationPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
@@ -47,6 +48,13 @@ public final class QuanLyNavigationPanel extends JPanel {
 
     }
 
+    /** @param tenMuc mục cần chọn lại khi người dùng hủy điều hướng; không phát thêm sự kiện mở màn hình */
+    public void chonMuc(String tenMuc) {
+        java.util.Collections.list(nhomMuc.getElements()).stream()
+                .filter(nut -> nut.getText().equals(tenMuc))
+                .findFirst().ifPresent(nut -> nut.setSelected(true));
+    }
+
     /* Tạo nút chọn mục, cập nhật nền/chữ và báo tên mục khi được kích hoạt. */
     private JToggleButton taoMuc(String tenMuc, Consumer<String> khiChonMuc) {
         JToggleButton btnMuc = new JToggleButton(tenMuc) {
@@ -71,7 +79,9 @@ public final class QuanLyNavigationPanel extends JPanel {
         btnMuc.setBackground(UiTheme.SIDEBAR_BACKGROUND);
         btnMuc.setContentAreaFilled(false);
         btnMuc.setOpaque(false);
-        btnMuc.setToolTipText(tenMuc + ": chức năng chưa triển khai.");
+        boolean daCo = "Nhân viên".equals(tenMuc);
+        btnMuc.setToolTipText(daCo ? "Mở " + tenMuc.toLowerCase(Locale.ROOT)
+                : tenMuc + ": chức năng chưa triển khai.");
         btnMuc.getAccessibleContext().setAccessibleDescription(btnMuc.getToolTipText());
         btnMuc.addItemListener(event -> {
             btnMuc.setBackground(btnMuc.isSelected() ? UiTheme.SIDEBAR_ACTIVE : UiTheme.SIDEBAR_BACKGROUND);

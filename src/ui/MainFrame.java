@@ -18,7 +18,6 @@ import javax.swing.SwingConstants;
 
 import dao.PhuTungSuDungDAO;
 import dao.TrangChuKyThuatDAO;
-import dao.TrangChuQuanLyDAO;
 import entity.TaiKhoan;
 import entity.VaiTro;
 import ui.component.AppHeaderPanel;
@@ -29,16 +28,15 @@ import ui.component.SuaChuaUi;
 import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
 import ui.component.WindowTitlePanel;
-import ui.dialog.ChiTietDoanhThuDialog;
 import ui.screen.BaoCaoKiemTraPanel;
+import ui.screen.NhanVienPanel;
 import ui.screen.PhieuSuaChuaPanel;
 import ui.screen.PhuTungSuDungPanel;
 import ui.screen.TrangChuKyThuatPanel;
-import ui.screen.TrangChuQuanLyPanel;
 
 /**
  * Khung ứng dụng dùng chung gồm menu đầu trang, sidebar, nội dung và thanh trạng thái.
- * Gắn tổng quan Quản lý và các màn kỹ thuật, sửa chữa theo vai trò đăng nhập.
+ * Gắn màn Nhân viên và các màn kỹ thuật, sửa chữa theo vai trò đăng nhập.
  */
 public final class MainFrame extends JFrame implements ActionListener {
     /** Phiên bản tương thích Swing. */
@@ -61,8 +59,9 @@ public final class MainFrame extends JFrame implements ActionListener {
     private PhieuSuaChuaPanel pnlSuaChua;
     /** Màn hình và DAO phụ tùng được giữ lại trong suốt phiên đăng nhập. */
     private PhuTungSuDungPanel pnlPhuTung;
-    /** Tổng quan Quản lý, chỉ khởi tạo cho tài khoản có quyền tương ứng. */
-    private TrangChuQuanLyPanel pnlTrangChuQuanLy;
+    /** Phân hệ nhân viên và điều hướng Quản lý, được giữ trong phiên đăng nhập. */
+    private NhanVienPanel pnlNhanVien;
+    private QuanLyNavigationPanel pnlDieuHuongQuanLy;
 
     /**
      * @param taiKhoan tài khoản đã được xác thực
@@ -101,9 +100,8 @@ public final class MainFrame extends JFrame implements ActionListener {
         pnlLamViec.add(createStatusBar(), BorderLayout.SOUTH);
         add(pnlLamViec, BorderLayout.CENTER);
         if (taiKhoan.getVaiTro() == VaiTro.QUAN_LY) {
-            khoiTaoTrangChuQuanLy();
-            setSidebarContent(new QuanLyNavigationPanel(tenMuc ->
-                    dieuHuongQuanLy(tenMuc)));
+            pnlDieuHuongQuanLy = new QuanLyNavigationPanel(this::dieuHuongQuanLy);
+            setSidebarContent(pnlDieuHuongQuanLy);
         } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
             khoiTaoTrangChuKyThuat();
         } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_TIEP_NHAN) {
@@ -208,38 +206,56 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Kết thúc phiên một lần từ menu Hệ thống và mở lại form đăng nhập trống. */
     private void dangXuat() {
-        if (taiKhoanDangNhap != null) {
+        if (taiKhoanDangNhap != null && choPhepRoiNhanVien()) {
             taiKhoanDangNhap = null;
             dispose();
             khiDangXuat.run();
         }
     }
 
-    /** Nạp snapshot chỉ đọc; tổng tiền và dialog cùng đọc từ DAO của tổng quan. */
-    private void khoiTaoTrangChuQuanLy() {
-        TrangChuQuanLyDAO trangChuDAO = new TrangChuQuanLyDAO();
-        pnlTrangChuQuanLy = new TrangChuQuanLyPanel(trangChuDAO.docTongQuan(getTaiKhoanDangNhap()), ngay -> {
-            // Không mở dữ liệu bằng tham chiếu UI cũ sau khi phiên đăng nhập đã kết thúc.
-            if (taiKhoanDangNhap != null) {
-                new ChiTietDoanhThuDialog(this, ngay,
-                        trangChuDAO.docHoaDonTheoNgay(getTaiKhoanDangNhap(), ngay)).setVisible(true);
-            }
-        });
-        setScreen(pnlTrangChuQuanLy);
-        setStatus("Tổng quan điều hành");
-    }
-
     /**
-     * Mở lại tổng quan đã có; các mục nghiệp vụ khác vẫn báo rõ chưa triển khai.
+     * Mở Nhân viên; mục Tổng quan giữ vùng nội dung trống để triển khai sau.
      * @param tenMuc mục Quản lý được chọn
      */
     private void dieuHuongQuanLy(String tenMuc) {
         if ("Tổng quan điều hành".equals(tenMuc)) {
-            setScreen(pnlTrangChuQuanLy);
-            setStatus("Tổng quan điều hành");
+            if (!choPhepRoiNhanVien()) {
+                pnlDieuHuongQuanLy.chonMuc("Nhân viên");
+                return;
+            }
+            JPanel pnlTrong = new JPanel();
+            pnlTrong.setOpaque(false);
+            setScreen(pnlTrong);
+            setStatus("Tổng quan điều hành: chưa triển khai.");
+        } else if ("Nhân viên".equals(tenMuc)) {
+            moDanhSachNhanVien();
         } else {
             setStatus(tenMuc + ": chức năng chưa triển khai.");
         }
+    }
+
+    /** Mở màn nhân viên trong khung chung; panel đọc DAO theo tài khoản của phiên hiện tại. */
+    private void moDanhSachNhanVien() {
+        if (pnlNhanVien == null) {
+            pnlNhanVien = new NhanVienPanel(getTaiKhoanDangNhap());
+        }
+        setScreen(pnlNhanVien);
+        setStatus("Danh sách nhân viên");
+    }
+
+    /** @return cho phép rời màn hình sau khi xử lý thay đổi chưa lưu của hồ sơ nhân viên */
+    private boolean choPhepRoiNhanVien() {
+        return pnlNhanVien == null || !pnlNoiDung.isAncestorOf(pnlNhanVien)
+                || pnlNhanVien.choPhepRoiTrang();
+    }
+
+    /** Giữ cửa sổ nếu người dùng chọn tiếp tục chỉnh sửa hồ sơ chưa lưu. */
+    @Override
+    protected void processWindowEvent(WindowEvent event) {
+        if (event.getID() == WindowEvent.WINDOW_CLOSING && !choPhepRoiNhanVien()) {
+            return;
+        }
+        super.processWindowEvent(event);
     }
 
     /** Gắn điều hướng sửa chữa cho nhân viên tiếp nhận. */
