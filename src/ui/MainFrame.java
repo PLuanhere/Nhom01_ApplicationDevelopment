@@ -17,6 +17,8 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 import dao.KhachHangDAO;
+import dao.BaoGiaDAO;
+import dao.BaoCaoKiemTraDAO;
 import dao.PhieuTiepNhanDAO;
 import dao.PhuTungSuDungDAO;
 import dao.TrangChuKyThuatDAO;
@@ -67,6 +69,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     private XePanel pnlXe;
     private PhieuTiepNhanPanel pnlTiepNhan;
     private BaoGiaPanel pnlBaoGia;
+    private BaoGiaDAO baoGiaDAO;
     private TrangChuTiepNhanPanel pnlTrangChuTiepNhan;
     private TiepNhanNavigationPanel pnlDieuHuongTiepNhan;
     private String mucTiepNhanDangMo = "Tổng quan tiếp nhận";
@@ -292,6 +295,9 @@ public final class MainFrame extends JFrame implements ActionListener {
         khachHangDAO = KhachHangDAO.taoDuLieuMau();
         xeDAO = XeDAO.taoDuLieuMau(khachHangDAO, getTaiKhoanDangNhap());
         phieuTiepNhanDAO = new PhieuTiepNhanDAO(khachHangDAO, xeDAO);
+        BaoCaoKiemTraDAO nguonKiemTra = new BaoCaoKiemTraDAO();
+        baoGiaDAO = new BaoGiaDAO(phieuTiepNhanDAO,
+                () -> nguonKiemTra.layBaoCaoHoanTatChoBaoGia(getTaiKhoanDangNhap()));
 
         pnlDieuHuongTiepNhan =
                 new TiepNhanNavigationPanel(this::dieuHuongTiepNhan);
@@ -369,11 +375,11 @@ public final class MainFrame extends JFrame implements ActionListener {
             setStatus("Tiếp nhận · Phiếu lưu trong bộ nhớ của phiên");
 
         } else if ("Báo giá".equals(muc)) {
-            if (pnlBaoGia == null) pnlBaoGia = new BaoGiaPanel(this::getTaiKhoanDangNhap);
+            if (pnlBaoGia == null) pnlBaoGia = new BaoGiaPanel(baoGiaDAO, this::getTaiKhoanDangNhap);
             setScreen(pnlBaoGia);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
-            setStatus("UI báo giá · Dữ liệu minh họa, chưa lưu/gửi nghiệp vụ");
+            setStatus("Báo giá · Lưu trong bộ nhớ của phiên");
 
         } else if ("Phương tiện".equals(muc)) {
             if (pnlXe == null) {

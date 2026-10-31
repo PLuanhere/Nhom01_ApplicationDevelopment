@@ -41,6 +41,18 @@ public final class BaoCaoKiemTraDAO {
                 new String[] {"Vệ sinh và kiểm tra phanh", "Thay dầu và lọc dầu", "Không có hạng mục sửa"}));
     }
 
+    /** Tiếp nhận chỉ được đọc kết quả hoàn tất để lập báo giá, không sửa báo cáo kỹ thuật. */
+    public List<BaoCaoKiemTra> layBaoCaoHoanTatChoBaoGia(TaiKhoan taiKhoan) {
+        if (taiKhoan == null || taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN) {
+            throw new SecurityException("Chỉ tiếp nhận được đọc nguồn lập báo giá.");
+        }
+        List<BaoCaoKiemTra> ketQua = new ArrayList<>();
+        for (BaoCaoKiemTra bc : danhSachBaoCao) {
+            if (bc.getTrangThai() == TrangThaiKiemTra.HOAN_TAT) ketQua.add(bc);
+        }
+        return ketQua;
+    }
+
     // Đọc các phiếu tiếp nhận thuộc phạm vi phân công của tài khoản.
     public List<PhieuTiepNhan> layPhieu(TaiKhoan taiKhoan) {
         kiemTraQuyen(taiKhoan);
