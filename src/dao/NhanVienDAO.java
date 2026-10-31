@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import entity.BoPhanNhanVien;
 import entity.NhanVien;
+import entity.KyThuatVienPhanCong;
 import entity.TaiKhoan;
 import entity.TrangThaiNhanVien;
 import entity.VaiTro;
@@ -18,6 +19,20 @@ public final class NhanVienDAO {
 
     /** Dữ liệu dùng chung trong lần chạy ứng dụng; UI thao tác trên EDT. */
     private static final List<NhanVien> DANH_SACH = taoDuLieuBanDau();
+
+    /** Nguồn phân công đọc lại tình trạng hồ sơ; tài khoản nối bằng mã cố định, không theo tên. */
+    List<KyThuatVienPhanCong> layLienKetKyThuat(TaiKhoanDAO taiKhoanDAO) {
+        List<KyThuatVienPhanCong> ketQua = new ArrayList<>();
+        for (TaiKhoan tk : taiKhoanDAO.layTaiKhoanNoiBo()) {
+            for (NhanVien nv : DANH_SACH) {
+                if (nv.getMaNhanVien().equals(tk.getMaNhanVien())) {
+                    KyThuatVienPhanCong lienKet = new KyThuatVienPhanCong(nv, tk);
+                    if (lienKet.duocPhanCong()) ketQua.add(lienKet);
+                }
+            }
+        }
+        return ketQua;
+    }
 
     /**
      * @param taiKhoan danh tính đã xác thực

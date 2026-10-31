@@ -16,6 +16,8 @@ import javax.swing.event.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.JTextComponent;
 import dao.KhachHangDAO;
+import dao.TrangChuTiepNhanDAO;
+import entity.KyThuatVienPhanCong;
 import dao.XeDAO;
 import dao.PhieuTiepNhanDAO;
 import entity.PhieuTiepNhan;
@@ -35,6 +37,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
     private final KhachHangDAO khachHangDAO;
     private final XeDAO xeDAO;
     private final PhieuTiepNhanDAO phieuDAO;
+    private TrangChuTiepNhanDAO tienDoDAO;
     /** Nội dung đã đọc lại với khách, vô hiệu khi quay về chỉnh sửa. */
     private Xe xeDoiChieu;
     private KhachHang khachDoiChieu;
@@ -91,6 +94,31 @@ public final class PhieuTiepNhanPanel extends JPanel {
         locDanhSach();
     }
 
+    public PhieuTiepNhanPanel(KhachHangDAO khachHangDAO, XeDAO xeDAO, PhieuTiepNhanDAO phieuDAO,
+            Supplier<TaiKhoan> phien, TrangChuTiepNhanDAO tienDoDAO) {
+        this(khachHangDAO, xeDAO, phieuDAO, phien);
+        this.tienDoDAO = tienDoDAO;
+        if (tienDoDAO != null) {
+            for (String ten : new String[] {"Đang kiểm tra", "Đã kiểm tra", "Nháp", "Chờ khách xác nhận", "Đã đồng ý", "Yêu cầu điều chỉnh", "Từ chối", "Chờ sửa chữa", "Đang sửa", "Chờ phụ tùng", "Chờ xác nhận thanh toán", "Chờ bàn giao", "Đã bàn giao"}) cboTrangThai.addItem(ten);
+        }
+        locDanhSach();
+    }
+
+    private void giaoKiemTra() {
+        TaiKhoan tk = kiemTraPhien(); int row = tblDanhSach.getSelectedRow();
+        if (row < 0) { lblDanhSach.setText("Chọn phiếu để giao kiểm tra."); return; }
+        String ma = (String) modelDanhSach.getValueAt(tblDanhSach.convertRowIndexToModel(row), 0);
+        List<KyThuatVienPhanCong> nhanSu = phieuDAO.layKyThuatPhanCong(tk);
+        if (nhanSu.isEmpty()) { lblDanhSach.setText("Chưa có kỹ thuật viên đang làm việc được liên kết tài khoản."); return; }
+        KyThuatVienPhanCong chon = (KyThuatVienPhanCong) JOptionPane.showInputDialog(this,
+                "Chọn người kiểm tra cho " + ma, "Phân công kiểm tra", JOptionPane.QUESTION_MESSAGE, null, nhanSu.toArray(), null);
+        if (chon == null) return;
+        try {
+            phieuDAO.giaoKiemTra(tk, phieuDAO.timTheoMa(tk, ma), chon.getTaiKhoan().getTenDangNhap());
+            lblDanhSach.setText("Đã giao kiểm tra: " + phieuDAO.docPhanCongKiemTra(tk, ma));
+        } catch (IllegalArgumentException | IllegalStateException e) { lblDanhSach.setText(e.getMessage()); }
+    }
+
     public boolean choPhepRoiManHinh() {
         return !daThayDoi || JOptionPane.showConfirmDialog(this, "Phiếu đang nhập chưa lưu. Bỏ nội dung đang nhập?",
                 "Thay đổi chưa lưu", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION;
@@ -126,6 +154,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
         JPanel nut = nen(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         nut.add(nut("Xem chi tiết", false, this::xemChiTiet));
         nut.add(nut("Xem lịch sử xe", false, this::xemLichSu));
+        nut.add(nut("Phân công kiểm tra", false, this::giaoKiemTra));
         ds.add(nut, BorderLayout.SOUTH);
         tblDanhSach.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "CHI_TIET");
         tblDanhSach.getActionMap().put("CHI_TIET", new AbstractAction() {
@@ -304,7 +333,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
                     ma -> xeDAO.demTheoKhach(kiemTraPhien(), ma));
             moHoSoDialog("Hồ sơ khách hàng · lưu riêng với phiếu tiếp nhận", pnl, pnl::choPhepRoiManHinh);
         } else {
-            XePanel pnl = new XePanel(xeDAO, khachHangDAO, phien, phieuDAO);
+            XePanel pnl = new XePanel(xeDAO, khachHangDAO, phien, phieuDAO, tienDoDAO);
             moHoSoDialog("Hồ sơ phương tiện · lưu riêng với phiếu tiếp nhận", pnl, pnl::choPhepRoiManHinh);
         }
         traHoSo();
@@ -329,13 +358,22 @@ public final class PhieuTiepNhanPanel extends JPanel {
 
     private void locDanhSach() {
         TaiKhoan tk = kiemTraPhien();
-        modelDanhSach.setRowCount(0);
-        TrangThaiTiepNhan trangThai = cboTrangThai.getSelectedIndex() == 0 ? null : TrangThaiTiepNhan.CHO_KIEM_TRA;
-        for (PhieuTiepNhan phieu : phieuDAO.timKiem(tk, txtLoc.getText(), trangThai)) {
-            modelDanhSach.addRow(new Object[] {phieu.getMaPhieu(), phieu.getBienSo(), phieu.getTenKhach(),
-                    phieu.getThoiGianNhan().format(DINH_DANG_NGAY), phieu.getYeuCau(), phieu.getTrangThai().getTenHienThi()});
+        try {
+            java.util.List<Object[]> cacDong = new java.util.ArrayList<>();
+            TrangThaiTiepNhan trangThai = tienDoDAO == null && cboTrangThai.getSelectedIndex() > 0 ? TrangThaiTiepNhan.CHO_KIEM_TRA : null;
+            for (PhieuTiepNhan phieu : phieuDAO.timKiem(tk, txtLoc.getText(), trangThai)) {
+                String hienThi = tienDoDAO == null ? phieu.getTrangThai().getTenHienThi() : tienDoDAO.trangThaiPhieu(phien.get(), phieu.getMaPhieu());
+                if (tienDoDAO != null && cboTrangThai.getSelectedIndex() > 0 && !hienThi.equals(cboTrangThai.getSelectedItem())) continue;
+                cacDong.add(new Object[] {phieu.getMaPhieu(), phieu.getBienSo(), phieu.getTenKhach(),
+                        phieu.getThoiGianNhan().format(DINH_DANG_NGAY), phieu.getYeuCau(), hienThi});
+            }
+            // Chỉ thay bảng sau khi đã đọc đủ trạng thái; lỗi nguồn không để lại danh sách bị nạp dở.
+            modelDanhSach.setRowCount(0);
+            for (Object[] dong : cacDong) modelDanhSach.addRow(dong);
+            lblDanhSach.setText(modelDanhSach.getRowCount() + " phiếu · Dữ liệu trong bộ nhớ, chưa lưu lâu dài.");
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
+            lblDanhSach.setText("Chưa cập nhật được danh sách: " + e.getMessage());
         }
-        lblDanhSach.setText(modelDanhSach.getRowCount() + " phiếu · Dữ liệu trong bộ nhớ, chưa lưu lâu dài.");
     }
 
     private void luuPhieu() {
@@ -378,7 +416,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
 
     private void xemLichSu() {
         kiemTraPhien(); int dong = dongDangChon(); if (dong < 0) return;
-        XePanel pnl = new XePanel(xeDAO, khachHangDAO, phien, phieuDAO);
+        XePanel pnl = new XePanel(xeDAO, khachHangDAO, phien, phieuDAO, tienDoDAO);
         pnl.moLichSuTheoBienSo((String) modelDanhSach.getValueAt(dong, 1));
         moHoSoDialog("Lịch sử xe · tiếp nhận trong phiên, sửa chữa chưa kết nối", pnl, pnl::choPhepRoiManHinh);
     }
