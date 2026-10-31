@@ -17,6 +17,8 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 import dao.KhachHangDAO;
+import dao.BaoGiaDAO;
+import dao.BaoCaoKiemTraDAO;
 import dao.PhieuTiepNhanDAO;
 import dao.PhuTungSuDungDAO;
 import dao.TrangChuKyThuatDAO;
@@ -33,6 +35,7 @@ import ui.component.WindowMouseHandler;
 import ui.component.WindowTitlePanel;
 import ui.screen.BaoCaoKiemTraPanel;
 import ui.screen.KhachHangPanel;
+import ui.screen.BaoGiaPanel;
 import ui.screen.KhongGianKyThuatPanel;
 import ui.screen.NhanVienPanel;
 import ui.screen.PhieuTiepNhanPanel;
@@ -65,6 +68,8 @@ public final class MainFrame extends JFrame implements ActionListener {
     private KhachHangPanel pnlKhachHang;
     private XePanel pnlXe;
     private PhieuTiepNhanPanel pnlTiepNhan;
+    private BaoGiaPanel pnlBaoGia;
+    private BaoGiaDAO baoGiaDAO;
     private TrangChuTiepNhanPanel pnlTrangChuTiepNhan;
     private TiepNhanNavigationPanel pnlDieuHuongTiepNhan;
     private String mucTiepNhanDangMo = "Tổng quan tiếp nhận";
@@ -290,6 +295,9 @@ public final class MainFrame extends JFrame implements ActionListener {
         khachHangDAO = KhachHangDAO.taoDuLieuMau();
         xeDAO = XeDAO.taoDuLieuMau(khachHangDAO, getTaiKhoanDangNhap());
         phieuTiepNhanDAO = new PhieuTiepNhanDAO(khachHangDAO, xeDAO);
+        BaoCaoKiemTraDAO nguonKiemTra = new BaoCaoKiemTraDAO();
+        baoGiaDAO = new BaoGiaDAO(phieuTiepNhanDAO,
+                () -> nguonKiemTra.layBaoCaoHoanTatChoBaoGia(getTaiKhoanDangNhap()));
 
         pnlDieuHuongTiepNhan =
                 new TiepNhanNavigationPanel(this::dieuHuongTiepNhan);
@@ -313,6 +321,7 @@ public final class MainFrame extends JFrame implements ActionListener {
                 || "Khách hàng".equals(muc)
                 || "Phương tiện".equals(muc)
                 || "Phiếu tiếp nhận".equals(muc)
+                || "Báo giá".equals(muc)
                 || "Lệnh sửa chữa".equals(muc);
 
         if (daTrienKhai && !muc.equals(mucTiepNhanDangMo)) {
@@ -333,6 +342,7 @@ public final class MainFrame extends JFrame implements ActionListener {
                     && pnlTiepNhan != null) {
                 pnlTiepNhan.moDanhSach();
             }
+            if ("Báo giá".equals(mucTiepNhanDangMo) && pnlBaoGia != null) pnlBaoGia.moDanhSach();
         }
 
         if ("Khách hàng".equals(muc)) {
@@ -363,6 +373,13 @@ public final class MainFrame extends JFrame implements ActionListener {
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
             setStatus("Tiếp nhận · Phiếu lưu trong bộ nhớ của phiên");
+
+        } else if ("Báo giá".equals(muc)) {
+            if (pnlBaoGia == null) pnlBaoGia = new BaoGiaPanel(baoGiaDAO, this::getTaiKhoanDangNhap);
+            setScreen(pnlBaoGia);
+            mucTiepNhanDangMo = muc;
+            pnlDieuHuongTiepNhan.chonMuc(muc);
+            setStatus("Báo giá · Lưu trong bộ nhớ của phiên");
 
         } else if ("Phương tiện".equals(muc)) {
             if (pnlXe == null) {
@@ -398,6 +415,7 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** @return true nếu được rời màn hình Tiếp nhận hiện tại */
     private boolean choPhepRoiTiepNhan() {
+        if ("Báo giá".equals(mucTiepNhanDangMo) && pnlBaoGia != null) return pnlBaoGia.choPhepRoiManHinh();
         if ("Khách hàng".equals(mucTiepNhanDangMo)
                 && pnlKhachHang != null) {
             return pnlKhachHang.choPhepRoiManHinh();
