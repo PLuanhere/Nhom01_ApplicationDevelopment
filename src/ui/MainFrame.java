@@ -7,6 +7,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.util.Objects;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -20,6 +21,7 @@ import dao.KhachHangDAO;
 import dao.BaoGiaDAO;
 import dao.BaoCaoKiemTraDAO;
 import dao.PhieuTiepNhanDAO;
+import dao.PhieuSuaChuaDAO;
 import dao.PhuTungSuDungDAO;
 import dao.TrangChuKyThuatDAO;
 import dao.XeDAO;
@@ -36,6 +38,7 @@ import ui.component.WindowTitlePanel;
 import ui.screen.BaoCaoKiemTraPanel;
 import ui.screen.KhachHangPanel;
 import ui.screen.BaoGiaPanel;
+import ui.screen.LenhSuaChuaTiepNhanPanel;
 import ui.screen.KhongGianKyThuatPanel;
 import ui.screen.NhanVienPanel;
 import ui.screen.PhieuTiepNhanPanel;
@@ -70,6 +73,8 @@ public final class MainFrame extends JFrame implements ActionListener {
     private PhieuTiepNhanPanel pnlTiepNhan;
     private BaoGiaPanel pnlBaoGia;
     private BaoGiaDAO baoGiaDAO;
+    private PhieuSuaChuaDAO phieuSuaChuaDAO;
+    private LenhSuaChuaTiepNhanPanel pnlLenhTiepNhan;
     private TrangChuTiepNhanPanel pnlTrangChuTiepNhan;
     private TiepNhanNavigationPanel pnlDieuHuongTiepNhan;
     private String mucTiepNhanDangMo = "Tổng quan tiếp nhận";
@@ -298,6 +303,8 @@ public final class MainFrame extends JFrame implements ActionListener {
         BaoCaoKiemTraDAO nguonKiemTra = new BaoCaoKiemTraDAO();
         baoGiaDAO = new BaoGiaDAO(phieuTiepNhanDAO,
                 () -> nguonKiemTra.layBaoCaoHoanTatChoBaoGia(getTaiKhoanDangNhap()));
+        // Chưa có liên kết nhân viên/tài khoản: không tự ghép theo tên hoặc cấp quyền giả.
+        phieuSuaChuaDAO = new PhieuSuaChuaDAO(baoGiaDAO, List::of);
 
         pnlDieuHuongTiepNhan =
                 new TiepNhanNavigationPanel(this::dieuHuongTiepNhan);
@@ -343,6 +350,7 @@ public final class MainFrame extends JFrame implements ActionListener {
                 pnlTiepNhan.moDanhSach();
             }
             if ("Báo giá".equals(mucTiepNhanDangMo) && pnlBaoGia != null) pnlBaoGia.moDanhSach();
+            if ("Lệnh sửa chữa".equals(mucTiepNhanDangMo) && pnlLenhTiepNhan != null) pnlLenhTiepNhan.moDanhSach();
         }
 
         if ("Khách hàng".equals(muc)) {
@@ -403,7 +411,9 @@ public final class MainFrame extends JFrame implements ActionListener {
             setStatus("Tổng quan tiếp nhận · Dữ liệu minh họa, chưa nối nghiệp vụ");
 
         } else if ("Lệnh sửa chữa".equals(muc)) {
-            moDanhSachSuaChua();
+            if (pnlLenhTiepNhan == null) pnlLenhTiepNhan = new LenhSuaChuaTiepNhanPanel(phieuSuaChuaDAO, this::getTaiKhoanDangNhap);
+            setScreen(pnlLenhTiepNhan);
+            setStatus("Lệnh sửa chữa · Lưu trong bộ nhớ của phiên");
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
 
@@ -415,6 +425,7 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** @return true nếu được rời màn hình Tiếp nhận hiện tại */
     private boolean choPhepRoiTiepNhan() {
+        if ("Lệnh sửa chữa".equals(mucTiepNhanDangMo) && pnlLenhTiepNhan != null) return pnlLenhTiepNhan.choPhepRoiManHinh();
         if ("Báo giá".equals(mucTiepNhanDangMo) && pnlBaoGia != null) return pnlBaoGia.choPhepRoiManHinh();
         if ("Khách hàng".equals(mucTiepNhanDangMo)
                 && pnlKhachHang != null) {
@@ -433,6 +444,10 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Mở màn sửa chữa hiện có và giữ dữ liệu trong phiên. */
     private void moDanhSachSuaChua() {
+        if (getTaiKhoanDangNhap().getVaiTro() == VaiTro.NHAN_VIEN_TIEP_NHAN) {
+            dieuHuongTiepNhan("Lệnh sửa chữa");
+            return;
+        }
         if (pnlSuaChua == null) {
             pnlSuaChua = new PhieuSuaChuaPanel(
                     this, getTaiKhoanDangNhap());
