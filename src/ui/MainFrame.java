@@ -17,6 +17,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 import dao.XeDAO;
+import dao.PhieuTiepNhanDAO;
 import ui.screen.XePanel;
 import ui.screen.PhieuTiepNhanPanel;
 import dao.KhachHangDAO;
@@ -64,6 +65,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     /** Các màn hình tiếp nhận cùng dùng một nguồn hồ sơ trong phiên. */
     private KhachHangDAO khachHangDAO;
     private XeDAO xeDAO;
+    private PhieuTiepNhanDAO phieuTiepNhanDAO;
     private String mucTiepNhanDangMo = "Tổng quan tiếp nhận";
     private TrangChuTiepNhanPanel pnlTrangChuTiepNhan;
     private TiepNhanNavigationPanel pnlDieuHuongTiepNhan;
@@ -230,6 +232,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     private void khoiTaoTrangChuTiepNhan() {
         khachHangDAO = KhachHangDAO.taoDuLieuMau();
         xeDAO = XeDAO.taoDuLieuMau(khachHangDAO, getTaiKhoanDangNhap());
+        phieuTiepNhanDAO = new PhieuTiepNhanDAO(khachHangDAO, xeDAO);
         pnlDieuHuongTiepNhan = new TiepNhanNavigationPanel(this::dieuHuongTiepNhan);
         pnlTrangChuTiepNhan = new TrangChuTiepNhanPanel(this::dieuHuongTiepNhan);
         setSidebarContent(pnlDieuHuongTiepNhan);
@@ -262,18 +265,18 @@ public final class MainFrame extends JFrame implements ActionListener {
             pnlDieuHuongTiepNhan.chonMuc(muc);
             setStatus("Khách hàng · Dữ liệu trong bộ nhớ, chưa lưu lâu dài");
         } else if ("Phiếu tiếp nhận".equals(muc)) {
-            if (pnlTiepNhan == null) pnlTiepNhan = new PhieuTiepNhanPanel(khachHangDAO, xeDAO, this::getTaiKhoanDangNhap);
+            if (pnlTiepNhan == null) pnlTiepNhan = new PhieuTiepNhanPanel(khachHangDAO, xeDAO, phieuTiepNhanDAO, this::getTaiKhoanDangNhap);
             setScreen(pnlTiepNhan);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
-            setStatus("UI tiếp nhận · Danh sách mẫu, chưa lưu phiếu");
+            setStatus("Tiếp nhận · Phiếu lưu trong bộ nhớ của phiên");
         } else if ("Phương tiện".equals(muc)) {
-            if (pnlXe == null) pnlXe = new XePanel(xeDAO, khachHangDAO, this::getTaiKhoanDangNhap);
+            if (pnlXe == null) pnlXe = new XePanel(xeDAO, khachHangDAO, this::getTaiKhoanDangNhap, phieuTiepNhanDAO);
             if (!"Phương tiện".equals(mucTiepNhanDangMo)) pnlXe.moDanhSach();
             setScreen(pnlXe);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
-            setStatus("Phương tiện · Dữ liệu trong bộ nhớ, lịch sử chưa kết nối");
+            setStatus("Phương tiện · Tiếp nhận trong phiên, sửa chữa chưa kết nối");
         } else if ("Tổng quan tiếp nhận".equals(muc)) {
             setScreen(pnlTrangChuTiepNhan);
             mucTiepNhanDangMo = muc;
