@@ -63,6 +63,18 @@ public final class BanGiaoXePanel extends JPanel {
     }
     public void moDanhSach() { kiemTraPhien(); daThayDoi = false; locDanhSach(); boCuc.show(pnlThe, "DANH_SACH"); }
 
+    /** Dashboard chỉ truyền mã; mở lại luôn đọc lệnh và căn cứ mới nhất tại DAO. */
+    public void moTheoLenh(String maLenh) {
+        kiemTraPhien();
+        try { moForm(maLenh); }
+        catch (IllegalArgumentException | IllegalStateException | SecurityException e) { lblDanhSach.setText(e.getMessage()); }
+    }
+
+    public void moDanhSachChoGiao() {
+        kiemTraPhien(); txtTim.setText(""); txtTuNgay.setText(""); txtDenNgay.setText("");
+        cboTrangThai.setSelectedItem("Chờ bàn giao"); moDanhSach();
+    }
+
     private JPanel taoDanhSach() {
         JPanel pnl = nen(new BorderLayout(0, 16)), dau = nen(new BorderLayout(0, 16));
         dau.add(tieuDe(nhan("Bàn giao xe", true), "Tiếp nhận giao xe sau khi có xác nhận thu tiền hoặc phê duyệt ngoại lệ.", null), BorderLayout.NORTH);

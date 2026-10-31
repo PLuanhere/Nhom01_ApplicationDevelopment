@@ -14,9 +14,24 @@ public final class TrangChuTiepNhanDAO {
     private final BaoGiaDAO baoGia;
     private final PhieuSuaChuaDAO suaChua;
     private PhuTungSuDungDAO phuTung;
+    private BanGiaoXeDAO banGiao;
 
     public TrangChuTiepNhanDAO(PhieuTiepNhanDAO tiepNhan, BaoCaoKiemTraDAO kiemTra, BaoGiaDAO baoGia, PhieuSuaChuaDAO suaChua) {
         this.tiepNhan = tiepNhan; this.kiemTra = kiemTra; this.baoGia = baoGia; this.suaChua = suaChua;
+        banGiao = new BanGiaoXeDAO(suaChua, ma -> null);
+    }
+
+    public TrangChuTiepNhanDAO(PhieuTiepNhanDAO tiepNhan, BaoCaoKiemTraDAO kiemTra, BaoGiaDAO baoGia,
+            PhieuSuaChuaDAO suaChua, PhuTungSuDungDAO phuTung, BanGiaoXeDAO banGiao) {
+        this(tiepNhan, kiemTra, baoGia, suaChua, phuTung);
+        this.banGiao = java.util.Objects.requireNonNull(banGiao);
+    }
+
+    /** Chỉ lấy lệnh chưa giao có đủ căn cứ hiện tại; lỗi nguồn phải báo ra, không coi là không có xe. */
+    public List<PhieuSuaChua> layChoBanGiao(TaiKhoan tk) {
+        List<PhieuSuaChua> ds = banGiao.timKiem(tk, "", TrangThaiBanGiao.CHO_GIAO, null, null);
+        ds.sort((a, b) -> a.getThoiDiemHoanTat().compareTo(b.getThoiDiemHoanTat()));
+        return ds;
     }
 
     public TrangChuTiepNhanDAO(PhieuTiepNhanDAO tiepNhan, BaoCaoKiemTraDAO kiemTra, BaoGiaDAO baoGia,
@@ -78,7 +93,10 @@ public final class TrangChuTiepNhanDAO {
         for (BaoGia bg : baoGia.timKiem(tk, "", null)) {
             if (bg.getBaoCao().getPhieu().getMaPhieu().equals(maPhieu)) {
                 for (PhieuSuaChua lenh : suaChua.timKiem(tk, "", "Tất cả")) {
-                    if (lenh.getMaBaoGia().equals(bg.getMaBaoGia())) return lenh.getTrangThai().getTenHienThi();
+                    if (lenh.getMaBaoGia().equals(bg.getMaBaoGia())) {
+                        if (lenh.getTrangThai() == TrangThaiSuaChua.HOAN_THANH) return banGiao.trangThai(tk, lenh.getMaPhieu()).getTenHienThi();
+                        return lenh.getTrangThai().getTenHienThi();
+                    }
                 }
                 if (moiNhat == null || bg.getPhienBan() > moiNhat.getPhienBan()) moiNhat = bg;
             }

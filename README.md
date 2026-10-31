@@ -89,6 +89,8 @@ Tiếp nhận mở **Bàn giao xe** để xem các lệnh đã hoàn thành và 
 
 Khi được cấp nguồn căn cứ hợp lệ, người giao đối chiếu kết quả sửa chữa, nhập người nhận, giờ giao thực tế, tình trạng xe, tài sản đã trả và hình thức khách xác nhận. Bấm xác nhận mở hộp thoại xem lại; DAO đọc lại căn cứ lúc hoàn tất. Chứng từ đã lưu chỉ đọc, giữ người/thời điểm thực giao và căn cứ tài chính tại lúc giao. Bộ lọc ngày dùng giờ thực giao cho xe đã giao, ngày hoàn tất sửa chữa cho xe còn chờ.
 
+Dashboard **Chờ bàn giao** chỉ tính lệnh chưa giao đã đủ căn cứ. Bấm mã lệnh trong **Bàn giao cần thực hiện** để mở đúng xe; **Xe chờ bàn giao** mở danh sách đã lọc. Trở về tổng quan hoặc bấm **Làm mới tổng quan** để đọc lại số liệu. Lỗi nguồn hiển thị số chưa xác định, không coi là 0 xe. Danh sách phiếu tiếp nhận và lịch sử tiếp nhận của xe phản ánh tiếp các trạng thái chờ xác nhận thanh toán, chờ bàn giao và đã bàn giao.
+
 ### Tài khoản có sẵn
 
 | Tên đăng nhập | Mật khẩu | Vai trò |

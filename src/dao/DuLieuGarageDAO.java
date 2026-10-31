@@ -14,7 +14,7 @@ public final class DuLieuGarageDAO {
     private final PhuTungSuDungDAO phuTungDAO = new PhuTungSuDungDAO(false);
     private final BaoGiaDAO baoGiaDAO = new BaoGiaDAO(tiepNhanDAO, this::baoCaoHoanTat, phuTungDAO);
     private final PhieuSuaChuaDAO suaChuaDAO = new PhieuSuaChuaDAO(baoGiaDAO, this::layLienKetKyThuat);
-    private final TrangChuTiepNhanDAO trangChuDAO = new TrangChuTiepNhanDAO(tiepNhanDAO, kiemTraDAO, baoGiaDAO, suaChuaDAO, phuTungDAO);
+    private final TrangChuTiepNhanDAO trangChuDAO;
 
     private final BanGiaoXeDAO banGiaoDAO;
 
@@ -24,6 +24,7 @@ public final class DuLieuGarageDAO {
     public DuLieuGarageDAO(java.util.function.Function<String, entity.CanCuBanGiao> nguonCanCu) {
         phuTungDAO.noiNguonLenh(suaChuaDAO);
         banGiaoDAO = new BanGiaoXeDAO(suaChuaDAO, nguonCanCu);
+        trangChuDAO = new TrangChuTiepNhanDAO(tiepNhanDAO, kiemTraDAO, baoGiaDAO, suaChuaDAO, phuTungDAO, banGiaoDAO);
     }
 
     /** Chỉ đọc nội bộ giữa các DAO; quyền của UI được kiểm tra tại từng thao tác nghiệp vụ. */
