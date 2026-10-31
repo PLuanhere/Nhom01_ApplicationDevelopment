@@ -24,7 +24,7 @@ public final class TiepNhanNavigationPanel extends JPanel {
         danhSach.setOpaque(false);
         String[] ten = {"Tổng quan tiếp nhận", "Phiếu tiếp nhận", "Khách hàng", "Phương tiện",
                 "Báo giá", "Lệnh sửa chữa", "Bàn giao xe"};
-        String[] icon = {"reception-home", "clipboard", "users", "car", "reception-file",
+        String[] icon = {"reception-home", "clipboard", "users", "reception-car", "reception-file",
                 "reception-wrench", "reception-key"};
         ButtonGroup nhom = new ButtonGroup();
         for (int i = 0; i < ten.length; i++) {

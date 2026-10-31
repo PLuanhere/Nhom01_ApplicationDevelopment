@@ -17,6 +17,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 import dao.KhachHangDAO;
+import dao.PhieuTiepNhanDAO;
 import dao.PhuTungSuDungDAO;
 import dao.TrangChuKyThuatDAO;
 import dao.XeDAO;
@@ -60,6 +61,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     // Phân hệ Tiếp nhận, cùng dùng một nguồn hồ sơ trong phiên.
     private KhachHangDAO khachHangDAO;
     private XeDAO xeDAO;
+    private PhieuTiepNhanDAO phieuTiepNhanDAO;
     private KhachHangPanel pnlKhachHang;
     private XePanel pnlXe;
     private PhieuTiepNhanPanel pnlTiepNhan;
@@ -287,6 +289,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     private void khoiTaoTrangChuTiepNhan() {
         khachHangDAO = KhachHangDAO.taoDuLieuMau();
         xeDAO = XeDAO.taoDuLieuMau(khachHangDAO, getTaiKhoanDangNhap());
+        phieuTiepNhanDAO = new PhieuTiepNhanDAO(khachHangDAO, xeDAO);
 
         pnlDieuHuongTiepNhan =
                 new TiepNhanNavigationPanel(this::dieuHuongTiepNhan);
@@ -353,18 +356,18 @@ public final class MainFrame extends JFrame implements ActionListener {
         } else if ("Phiếu tiếp nhận".equals(muc)) {
             if (pnlTiepNhan == null) {
                 pnlTiepNhan = new PhieuTiepNhanPanel(
-                        khachHangDAO, xeDAO, this::getTaiKhoanDangNhap);
+                        khachHangDAO, xeDAO, phieuTiepNhanDAO, this::getTaiKhoanDangNhap);
             }
 
             setScreen(pnlTiepNhan);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
-            setStatus("UI tiếp nhận · Danh sách mẫu, chưa lưu phiếu");
+            setStatus("Tiếp nhận · Phiếu lưu trong bộ nhớ của phiên");
 
         } else if ("Phương tiện".equals(muc)) {
             if (pnlXe == null) {
                 pnlXe = new XePanel(
-                        xeDAO, khachHangDAO, this::getTaiKhoanDangNhap);
+                        xeDAO, khachHangDAO, this::getTaiKhoanDangNhap, phieuTiepNhanDAO);
             }
 
             if (!"Phương tiện".equals(mucTiepNhanDangMo)) {
@@ -374,7 +377,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             setScreen(pnlXe);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
-            setStatus("Phương tiện · Dữ liệu trong bộ nhớ, lịch sử chưa kết nối");
+            setStatus("Phương tiện · Tiếp nhận trong phiên, sửa chữa chưa kết nối");
 
         } else if ("Tổng quan tiếp nhận".equals(muc)) {
             setScreen(pnlTrangChuTiepNhan);

@@ -17,34 +17,39 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.text.JTextComponent;
 import dao.KhachHangDAO;
 import dao.XeDAO;
+import dao.PhieuTiepNhanDAO;
+import entity.PhieuTiepNhan;
+import entity.TrangThaiTiepNhan;
+import java.util.UUID;
 import entity.KhachHang;
 import entity.TaiKhoan;
 import entity.VaiTro;
 import entity.Xe;
 import ui.component.UiTheme;
 
-/** UI tiếp nhận: duyệt luồng nhập/đối chiếu, chưa lưu phiếu hay giao việc cho kỹ thuật. */
+/** Nhập, đối chiếu và lưu phiếu vào kho chung trong phiên tiếp nhận. */
 public final class PhieuTiepNhanPanel extends JPanel {
     private static final long serialVersionUID = 1L;
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter
             .ofPattern("dd/MM/uuuu HH:mm", Locale.ROOT).withResolverStyle(ResolverStyle.STRICT);
     private final KhachHangDAO khachHangDAO;
     private final XeDAO xeDAO;
+    private final PhieuTiepNhanDAO phieuDAO;
+    /** Nội dung đã đọc lại với khách, vô hiệu khi quay về chỉnh sửa. */
+    private Xe xeDoiChieu;
+    private KhachHang khachDoiChieu;
+    private long kmDoiChieu;
+    private LocalDateTime ngayDoiChieu;
+    private String maThaoTac;
     private final Supplier<TaiKhoan> phien;
     private final CardLayout boCuc = new CardLayout();
     private final JPanel pnlThe = new JPanel(boCuc);
     private final JTextField txtLoc = new JTextField();
     private final JComboBox<String> cboTrangThai = new JComboBox<>(new String[] {
-            "Tất cả trạng thái", "Chờ kiểm tra", "Đang kiểm tra", "Đã lập báo giá"});
+            "Tất cả trạng thái", "Chờ kiểm tra"});
     private final DefaultTableModel modelDanhSach = model("Mã phiếu", "Biển số", "Khách hàng", "Ngày nhận", "Yêu cầu", "Trạng thái");
     private final JTable tblDanhSach = bang(modelDanhSach);
     private final JLabel lblDanhSach = nhan(" ", false);
-    /** Chỉ là fixture duyệt danh sách; không phải kho phiếu nghiệp vụ. */
-    private final String[][] phieuMau = {
-        {"TN-2026-0112", "51F-234.56", "Lê Văn Cường", "27/10/2026 09:15", "Kiểm tra phanh", "Chờ kiểm tra"},
-        {"TN-2026-0109", "51G-678.90", "Trần Thị Bình", "27/10/2026 08:40", "Bảo dưỡng", "Đang kiểm tra"},
-        {"TN-2026-0108", "51H-246.80", "Nguyễn Văn An", "27/10/2026 08:00", "Thay dầu", "Đã lập báo giá"}
-    };
     private final JTextField txtTraCuu = new JTextField();
     private final DefaultTableModel modelHoSo = model("Mã xe", "Biển số", "Mã khách", "Khách hàng", "SĐT");
     private final JTable tblHoSo = bang(modelHoSo);
@@ -67,7 +72,13 @@ public final class PhieuTiepNhanPanel extends JPanel {
 
     /** Hai kho dùng chung với màn khách/xe; mọi thao tác UI gọi trên EDT. */
     public PhieuTiepNhanPanel(KhachHangDAO khachHangDAO, XeDAO xeDAO, Supplier<TaiKhoan> phien) {
+        this(khachHangDAO, xeDAO, new PhieuTiepNhanDAO(khachHangDAO, xeDAO), phien);
+    }
+
+    public PhieuTiepNhanPanel(KhachHangDAO khachHangDAO, XeDAO xeDAO,
+            PhieuTiepNhanDAO phieuDAO, Supplier<TaiKhoan> phien) {
         super(new BorderLayout());
+        this.phieuDAO = Objects.requireNonNull(phieuDAO);
         this.khachHangDAO = Objects.requireNonNull(khachHangDAO);
         this.xeDAO = Objects.requireNonNull(xeDAO);
         this.phien = Objects.requireNonNull(phien);
@@ -110,10 +121,10 @@ public final class PhieuTiepNhanPanel extends JPanel {
         loc.add(tacVu, BorderLayout.EAST);
         dau.add(loc); pnl.add(dau, BorderLayout.NORTH);
         JPanel ds = khung(new BorderLayout(0, 12));
-        ds.add(nhan("Danh sách phiếu tiếp nhận · DỮ LIỆU MINH HỌA", true), BorderLayout.NORTH);
+        ds.add(nhan("Danh sách phiếu tiếp nhận · Dữ liệu trong bộ nhớ", true), BorderLayout.NORTH);
         ds.add(cuonBang(tblDanhSach));
         JPanel nut = nen(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        nut.add(nut("Xem chi tiết mẫu", false, this::xemChiTiet));
+        nut.add(nut("Xem chi tiết", false, this::xemChiTiet));
         nut.add(nut("Xem lịch sử xe", false, this::xemLichSu));
         ds.add(nut, BorderLayout.SOUTH);
         tblDanhSach.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "CHI_TIET");
@@ -173,7 +184,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
         JPanel pnl = nen(new BorderLayout(0, 16));
         pnl.add(tieuDe("Đối chiếu phiếu tiếp nhận", "Đọc lại hiện trạng và yêu cầu cùng khách trước khi xác nhận.",
                 nut("Quay lại chỉnh sửa", false, () -> {
-                    chkXacNhan.setSelected(false); boCuc.show(pnlThe, "FORM");
+                    chkXacNhan.setSelected(false); xeDoiChieu = null; boCuc.show(pnlThe, "FORM");
                 })), BorderLayout.NORTH);
         JPanel hang = nen(new GridLayout(1, 2, 16, 0));
         JPanel thongTin = khung(new BorderLayout(0, 12));
@@ -193,14 +204,11 @@ public final class PhieuTiepNhanPanel extends JPanel {
             lblXacNhan.setText(chkXacNhan.isSelected() ? "Đã chọn xác nhận · chưa lưu phiếu." : "Chưa xác nhận · chưa lưu phiếu.");
         });
         chu.add(chkXacNhan); chu.add(lblXacNhan);
-        JLabel gioiHan = nhan("<html>Bản UI: chưa lưu phiếu hoặc chuyển kỹ thuật.<br>Dữ liệu đang nhập chỉ dùng để duyệt màn hình.</html>", false);
+        JLabel gioiHan = nhan("<html>Phiếu lưu trong bộ nhớ của phiên.<br>Chưa lưu SQL hoặc phân công kỹ thuật.</html>", false);
         chu.add(gioiHan); xacNhan.add(chu, BorderLayout.NORTH);
         btnHoanTat.setEnabled(false);
         btnHoanTat.setPreferredSize(new Dimension(0, 40));
-        btnHoanTat.addActionListener(e -> {
-            kiemTraPhien();
-            if (chkXacNhan.isSelected()) lblXacNhan.setText("Chưa lưu: chức năng lưu sẽ có ở nhánh logic.");
-        });
+        btnHoanTat.addActionListener(e -> luuPhieu());
         xacNhan.add(btnHoanTat, BorderLayout.SOUTH); hang.add(xacNhan);
         hang.setPreferredSize(new Dimension(600, 440));
         JScrollPane cuon = cuonNoiDung(hang);
@@ -219,6 +227,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
 
     private void moPhieuMoi() {
         kiemTraPhien(); dangNap = true;
+        maThaoTac = UUID.randomUUID().toString(); xeDoiChieu = null;
         maXeDaChon = null; txtKhach.setText(""); txtXe.setText(""); txtKm.setText("");
         txtNgay.setText(LocalDateTime.now().format(DINH_DANG_NGAY));
         txtTinhTrang.setText(""); txtTaiSan.setText(""); txtYeuCau.setText("");
@@ -274,6 +283,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
             try { ngay = LocalDateTime.parse(txtNgay.getText().strip(), DINH_DANG_NGAY); }
             catch (DateTimeParseException e) { throw new IllegalArgumentException("Thời gian nhận không hợp lệ; nhập dd/MM/yyyy HH:mm."); }
             if (txtTinhTrang.getText().isBlank() || txtYeuCau.getText().isBlank()) throw new IllegalArgumentException("Cần nhập tình trạng ban đầu và yêu cầu của khách.");
+            xeDoiChieu = xe; khachDoiChieu = new KhachHang(kh); kmDoiChieu = km; ngayDoiChieu = ngay;
             txtDoiChieu.setText("Khách hàng: " + kh.getHoTen() + " · " + kh.getSoDienThoai()
                     + "\n\nPhương tiện: " + xe.getBienSo() + " · " + xe.getHangXe() + " " + xe.getModel()
                     + "\n\nKilomet khi nhận: " + km + " km\n\nThời gian nhận: " + ngay.format(DINH_DANG_NGAY)
@@ -294,7 +304,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
                     ma -> xeDAO.demTheoKhach(kiemTraPhien(), ma));
             moHoSoDialog("Hồ sơ khách hàng · lưu riêng với phiếu tiếp nhận", pnl, pnl::choPhepRoiManHinh);
         } else {
-            XePanel pnl = new XePanel(xeDAO, khachHangDAO, phien);
+            XePanel pnl = new XePanel(xeDAO, khachHangDAO, phien, phieuDAO);
             moHoSoDialog("Hồ sơ phương tiện · lưu riêng với phiếu tiếp nhận", pnl, pnl::choPhepRoiManHinh);
         }
         traHoSo();
@@ -318,34 +328,59 @@ public final class PhieuTiepNhanPanel extends JPanel {
     }
 
     private void locDanhSach() {
-        kiemTraPhien();
-        String tu = txtLoc.getText().strip().toLowerCase(Locale.ROOT); modelDanhSach.setRowCount(0);
-        for (String[] dong : phieuMau) {
-            boolean dungTrangThai = cboTrangThai.getSelectedIndex() == 0 || dong[5].equals(cboTrangThai.getSelectedItem());
-            if (dungTrangThai && String.join(" ", dong).toLowerCase(Locale.ROOT).contains(tu)) modelDanhSach.addRow(dong);
+        TaiKhoan tk = kiemTraPhien();
+        modelDanhSach.setRowCount(0);
+        TrangThaiTiepNhan trangThai = cboTrangThai.getSelectedIndex() == 0 ? null : TrangThaiTiepNhan.CHO_KIEM_TRA;
+        for (PhieuTiepNhan phieu : phieuDAO.timKiem(tk, txtLoc.getText(), trangThai)) {
+            modelDanhSach.addRow(new Object[] {phieu.getMaPhieu(), phieu.getBienSo(), phieu.getTenKhach(),
+                    phieu.getThoiGianNhan().format(DINH_DANG_NGAY), phieu.getYeuCau(), phieu.getTrangThai().getTenHienThi()});
         }
-        lblDanhSach.setText(modelDanhSach.getRowCount() + " phiếu minh họa · Chưa có chức năng lưu phiếu.");
+        lblDanhSach.setText(modelDanhSach.getRowCount() + " phiếu · Dữ liệu trong bộ nhớ, chưa lưu lâu dài.");
+    }
+
+    private void luuPhieu() {
+        if (!btnHoanTat.isEnabled()) return;
+        btnHoanTat.setEnabled(false);
+        try {
+            if (xeDoiChieu == null) throw new IllegalStateException("Hãy đối chiếu lại nội dung với khách.");
+            PhieuTiepNhan daLuu = phieuDAO.luu(kiemTraPhien(), maThaoTac, xeDoiChieu, khachDoiChieu,
+                    kmDoiChieu, ngayDoiChieu, txtTinhTrang.getText(), txtTaiSan.getText(), txtYeuCau.getText(), chkXacNhan.isSelected());
+            txtLoc.setText(""); cboTrangThai.setSelectedIndex(0);
+            moDanhSach();
+            lblDanhSach.setText("Đã lưu " + daLuu.getMaPhieu() + " · Chờ kiểm tra · Dữ liệu trong bộ nhớ.");
+            xeDoiChieu = null;
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
+            lblXacNhan.setText(e.getMessage());
+            btnHoanTat.setEnabled(chkXacNhan.isSelected());
+        }
     }
 
     private int dongDangChon() {
         int dong = tblDanhSach.getSelectedRow();
-        if (dong < 0) lblDanhSach.setText("Chọn phiếu minh họa trước.");
+        if (dong < 0) lblDanhSach.setText("Chọn phiếu tiếp nhận trước.");
         return dong < 0 ? -1 : tblDanhSach.convertRowIndexToModel(dong);
     }
 
     private void xemChiTiet() {
         kiemTraPhien(); int dong = dongDangChon(); if (dong < 0) return;
-        StringBuilder chu = new StringBuilder("DỮ LIỆU MINH HỌA · không phải chứng từ đã lưu\n\n");
-        for (int i = 0; i < modelDanhSach.getColumnCount(); i++) chu.append(modelDanhSach.getColumnName(i)).append(": ").append(modelDanhSach.getValueAt(dong, i)).append('\n');
-        JTextArea noiDung = vungChu(); noiDung.setText(chu.toString()); noiDung.setEditable(false);
-        JOptionPane.showMessageDialog(this, new JScrollPane(noiDung), "Chi tiết phiếu mẫu", JOptionPane.INFORMATION_MESSAGE);
+        PhieuTiepNhan phieu = phieuDAO.timTheoMa(kiemTraPhien(), (String) modelDanhSach.getValueAt(dong, 0));
+        JTextArea noiDung = vungChu();
+        noiDung.setText("Phiếu: " + phieu.getMaPhieu() + "\nKhách: " + phieu.getTenKhach() + " · " + phieu.getSoDienThoai()
+                + "\nXe: " + phieu.getBienSo() + " · " + phieu.getTenXe() + "\nKilomet: " + phieu.getSoKm()
+                + "\nNgày nhận: " + phieu.getThoiGianNhan().format(DINH_DANG_NGAY)
+                + "\nTình trạng: " + phieu.getTinhTrang() + "\nTài sản: " + phieu.getTaiSan()
+                + "\nYêu cầu: " + phieu.getYeuCau() + "\nNgười nhận: " + phieu.getNguoiTiepNhan()
+                + "\nKhách xác nhận lúc: " + phieu.getThoiGianXacNhan().format(DINH_DANG_NGAY)
+                + "\nTrạng thái: " + phieu.getTrangThai().getTenHienThi());
+        noiDung.setEditable(false); noiDung.setRows(16); noiDung.setColumns(55);
+        JOptionPane.showMessageDialog(this, new JScrollPane(noiDung), "Chi tiết phiếu đã xác nhận", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void xemLichSu() {
         kiemTraPhien(); int dong = dongDangChon(); if (dong < 0) return;
-        XePanel pnl = new XePanel(xeDAO, khachHangDAO, phien);
+        XePanel pnl = new XePanel(xeDAO, khachHangDAO, phien, phieuDAO);
         pnl.moLichSuTheoBienSo((String) modelDanhSach.getValueAt(dong, 1));
-        moHoSoDialog("Lịch sử xe · nguồn chứng từ chưa kết nối", pnl, pnl::choPhepRoiManHinh);
+        moHoSoDialog("Lịch sử xe · tiếp nhận trong phiên, sửa chữa chưa kết nối", pnl, pnl::choPhepRoiManHinh);
     }
 
     private TaiKhoan kiemTraPhien() {
@@ -359,7 +394,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
             @Override public void insertUpdate(DocumentEvent e) { thayDoi(); }
             @Override public void removeUpdate(DocumentEvent e) { thayDoi(); }
             @Override public void changedUpdate(DocumentEvent e) { thayDoi(); }
-            private void thayDoi() { if (!dangNap) { daThayDoi = true; chkXacNhan.setSelected(false); } }
+            private void thayDoi() { if (!dangNap) { daThayDoi = true; xeDoiChieu = null; chkXacNhan.setSelected(false); } }
         });
     }
 

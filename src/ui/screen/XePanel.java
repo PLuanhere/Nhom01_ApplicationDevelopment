@@ -10,6 +10,8 @@ import javax.swing.event.*;
 import javax.swing.table.DefaultTableModel;
 import dao.KhachHangDAO;
 import dao.XeDAO;
+import dao.PhieuTiepNhanDAO;
+import entity.PhieuTiepNhan;
 import entity.KhachHang;
 import entity.TaiKhoan;
 import entity.Xe;
@@ -19,6 +21,8 @@ import ui.component.UiTheme;
 public final class XePanel extends JPanel {
     private static final long serialVersionUID = 1L;
     private final XeDAO dao;
+    private final PhieuTiepNhanDAO phieuDAO;
+    private final DefaultTableModel modelLichSuTiepNhan = model("Ngày nhận", "Phiếu tiếp nhận", "Yêu cầu khách", "Trạng thái");
     private final KhachHangDAO khachHangDAO;
     private final Supplier<TaiKhoan> phien;
     private final CardLayout boCuc = new CardLayout();
@@ -47,7 +51,12 @@ public final class XePanel extends JPanel {
 
     /** Gọi trên EDT; hai DAO phải cùng nguồn khách hàng của phiên đăng nhập. */
     public XePanel(XeDAO dao, KhachHangDAO khachHangDAO, Supplier<TaiKhoan> phien) {
+        this(dao, khachHangDAO, phien, null);
+    }
+
+    public XePanel(XeDAO dao, KhachHangDAO khachHangDAO, Supplier<TaiKhoan> phien, PhieuTiepNhanDAO phieuDAO) {
         super(new BorderLayout());
+        this.phieuDAO = phieuDAO;
         this.dao = Objects.requireNonNull(dao);
         this.khachHangDAO = Objects.requireNonNull(khachHangDAO);
         this.phien = Objects.requireNonNull(phien);
@@ -156,10 +165,13 @@ public final class XePanel extends JPanel {
         txtTraLichSu.addActionListener(e -> traLichSu());
         tra.add(txtTraLichSu);
         tra.add(nut("Tra cứu", false, this::traLichSu), BorderLayout.EAST);
-        tra.add(nhan("Chưa nối nguồn tiếp nhận/sửa chữa; không hiển thị lịch sử minh họa như dữ liệu thật.", false), BorderLayout.SOUTH);
+        tra.add(nhan("Sửa chữa chưa nối nguồn; lịch sử tiếp nhận lấy từ kho trong phiên khi có.", false), BorderLayout.SOUTH);
         noiDung.add(tra);
         noiDung.add(khungLichSu("Lịch sử sửa chữa · UC008", "Ngày", "Lệnh sửa chữa", "Nội dung", "Phụ tùng", "Kết quả"));
-        noiDung.add(khungLichSu("Lịch sử tiếp nhận · UC012", "Ngày nhận", "Phiếu tiếp nhận", "Yêu cầu khách", "Trạng thái"));
+        JPanel tiepNhan = khung(new BorderLayout(0, 10));
+        tiepNhan.add(nhan("Lịch sử tiếp nhận · UC012", true), BorderLayout.NORTH);
+        tiepNhan.add(new JScrollPane(bang(modelLichSuTiepNhan)));
+        noiDung.add(tiepNhan);
         // Các khung lịch sử cần chiều cao tối thiểu; cuộn thay vì ép mất ô tra cứu.
         noiDung.setPreferredSize(new Dimension(600, 620));
         JPanel neo = nen(new BorderLayout());
@@ -211,10 +223,15 @@ public final class XePanel extends JPanel {
 
     private void traLichSu() {
         lblXeLichSu.setText("Không tìm thấy phương tiện.");
+        modelLichSuTiepNhan.setRowCount(0);
         try {
             String khoa = Xe.chuanHoaBienSo(txtTraLichSu.getText());
             for (Xe xe : dao.timKiem(phien.get(), txtTraLichSu.getText())) {
                 if (Xe.chuanHoaBienSo(xe.getBienSo()).equals(khoa)) {
+                    if (phieuDAO != null) for (PhieuTiepNhan phieu : phieuDAO.lichSuTheoXe(phien.get(), xe.getMaXe())) {
+                        modelLichSuTiepNhan.addRow(new Object[] {phieu.getThoiGianNhan().toString(), phieu.getMaPhieu(),
+                                phieu.getYeuCau(), phieu.getTrangThai().getTenHienThi()});
+                    }
                     lblXeLichSu.setText(xe.getBienSo() + " · " + khachHangDAO.timTheoMa(phien.get(), xe.getMaKH()).getHoTen());
                     return;
                 }
