@@ -94,11 +94,15 @@ public final class KhongGianKyThuatPanel extends JPanel implements ActionListene
     private JPanel pnlTimNhanhHeader;
 
     public KhongGianKyThuatPanel(MainFrame winChu, TaiKhoan taiKhoan, Runnable dangXuat) {
+        this(winChu, taiKhoan, dangXuat, new KyThuatDAO(taiKhoan));
+    }
+
+    public KhongGianKyThuatPanel(MainFrame winChu, TaiKhoan taiKhoan, Runnable dangXuat, KyThuatDAO daoChung) {
         super(new BorderLayout());
         this.winChu = winChu;
         this.taiKhoan = taiKhoan;
         this.dangXuat = dangXuat;
-        dao = new KyThuatDAO(taiKhoan);
+        dao = java.util.Objects.requireNonNull(daoChung);
         setBackground(NEN);
         add(taoSidebar(), BorderLayout.WEST);
         JPanel pnlKhongGian = new JPanel(new BorderLayout());

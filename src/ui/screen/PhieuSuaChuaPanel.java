@@ -46,7 +46,7 @@ public final class PhieuSuaChuaPanel extends JPanel implements ActionListener {
 
     private final JFrame winChu;
     private final TaiKhoan taiKhoan;
-    private final PhieuSuaChuaDAO phieuDAO = new PhieuSuaChuaDAO();
+    private final PhieuSuaChuaDAO phieuDAO;
 
     private final JTextField txtTuKhoa = new JTextField("SC-2026-0112");
     private final JComboBox<String> cmbBoLoc = new JComboBox<String>(
@@ -78,6 +78,11 @@ public final class PhieuSuaChuaPanel extends JPanel implements ActionListener {
     private String dauVetBanDau = "";
 
     public PhieuSuaChuaPanel(JFrame winChu, TaiKhoan taiKhoan) {
+        this(winChu, taiKhoan, new PhieuSuaChuaDAO());
+    }
+
+    public PhieuSuaChuaPanel(JFrame winChu, TaiKhoan taiKhoan, PhieuSuaChuaDAO nguonChung) {
+        this.phieuDAO = java.util.Objects.requireNonNull(nguonChung);
         this.winChu = winChu;
         this.taiKhoan = taiKhoan;
         for (JTextArea txaTruong : new JTextArea[]{txaGhiChu, txaKetQua, txaPhatSinh}) {

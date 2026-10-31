@@ -23,10 +23,13 @@ public final class TaiKhoanDAO {
             "HDg+XvXmvAPJjeZgQLmrPozADDpa/2XOT/PsBNcN+vo=");
     /* Dữ liệu tài khoản hiện tại; mỗi tài khoản có một vai trò và không cho sửa từ UI */
     private static final List<TaiKhoan> DANH_SACH_TAI_KHOAN = List.of(
-            new TaiKhoan("quanly", VaiTro.QUAN_LY),
-            new TaiKhoan("tiepnhan", VaiTro.NHAN_VIEN_TIEP_NHAN),
-            new TaiKhoan("kythuat", VaiTro.NHAN_VIEN_KY_THUAT),
-            new TaiKhoan("thungan", VaiTro.THU_NGAN));
+            new TaiKhoan("quanly", VaiTro.QUAN_LY, "NV001"),
+            new TaiKhoan("tiepnhan", VaiTro.NHAN_VIEN_TIEP_NHAN, "NV003"),
+            new TaiKhoan("kythuat", VaiTro.NHAN_VIEN_KY_THUAT, "NV005"),
+            new TaiKhoan("thungan", VaiTro.THU_NGAN, "NV007"));
+
+    /** Chỉ dùng trong DAO nhân sự khi nối hồ sơ; không cung cấp mật khẩu hoặc API đổi quyền. */
+    List<TaiKhoan> layTaiKhoanNoiBo() { return List.copyOf(DANH_SACH_TAI_KHOAN); }
 
     /* Tạo đối tượng truy cập danh sách tài khoản có sẵn */
     public TaiKhoanDAO() {

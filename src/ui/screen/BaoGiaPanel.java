@@ -17,6 +17,7 @@ import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.table.*;
 import entity.BaoGia;
+import entity.PhuTung;
 import entity.BaoCaoKiemTra;
 import entity.ChiTietBaoGia;
 import entity.PhieuTiepNhan;
@@ -36,6 +37,7 @@ public final class BaoGiaPanel extends JPanel {
     private final JPanel pnlThe = nen(boCuc);
     private final List<BaoCaoKiemTra> baoCaoHoanTat = new ArrayList<>();
     private final BaoGiaDAO dao;
+    private final List<PhuTung> danhMuc;
     /** Bản nhập riêng, không sửa chi tiết của phiên bản đã gửi khách. */
     private final List<ChiTietBaoGia> banNhap = new ArrayList<>();
     private final JTextField txtTim = new JTextField();
@@ -68,9 +70,12 @@ public final class BaoGiaPanel extends JPanel {
     private String maThaoTac;
     private boolean dangNap, daThayDoi;
 
-    public BaoGiaPanel(BaoGiaDAO dao, Supplier<TaiKhoan> phien) {
+    public BaoGiaPanel(BaoGiaDAO dao, Supplier<TaiKhoan> phien) { this(dao, phien, List.of()); }
+
+    public BaoGiaPanel(BaoGiaDAO dao, Supplier<TaiKhoan> phien, List<PhuTung> danhMuc) {
         super(new BorderLayout());
         this.dao = Objects.requireNonNull(dao);
+        this.danhMuc = List.copyOf(danhMuc);
         this.phien = Objects.requireNonNull(phien); kiemTraPhien(); setOpaque(false);
         pnlThe.add(taoDanhSach(), "DANH_SACH"); pnlThe.add(taoForm(), "FORM"); pnlThe.add(taoQuyetDinh(), "QUYET_DINH"); add(pnlThe);
         cboBaoCao.addActionListener(e -> { if (!dangNap) { capNhatCanCu(); daThayDoi = true; } });
@@ -196,7 +201,7 @@ public final class BaoGiaPanel extends JPanel {
         new HangMucBaoGiaDialog(SwingUtilities.getWindowAncestor(this), sua ? banNhap.get(index) : null, dong -> {
             kiemTraPhien(); if (index < 0) banNhap.add(dong); else banNhap.set(index, dong);
             daThayDoi = true; capNhatChiTiet(); lblLoi.setText(" ");
-        }).setVisible(true);
+        }, danhMuc).setVisible(true);
     }
 
     private void xoaDong() {
