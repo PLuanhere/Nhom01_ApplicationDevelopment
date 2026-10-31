@@ -16,7 +16,15 @@ public final class DuLieuGarageDAO {
     private final PhieuSuaChuaDAO suaChuaDAO = new PhieuSuaChuaDAO(baoGiaDAO, this::layLienKetKyThuat);
     private final TrangChuTiepNhanDAO trangChuDAO = new TrangChuTiepNhanDAO(tiepNhanDAO, kiemTraDAO, baoGiaDAO, suaChuaDAO, phuTungDAO);
 
-    public DuLieuGarageDAO() { phuTungDAO.noiNguonLenh(suaChuaDAO); }
+    private final BanGiaoXeDAO banGiaoDAO;
+
+    public DuLieuGarageDAO() { this(maLenh -> null); }
+
+    /** Chỉ nhận hàm đọc căn cứ từ phân hệ phụ trách, không mở API thu tiền cho tiếp nhận. */
+    public DuLieuGarageDAO(java.util.function.Function<String, entity.CanCuBanGiao> nguonCanCu) {
+        phuTungDAO.noiNguonLenh(suaChuaDAO);
+        banGiaoDAO = new BanGiaoXeDAO(suaChuaDAO, nguonCanCu);
+    }
 
     /** Chỉ đọc nội bộ giữa các DAO; quyền của UI được kiểm tra tại từng thao tác nghiệp vụ. */
     private List<KyThuatVienPhanCong> layLienKetKyThuat() { return nhanVienDAO.layLienKetKyThuat(taiKhoanDAO); }
@@ -28,5 +36,6 @@ public final class DuLieuGarageDAO {
     public BaoGiaDAO getBaoGiaDAO() { return baoGiaDAO; }
     public PhieuSuaChuaDAO getSuaChuaDAO() { return suaChuaDAO; }
     public PhuTungSuDungDAO getPhuTungDAO() { return phuTungDAO; }
+    public BanGiaoXeDAO getBanGiaoDAO() { return banGiaoDAO; }
     public TrangChuTiepNhanDAO getTrangChuDAO() { return trangChuDAO; }
 }

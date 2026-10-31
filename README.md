@@ -83,6 +83,12 @@ Chạy từ `app.App`. Form đăng nhập giữ một `DuLieuGarageDAO` trong l�
 
 Bốn tài khoản hiện tại liên kết hồ sơ bằng mã: quanly/NV001, tiepnhan/NV003, kythuat/NV005, thungan/NV007. Chỉ hồ sơ kỹ thuật đang làm việc có tài khoản kỹ thuật mới xuất hiện trong danh sách phân công; không ghép bằng họ tên. Constructor cũ của các màn/DAO vẫn giữ để tương thích nguồn mẫu riêng, còn luồng `app.App` sử dụng các constructor nhận nguồn chung.
 
+### Bàn giao xe
+
+Tiếp nhận mở **Bàn giao xe** để xem các lệnh đã hoàn thành và lịch sử đã giao. Màn hình chỉ đọc căn cứ từ thu ngân hoặc phê duyệt quản lý, không có thao tác tự xác nhận thu tiền. Chưa có phân hệ hóa đơn/thanh toán nối vào nguồn chung nên App hiện hiển thị xe ở trạng thái chờ xác nhận thanh toán và khóa bàn giao khi thiếu căn cứ.
+
+Khi được cấp nguồn căn cứ hợp lệ, người giao đối chiếu kết quả sửa chữa, nhập người nhận, giờ giao thực tế, tình trạng xe, tài sản đã trả và hình thức khách xác nhận. Bấm xác nhận mở hộp thoại xem lại; DAO đọc lại căn cứ lúc hoàn tất. Chứng từ đã lưu chỉ đọc, giữ người/thời điểm thực giao và căn cứ tài chính tại lúc giao. Bộ lọc ngày dùng giờ thực giao cho xe đã giao, ngày hoàn tất sửa chữa cho xe còn chờ.
+
 ### Tài khoản có sẵn
 
 | Tên đăng nhập | Mật khẩu | Vai trò |
