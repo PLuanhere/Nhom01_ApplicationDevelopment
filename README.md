@@ -71,6 +71,18 @@ Cách đọc luồng code: `NhanVienFormPanel.luuHoSo()` kiểm tra từng trư�
 - Hồ sơ được giữ chung **trong cùng lần chạy ứng dụng**, kể cả đăng xuất/đăng nhập lại; tắt và mở ứng dụng sẽ trở về bốn hồ sơ ban đầu. Chưa có lưu file hoặc database.
 - Bộ phận và tình trạng làm việc của hồ sơ không thay đổi quyền/mật khẩu của bốn tài khoản đăng nhập. Hai frame hiện tại không có thao tác xóa; chuyển trạng thái Đã nghỉ việc trong form để ghi nhận nghỉ việc.
 
+### Luồng tiếp nhận và kỹ thuật dùng chung dữ liệu
+
+Chạy từ `app.App`. Form đăng nhập giữ một `DuLieuGarageDAO` trong lần chạy ứng dụng và truyền cùng nguồn đó khi đổi vai trò. Khách/xe và chứng từ mới ban đầu rỗng; dữ liệu được giữ khi đăng xuất/đăng nhập lại, nhưng chưa lưu sau khi tắt ứng dụng. Danh mục/tồn phụ tùng đầu kỳ vẫn là dữ liệu mẫu sẵn có.
+
+1. Tiếp nhận tạo khách, xe, xác nhận phiếu rồi chọn **Phân công kiểm tra** ở danh sách phiếu.
+2. Đăng xuất và đăng nhập kỹ thuật để mở đúng phiếu được giao, nhập kết quả rồi hoàn tất báo cáo.
+3. Tiếp nhận lập báo giá từ báo cáo hoàn tất. Dòng phụ tùng chọn theo mã danh mục; tên/đơn vị được lấy từ danh mục. Ghi nhận gửi khách và quyết định đồng ý trước khi tạo lệnh.
+4. Chọn người chính/hỗ trợ và người phụ trách từng dòng, sau đó phát hành lệnh. Kỹ thuật đăng nhập lại sẽ thấy lệnh này, ghi thực dùng và cập nhật hoàn thành trong giao diện hiện có.
+5. Tiếp nhận xem tiến độ, lịch sử xe và dashboard từ cùng chứng từ. Hoàn thành sửa chữa chưa đồng nghĩa đã thanh toán hoặc được bàn giao.
+
+Bốn tài khoản hiện tại liên kết hồ sơ bằng mã: quanly/NV001, tiepnhan/NV003, kythuat/NV005, thungan/NV007. Chỉ hồ sơ kỹ thuật đang làm việc có tài khoản kỹ thuật mới xuất hiện trong danh sách phân công; không ghép bằng họ tên. Constructor cũ của các màn/DAO vẫn giữ để tương thích nguồn mẫu riêng, còn luồng `app.App` sử dụng các constructor nhận nguồn chung.
+
 ### Tài khoản có sẵn
 
 | Tên đăng nhập | Mật khẩu | Vai trò |

@@ -17,6 +17,13 @@ public final class BaoCaoKiemTraDAO {
     private final List<PhieuTiepNhan> danhSachPhieu = new ArrayList<PhieuTiepNhan>();
     private final List<BaoCaoKiemTra> danhSachBaoCao = new ArrayList<BaoCaoKiemTra>();
     private int soTiepTheo = 113;
+    private PhieuTiepNhanDAO nguonPhieu;
+
+    public BaoCaoKiemTraDAO(PhieuTiepNhanDAO nguonPhieu) {
+        this.nguonPhieu = java.util.Objects.requireNonNull(nguonPhieu);
+        soTiepTheo = 1;
+    }
+
 
     public BaoCaoKiemTraDAO() {
         PhieuTiepNhan phieuCu = new PhieuTiepNhan("TN-2026-0108", "51H-246.80",
@@ -41,11 +48,20 @@ public final class BaoCaoKiemTraDAO {
                 new String[] {"Vệ sinh và kiểm tra phanh", "Thay dầu và lọc dầu", "Không có hạng mục sửa"}));
     }
 
+    public synchronized List<BaoCaoKiemTra> layBaoCaoChoTiepNhan(TaiKhoan tk) {
+        if (tk == null || tk.getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN) throw new SecurityException("Chỉ tiếp nhận được xem tiến độ kiểm tra.");
+        return new ArrayList<>(danhSachBaoCao);
+    }
+
     /** Tiếp nhận chỉ được đọc kết quả hoàn tất để lập báo giá, không sửa báo cáo kỹ thuật. */
-    public List<BaoCaoKiemTra> layBaoCaoHoanTatChoBaoGia(TaiKhoan taiKhoan) {
+    public synchronized List<BaoCaoKiemTra> layBaoCaoHoanTatChoBaoGia(TaiKhoan taiKhoan) {
         if (taiKhoan == null || taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN) {
             throw new SecurityException("Chỉ tiếp nhận được đọc nguồn lập báo giá.");
         }
+        return layHoanTatNoiBo();
+    }
+
+    synchronized List<BaoCaoKiemTra> layHoanTatNoiBo() {
         List<BaoCaoKiemTra> ketQua = new ArrayList<>();
         for (BaoCaoKiemTra bc : danhSachBaoCao) {
             if (bc.getTrangThai() == TrangThaiKiemTra.HOAN_TAT) ketQua.add(bc);
@@ -54,9 +70,10 @@ public final class BaoCaoKiemTraDAO {
     }
 
     // Đọc các phiếu tiếp nhận thuộc phạm vi phân công của tài khoản.
-    public List<PhieuTiepNhan> layPhieu(TaiKhoan taiKhoan) {
+    public synchronized List<PhieuTiepNhan> layPhieu(TaiKhoan taiKhoan) {
         kiemTraQuyen(taiKhoan);
         List<PhieuTiepNhan> ketQua = new ArrayList<PhieuTiepNhan>();
+        if (nguonPhieu != null) return nguonPhieu.layPhieuKiemTra(taiKhoan);
         for (PhieuTiepNhan phieu : danhSachPhieu) {
             if (phieu.getTaiKhoanKyThuat().equals(taiKhoan.getTenDangNhap())) {
                 ketQua.add(phieu);
@@ -66,14 +83,14 @@ public final class BaoCaoKiemTraDAO {
     }
 
     // Lọc báo cáo theo phân công, mã báo cáo, mã phiếu, biển số và trạng thái.
-    public List<BaoCaoKiemTra> timKiem(TaiKhoan taiKhoan, String tuKhoa, String trangThai) {
+    public synchronized List<BaoCaoKiemTra> timKiem(TaiKhoan taiKhoan, String tuKhoa, String trangThai) {
         kiemTraQuyen(taiKhoan);
         String tuKhoaChuanHoa = tuKhoa.trim().toLowerCase(Locale.ROOT);
         List<BaoCaoKiemTra> ketQua = new ArrayList<BaoCaoKiemTra>();
         for (BaoCaoKiemTra baoCao : danhSachBaoCao) {
             PhieuTiepNhan phieu = baoCao.getPhieu();
             String noiDung = baoCao.getMaBaoCao() + " " + phieu.getMaPhieu() + " " + phieu.getBienSo();
-            if (phieu.getTaiKhoanKyThuat().equals(taiKhoan.getTenDangNhap())
+            if (layPhieu(taiKhoan).contains(phieu)
                     && noiDung.toLowerCase(Locale.ROOT).contains(tuKhoaChuanHoa)
                     && ("Tất cả".equals(trangThai)
                     || baoCao.getTrangThai().getTenHienThi().equals(trangThai))) {
@@ -84,7 +101,7 @@ public final class BaoCaoKiemTraDAO {
     }
 
     // Tìm báo cáo của phiếu tiếp nhận để ngăn tạo trùng báo cáo.
-    public Optional<BaoCaoKiemTra> timTheoPhieu(TaiKhoan taiKhoan, PhieuTiepNhan phieu) {
+    public synchronized Optional<BaoCaoKiemTra> timTheoPhieu(TaiKhoan taiKhoan, PhieuTiepNhan phieu) {
         kiemTraPhieu(taiKhoan, phieu);
         for (BaoCaoKiemTra baoCao : danhSachBaoCao) {
             if (baoCao.getPhieu().getMaPhieu().equals(phieu.getMaPhieu())) {
@@ -95,8 +112,12 @@ public final class BaoCaoKiemTraDAO {
     }
 
     // Kiểm tra dữ liệu và lưu báo cáo nháp hoặc báo cáo hoàn tất.
-    public BaoCaoKiemTra luu(TaiKhoan taiKhoan, BaoCaoKiemTra banNhap, boolean hoanTat) {
+    public synchronized BaoCaoKiemTra luu(TaiKhoan taiKhoan, BaoCaoKiemTra banNhap, boolean hoanTat) {
         kiemTraPhieu(taiKhoan, banNhap.getPhieu());
+        if (nguonPhieu != null && (banNhap.getNgayKiemTra().isBefore(banNhap.getPhieu().getThoiGianNhan().toLocalDate())
+                || banNhap.getNgayKiemTra().isAfter(LocalDate.now()))) {
+            throw new IllegalArgumentException("Ngày kiểm tra phải từ ngày tiếp nhận đến hôm nay.");
+        }
         String[] noiDung = banNhap.getNoiDung();
         if (noiDung[0].trim().isEmpty() || noiDung[2].trim().isEmpty()
                 || (hoanTat && "Tổng hợp".equals(banNhap.getBoPhan())
@@ -114,7 +135,7 @@ public final class BaoCaoKiemTraDAO {
             throw new IllegalStateException("Báo cáo không còn tồn tại. Hãy tải lại danh sách.");
         }
         String maBaoCao = baoCaoCu == null
-                ? String.format("KT-2026-%04d", soTiepTheo) : baoCaoCu.getMaBaoCao();
+                ? String.format("KT-%04d-%04d", LocalDate.now().getYear(), soTiepTheo) : baoCaoCu.getMaBaoCao();
         BaoCaoKiemTra baoCaoMoi = new BaoCaoKiemTra(maBaoCao, banNhap.getPhieu(), banNhap.getNgayKiemTra(),
                 banNhap.getBoPhan(), noiDung, hoanTat ? TrangThaiKiemTra.HOAN_TAT : TrangThaiKiemTra.NHAP,
                 hoanTat ? LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")) : null,
@@ -129,7 +150,7 @@ public final class BaoCaoKiemTraDAO {
     }
 
     // Xóa báo cáo nháp thuộc phân công và chặn báo cáo đã hoàn tất hoặc đã thay đổi.
-    public void xoa(TaiKhoan taiKhoan, BaoCaoKiemTra baoCao) {
+    public synchronized void xoa(TaiKhoan taiKhoan, BaoCaoKiemTra baoCao) {
         kiemTraPhieu(taiKhoan, baoCao.getPhieu());
         if (baoCao.getTrangThai() != TrangThaiKiemTra.NHAP) {
             throw new IllegalStateException("Không thể xóa " + baoCao.getMaBaoCao() + " vì đã có dữ liệu liên quan.");
@@ -142,8 +163,7 @@ public final class BaoCaoKiemTraDAO {
     // Kiểm tra phiếu tồn tại, đã xác nhận và được phân công cho đúng tài khoản.
     private void kiemTraPhieu(TaiKhoan taiKhoan, PhieuTiepNhan phieu) {
         kiemTraQuyen(taiKhoan);
-        if (!danhSachPhieu.contains(phieu) || !phieu.isDaXacNhan()
-                || !phieu.getTaiKhoanKyThuat().equals(taiKhoan.getTenDangNhap())) {
+        if (!layPhieu(taiKhoan).contains(phieu) || !phieu.isDaXacNhan()) {
             throw new IllegalArgumentException("Phiếu tiếp nhận chưa hợp lệ hoặc không thuộc phân công.");
         }
     }

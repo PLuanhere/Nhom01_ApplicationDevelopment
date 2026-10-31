@@ -19,6 +19,8 @@ import javax.swing.SwingConstants;
 
 import dao.KhachHangDAO;
 import dao.BaoGiaDAO;
+import dao.DuLieuGarageDAO;
+import dao.KyThuatDAO;
 import dao.BaoCaoKiemTraDAO;
 import dao.PhieuTiepNhanDAO;
 import dao.PhieuSuaChuaDAO;
@@ -59,6 +61,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     private final Runnable khiDangXuat;
 
     private TaiKhoan taiKhoanDangNhap;
+    private final DuLieuGarageDAO duLieuChung;
 
     // Phân hệ Quản lý.
     private NhanVienPanel pnlNhanVien;
@@ -90,8 +93,13 @@ public final class MainFrame extends JFrame implements ActionListener {
      * @param khiDangXuat thao tác mở lại trang đăng nhập
      */
     public MainFrame(TaiKhoan taiKhoan, Runnable khiDangXuat) {
+        this(taiKhoan, khiDangXuat, null);
+    }
+
+    public MainFrame(TaiKhoan taiKhoan, Runnable khiDangXuat, DuLieuGarageDAO duLieuChung) {
         super("Garage Ô tô Đức Dũng");
 
+        this.duLieuChung = duLieuChung;
         taiKhoanDangNhap = Objects.requireNonNull(
                 taiKhoan, "Cần tài khoản đã đăng nhập.");
         this.khiDangXuat = Objects.requireNonNull(
@@ -114,8 +122,9 @@ public final class MainFrame extends JFrame implements ActionListener {
         // Giữ không gian Kỹ thuật mới từ main.
         if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
             add(new WindowTitlePanel(this), BorderLayout.NORTH);
-            add(new KhongGianKyThuatPanel(
-                    this, taiKhoan, this::dangXuat), BorderLayout.CENTER);
+            KyThuatDAO nguonKyThuat = duLieuChung == null ? new KyThuatDAO(taiKhoan)
+                    : new KyThuatDAO(this::getTaiKhoanDangNhap, duLieuChung.getSuaChuaDAO(), duLieuChung.getKiemTraDAO(), duLieuChung.getPhuTungDAO());
+            add(new KhongGianKyThuatPanel(this, taiKhoan, this::dangXuat, nguonKyThuat), BorderLayout.CENTER);
             return;
         }
 
@@ -160,8 +169,8 @@ public final class MainFrame extends JFrame implements ActionListener {
             setStatus("Dashboard kỹ thuật • Dữ liệu mẫu theo Figma 05/10/2026");
         } else if ("Báo cáo kiểm tra".equals(tenManHinh)) {
             if (pnlKiemTra == null) {
-                pnlKiemTra = new BaoCaoKiemTraPanel(
-                        this, getTaiKhoanDangNhap());
+                pnlKiemTra = new BaoCaoKiemTraPanel(this, getTaiKhoanDangNhap(),
+                        duLieuChung == null ? new BaoCaoKiemTraDAO() : duLieuChung.getKiemTraDAO());
             }
 
             setScreen(pnlKiemTra);
@@ -297,19 +306,26 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Khởi tạo nguồn hồ sơ và điều hướng Tiếp nhận. */
     private void khoiTaoTrangChuTiepNhan() {
-        khachHangDAO = KhachHangDAO.taoDuLieuMau();
-        xeDAO = XeDAO.taoDuLieuMau(khachHangDAO, getTaiKhoanDangNhap());
-        phieuTiepNhanDAO = new PhieuTiepNhanDAO(khachHangDAO, xeDAO);
-        BaoCaoKiemTraDAO nguonKiemTra = new BaoCaoKiemTraDAO();
-        baoGiaDAO = new BaoGiaDAO(phieuTiepNhanDAO,
-                () -> nguonKiemTra.layBaoCaoHoanTatChoBaoGia(getTaiKhoanDangNhap()));
-        // Chưa có liên kết nhân viên/tài khoản: không tự ghép theo tên hoặc cấp quyền giả.
-        phieuSuaChuaDAO = new PhieuSuaChuaDAO(baoGiaDAO, List::of);
+        if (duLieuChung != null) {
+            khachHangDAO = duLieuChung.getKhachHangDAO(); xeDAO = duLieuChung.getXeDAO();
+            phieuTiepNhanDAO = duLieuChung.getTiepNhanDAO(); baoGiaDAO = duLieuChung.getBaoGiaDAO();
+            phieuSuaChuaDAO = duLieuChung.getSuaChuaDAO();
+        } else {
+            khachHangDAO = KhachHangDAO.taoDuLieuMau();
+            xeDAO = XeDAO.taoDuLieuMau(khachHangDAO, getTaiKhoanDangNhap());
+            phieuTiepNhanDAO = new PhieuTiepNhanDAO(khachHangDAO, xeDAO);
+            BaoCaoKiemTraDAO nguonKiemTra = new BaoCaoKiemTraDAO();
+            baoGiaDAO = new BaoGiaDAO(phieuTiepNhanDAO,
+                    () -> nguonKiemTra.layBaoCaoHoanTatChoBaoGia(getTaiKhoanDangNhap()));
+            // Constructor cũ giữ fixture độc lập; luồng đăng nhập của App luôn truyền duLieuChung.
+            phieuSuaChuaDAO = new PhieuSuaChuaDAO(baoGiaDAO, List::of);
+        }
 
         pnlDieuHuongTiepNhan =
                 new TiepNhanNavigationPanel(this::dieuHuongTiepNhan);
         pnlTrangChuTiepNhan =
-                new TrangChuTiepNhanPanel(this::dieuHuongTiepNhan);
+                new TrangChuTiepNhanPanel(this::dieuHuongTiepNhan,
+                        duLieuChung == null ? null : duLieuChung.getTrangChuDAO(), this::getTaiKhoanDangNhap);
 
         setSidebarContent(pnlDieuHuongTiepNhan);
         dieuHuongTiepNhan("Tổng quan tiếp nhận");
@@ -374,7 +390,8 @@ public final class MainFrame extends JFrame implements ActionListener {
         } else if ("Phiếu tiếp nhận".equals(muc)) {
             if (pnlTiepNhan == null) {
                 pnlTiepNhan = new PhieuTiepNhanPanel(
-                        khachHangDAO, xeDAO, phieuTiepNhanDAO, this::getTaiKhoanDangNhap);
+                        khachHangDAO, xeDAO, phieuTiepNhanDAO, this::getTaiKhoanDangNhap,
+                        duLieuChung == null ? null : duLieuChung.getTrangChuDAO());
             }
 
             setScreen(pnlTiepNhan);
@@ -383,7 +400,8 @@ public final class MainFrame extends JFrame implements ActionListener {
             setStatus("Tiếp nhận · Phiếu lưu trong bộ nhớ của phiên");
 
         } else if ("Báo giá".equals(muc)) {
-            if (pnlBaoGia == null) pnlBaoGia = new BaoGiaPanel(baoGiaDAO, this::getTaiKhoanDangNhap);
+            if (pnlBaoGia == null) pnlBaoGia = new BaoGiaPanel(baoGiaDAO, this::getTaiKhoanDangNhap,
+                    duLieuChung == null ? List.of() : duLieuChung.getPhuTungDAO().docDanhMuc());
             setScreen(pnlBaoGia);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
@@ -392,7 +410,8 @@ public final class MainFrame extends JFrame implements ActionListener {
         } else if ("Phương tiện".equals(muc)) {
             if (pnlXe == null) {
                 pnlXe = new XePanel(
-                        xeDAO, khachHangDAO, this::getTaiKhoanDangNhap, phieuTiepNhanDAO);
+                        xeDAO, khachHangDAO, this::getTaiKhoanDangNhap, phieuTiepNhanDAO,
+                        duLieuChung == null ? null : duLieuChung.getTrangChuDAO());
             }
 
             if (!"Phương tiện".equals(mucTiepNhanDangMo)) {
@@ -402,13 +421,14 @@ public final class MainFrame extends JFrame implements ActionListener {
             setScreen(pnlXe);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
-            setStatus("Phương tiện · Tiếp nhận trong phiên, sửa chữa chưa kết nối");
+            setStatus("Phương tiện · Lịch sử từ nguồn dữ liệu trong bộ nhớ");
 
         } else if ("Tổng quan tiếp nhận".equals(muc)) {
             setScreen(pnlTrangChuTiepNhan);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
-            setStatus("Tổng quan tiếp nhận · Dữ liệu minh họa, chưa nối nghiệp vụ");
+            pnlTrangChuTiepNhan.capNhatDuLieu();
+            setStatus("Tổng quan tiếp nhận · Dữ liệu trong bộ nhớ của lần chạy ứng dụng");
 
         } else if ("Lệnh sửa chữa".equals(muc)) {
             if (pnlLenhTiepNhan == null) pnlLenhTiepNhan = new LenhSuaChuaTiepNhanPanel(phieuSuaChuaDAO, this::getTaiKhoanDangNhap);
@@ -449,8 +469,8 @@ public final class MainFrame extends JFrame implements ActionListener {
             return;
         }
         if (pnlSuaChua == null) {
-            pnlSuaChua = new PhieuSuaChuaPanel(
-                    this, getTaiKhoanDangNhap());
+            pnlSuaChua = new PhieuSuaChuaPanel(this, getTaiKhoanDangNhap(),
+                    duLieuChung == null ? new PhieuSuaChuaDAO() : duLieuChung.getSuaChuaDAO());
         }
 
         setScreen(pnlSuaChua);
@@ -463,7 +483,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     private void moDanhSachPhuTung() {
         if (pnlPhuTung == null) {
             pnlPhuTung = new PhuTungSuDungPanel(
-                    getTaiKhoanDangNhap(), new PhuTungSuDungDAO());
+                    getTaiKhoanDangNhap(), duLieuChung == null ? new PhuTungSuDungDAO() : duLieuChung.getPhuTungDAO());
         }
 
         pnlPhuTung.moDanhSach();

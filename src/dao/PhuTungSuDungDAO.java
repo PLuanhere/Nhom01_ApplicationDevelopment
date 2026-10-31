@@ -25,10 +25,16 @@ public final class PhuTungSuDungDAO {
     private final Map<String, String> luotDaGhi = new LinkedHashMap<String, String>();
     private int soTiepTheo = 113;
 
-    public PhuTungSuDungDAO() {
+    private PhieuSuaChuaDAO nguonLenh;
+
+    public PhuTungSuDungDAO() { this(true); }
+
+    /** Giữ danh mục/tồn đầu kỳ, nhưng không nạp lệnh và chứng từ mẫu khi dùng luồng chung. */
+    public PhuTungSuDungDAO(boolean coHoSoMau) {
         themDanhMuc("PT001", "Dầu 5W-30", "lít", "48", "12");
         themDanhMuc("PT005", "Lọc dầu động cơ", "cái", "6", "12");
         themDanhMuc("PT004", "Rotuyn lái", "cái", "5", "2");
+        if (!coHoSoMau) { soTiepTheo = 1; return; }
         String[] maLenh = {"SC-2026-0111", "SC-2026-0113", "SC-2026-0114", "SC-2026-0108"};
         for (String ma : maLenh) {
             Map<String, BigDecimal> chiTiet = new LinkedHashMap<String, BigDecimal>();
@@ -46,8 +52,39 @@ public final class PhuTungSuDungDAO {
                 new BigDecimal("4"), "Đã ghi nhận thực dùng", TrangThaiSuDung.DA_GHI_NHAN));
     }
 
+    void noiNguonLenh(PhieuSuaChuaDAO nguon) {
+        if (nguonLenh != null) throw new IllegalStateException("Nguồn lệnh đã được kết nối.");
+        nguonLenh = Objects.requireNonNull(nguon);
+    }
+
+    public List<PhuTung> docDanhMuc() { return new ArrayList<>(danhMuc.values()); }
+
+    /** Khóa đúng dòng báo giá bằng vị trí, không suy ra phụ tùng từ tên hạng mục. */
+    synchronized PhuTungSuDung ghiTheoHangMuc(TaiKhoan tk, String maLenh, int viTri, String maPT, BigDecimal so, String luot) {
+        kiemTraLenh(tk, maLenh);
+        entity.PhieuSuaChua lenh = nguonLenh.timTheoMa(tk, maLenh).orElseThrow();
+        List<entity.ChiTietBaoGia> chiTiet = nguonLenh.layBaoGia(tk, maLenh).getChiTiet();
+        if (lenh.getTrangThai() == entity.TrangThaiSuaChua.HOAN_THANH || viTri < 0 || viTri >= chiTiet.size()) throw new IllegalStateException("Lệnh/hạng mục không thể ghi nhận thêm phụ tùng.");
+        entity.HangMucSuaChua hm = lenh.getDanhSachHangMuc().get(viTri);
+        if (!hm.getTaiKhoanThucHien().equals(tk.getTenDangNhap()) && !lenh.getKyThuatChinh().equals(tk.getTenDangNhap())) throw new SecurityException("Không được ghi phụ tùng cho hạng mục này.");
+        entity.ChiTietBaoGia ct = chiTiet.get(viTri);
+        if (!"Phụ tùng".equals(ct.getLoai()) || !ct.getMaPhuTung().equals(maPT)) throw new IllegalArgumentException("Phụ tùng không thuộc dòng đã duyệt.");
+        docPhuTung(maPT).kiemTraSoLuong(so);
+        String khoa = maLenh + "#" + viTri;
+        BigDecimal daDung = BigDecimal.ZERO;
+        for (PhuTungSuDung dong : hoSo.values()) if (dong.getHangMuc().equals(khoa) && dong.getTrangThai() == TrangThaiSuDung.DA_GHI_NHAN) daDung = daDung.add(dong.getSoLuong());
+        if (daDung.add(so).compareTo(ct.getSoLuong()) > 0) throw new IllegalArgumentException("Lượng thực dùng vượt dòng báo giá đã duyệt.");
+        return ghiNoiBo(tk, maLenh, khoa, maPT, so, docPhamViDuyet(tk, maLenh).get(maPT), luot);
+    }
+
     // Ghi lượng thực dùng sau khi DAO kỹ thuật đã kiểm tra lệnh và hạng mục hiện tại.
     synchronized PhuTungSuDung ghiTheoHangMuc(TaiKhoan taiKhoan, String maLenh, String hangMuc,
+            String maPhuTung, BigDecimal soLuong, BigDecimal gioiHan, String maLuot) {
+        if (nguonLenh != null) throw new IllegalStateException("Cần chọn đúng dòng báo giá khi ghi nhận phụ tùng.");
+        return ghiNoiBo(taiKhoan, maLenh, hangMuc, maPhuTung, soLuong, gioiHan, maLuot);
+    }
+
+    private PhuTungSuDung ghiNoiBo(TaiKhoan taiKhoan, String maLenh, String hangMuc,
             String maPhuTung, BigDecimal soLuong, BigDecimal gioiHan, String maLuot) {
         kiemTraTaiKhoan(taiKhoan);
         if (maLuot == null || maLuot.isBlank() || luotDaGhi.containsKey(maLuot)) {
@@ -86,8 +123,9 @@ public final class PhuTungSuDungDAO {
         String khoa = Objects.requireNonNull(tuKhoa).trim().toLowerCase(Locale.ROOT);
         for (PhuTungSuDung banGhi : hoSo.values()) {
             String noiDung = banGhi.getMaGhiNhan() + " " + banGhi.getMaLenhSuaChua() + " " + banGhi.getPhuTung();
-            if (taiKhoan.getTenDangNhap().equals(phanCong.get(banGhi.getMaLenhSuaChua()))
-                    && noiDung.toLowerCase(Locale.ROOT).contains(khoa)
+            boolean duocDoc = nguonLenh == null ? taiKhoan.getTenDangNhap().equals(phanCong.get(banGhi.getMaLenhSuaChua()))
+                    : nguonLenh.timTheoMa(taiKhoan, banGhi.getMaLenhSuaChua()).isPresent();
+            if (duocDoc && noiDung.toLowerCase(Locale.ROOT).contains(khoa)
                     && (trangThai == null || trangThai == banGhi.getTrangThai())) {
                 ketQua.add(banGhi);
             }
@@ -95,10 +133,23 @@ public final class PhuTungSuDungDAO {
         return ketQua;
     }
 
+    /** Tiếp nhận tra cứu thực dùng của lệnh để xem lịch sử; không có quyền xác nhận xuất kho. */
+    public synchronized List<PhuTungSuDung> layThucDungChoTiepNhan(TaiKhoan tk, String maLenh) {
+        if (tk == null || tk.getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN) throw new SecurityException("Chỉ tiếp nhận được tra lịch sử tại quầy.");
+        if (nguonLenh == null || nguonLenh.timTheoMa(tk, maLenh).isEmpty()) throw new IllegalArgumentException("Lệnh sửa chữa không tồn tại.");
+        List<PhuTungSuDung> ketQua = new ArrayList<>();
+        for (PhuTungSuDung dong : hoSo.values()) if (dong.getMaLenhSuaChua().equals(maLenh) && dong.getTrangThai() == TrangThaiSuDung.DA_GHI_NHAN) ketQua.add(dong);
+        return ketQua;
+    }
+
     // Đọc các lệnh được phân công và có phạm vi phụ tùng đã duyệt.
     public synchronized List<String> docLenhDaDuyet(TaiKhoan taiKhoan) {
         kiemTraTaiKhoan(taiKhoan);
         List<String> ketQua = new ArrayList<String>();
+        if (nguonLenh != null) {
+            for (entity.PhieuSuaChua lenh : nguonLenh.timKiem(taiKhoan, "", "Tất cả")) ketQua.add(lenh.getMaPhieu());
+            return ketQua;
+        }
         for (String maLenh : phamViDuyet.keySet()) {
             if (taiKhoan.getTenDangNhap().equals(phanCong.get(maLenh))) {
                 ketQua.add(maLenh);
@@ -110,6 +161,13 @@ public final class PhuTungSuDungDAO {
     // Trả bản sao phạm vi duyệt để màn hình không sửa trực tiếp dữ liệu nội bộ.
     public synchronized Map<String, BigDecimal> docPhamViDuyet(TaiKhoan taiKhoan, String maLenh) {
         kiemTraLenh(taiKhoan, maLenh);
+        if (nguonLenh != null) {
+            Map<String, BigDecimal> ketQua = new LinkedHashMap<>();
+            for (entity.ChiTietBaoGia ct : nguonLenh.layBaoGia(taiKhoan, maLenh).getChiTiet()) {
+                if (!ct.getMaPhuTung().isEmpty()) ketQua.merge(ct.getMaPhuTung(), ct.getSoLuong(), BigDecimal::add);
+            }
+            return ketQua;
+        }
         return new LinkedHashMap<String, BigDecimal>(phamViDuyet.get(maLenh));
     }
 
@@ -131,7 +189,7 @@ public final class PhuTungSuDungDAO {
     // Tính lượng còn được dùng sau các lần đã ghi nhận theo lệnh.
     public synchronized BigDecimal docLuongConLai(TaiKhoan taiKhoan, String maLenh, String maPhuTung) {
         kiemTraLenh(taiKhoan, maLenh);
-        BigDecimal conLai = phamViDuyet.get(maLenh).get(maPhuTung);
+        BigDecimal conLai = docPhamViDuyet(taiKhoan, maLenh).get(maPhuTung);
         if (conLai == null) {
             throw new IllegalArgumentException("Phụ tùng chưa được khách duyệt.");
         }
@@ -147,6 +205,7 @@ public final class PhuTungSuDungDAO {
     // Lưu nháp sau khi kiểm tra phân công, phạm vi duyệt và phiên bản đang sửa.
     public synchronized PhuTungSuDung luuNhap(TaiKhoan taiKhoan, PhuTungSuDung banCu, String maLenh,
             String maPhuTung, BigDecimal soLuong, String ghiChu) {
+        if (nguonLenh != null) throw new IllegalStateException("Ghi thực dùng theo từng hạng mục trong không gian kỹ thuật.");
         kiemTraLenh(taiKhoan, maLenh);
         if (banCu != null) {
             kiemTraNhap(taiKhoan, banCu);
@@ -262,6 +321,10 @@ public final class PhuTungSuDungDAO {
     // Kiểm tra lệnh tồn tại và được phân công cho tài khoản hiện tại.
     private void kiemTraLenh(TaiKhoan taiKhoan, String maLenh) {
         kiemTraTaiKhoan(taiKhoan);
+        if (nguonLenh != null) {
+            if (nguonLenh.timTheoMa(taiKhoan, maLenh).isEmpty()) throw new SecurityException("Lệnh không tồn tại hoặc không thuộc phân công.");
+            return;
+        }
         if (!phamViDuyet.containsKey(maLenh)) {
             throw new IllegalArgumentException("Lệnh không tồn tại hoặc chưa được khách duyệt.");
         }
