@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
+import entity.KyThuatVienPhanCong;
 import entity.KhachHang;
 import entity.PhieuTiepNhan;
 import entity.TaiKhoan;
@@ -21,10 +23,20 @@ public final class PhieuTiepNhanDAO {
     /** Mỗi mã thao tác chỉ ghi được một nội dung xác nhận. */
     private final Map<String, PhieuTiepNhan> theoThaoTac = new LinkedHashMap<>();
     private int soThuTu = 1;
+    private final Supplier<List<KyThuatVienPhanCong>> nguonKyThuat;
+    private final Map<String, String> phanCongKiemTra = new LinkedHashMap<>();
+    private final Map<String, String> nguoiGiaoKiemTra = new LinkedHashMap<>();
+    private final Map<String, LocalDateTime> lucGiaoKiemTra = new LinkedHashMap<>();
 
     public PhieuTiepNhanDAO(KhachHangDAO khachHangDAO, XeDAO xeDAO) {
+        this(khachHangDAO, xeDAO, List::of);
+    }
+
+    public PhieuTiepNhanDAO(KhachHangDAO khachHangDAO, XeDAO xeDAO,
+            Supplier<List<KyThuatVienPhanCong>> nguonKyThuat) {
         this.khachHangDAO = Objects.requireNonNull(khachHangDAO);
         this.xeDAO = Objects.requireNonNull(xeDAO);
+        this.nguonKyThuat = Objects.requireNonNull(nguonKyThuat);
     }
 
     /**
@@ -86,6 +98,47 @@ public final class PhieuTiepNhanDAO {
         xeDAO.timTheoMa(tk, maXe);
         List<PhieuTiepNhan> ketQua = new ArrayList<>();
         for (PhieuTiepNhan phieu : theoThaoTac.values()) if (phieu.getMaXe().equals(maXe)) ketQua.add(phieu);
+        return ketQua;
+    }
+
+    public synchronized List<KyThuatVienPhanCong> layKyThuatPhanCong(TaiKhoan tk) {
+        kiemTraQuyen(tk);
+        List<KyThuatVienPhanCong> ketQua = new ArrayList<>();
+        for (KyThuatVienPhanCong kt : nguonKyThuat.get()) if (kt.duocPhanCong()) ketQua.add(kt);
+        return ketQua;
+    }
+
+    /** Giao kiểm tra một lần, không đổi phiếu đã xác nhận để giữ nguyên snapshot và liên kết báo cáo. */
+    public synchronized void giaoKiemTra(TaiKhoan tk, PhieuTiepNhan daDoc, String taiKhoanKyThuat) {
+        kiemTraQuyen(tk);
+        if (daDoc == null || timTheoMa(tk, daDoc.getMaPhieu()) != daDoc) throw new IllegalArgumentException("Cần phiếu tiếp nhận đã lưu.");
+        boolean hopLe = false;
+        for (KyThuatVienPhanCong kt : layKyThuatPhanCong(tk)) if (kt.getTaiKhoan().getTenDangNhap().equals(taiKhoanKyThuat)) hopLe = true;
+        if (!hopLe) throw new IllegalArgumentException("Kỹ thuật viên không còn hoạt động hoặc không có liên kết tài khoản hợp lệ.");
+        String cu = phanCongKiemTra.get(daDoc.getMaPhieu());
+        if (cu != null) {
+            if (!cu.equals(taiKhoanKyThuat)) throw new IllegalStateException("Phiếu đã giao kiểm tra. Không tự đổi người kiểm tra.");
+            return;
+        }
+        phanCongKiemTra.put(daDoc.getMaPhieu(), taiKhoanKyThuat);
+        nguoiGiaoKiemTra.put(daDoc.getMaPhieu(), tk.getTenDangNhap());
+        lucGiaoKiemTra.put(daDoc.getMaPhieu(), LocalDateTime.now());
+    }
+
+    public synchronized String docPhanCongKiemTra(TaiKhoan tk, String ma) {
+        timTheoMa(tk, ma);
+        String nguoi = phanCongKiemTra.get(ma);
+        return nguoi == null ? "Chưa phân công" : nguoi + " · " + nguoiGiaoKiemTra.get(ma) + " · " + lucGiaoKiemTra.get(ma);
+    }
+
+    public synchronized List<PhieuTiepNhan> layPhieuKiemTra(TaiKhoan tk) {
+        if (tk == null || tk.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT) throw new SecurityException("Chỉ kỹ thuật được đọc phiếu kiểm tra đã giao.");
+        boolean dangLam = false;
+        for (KyThuatVienPhanCong kt : nguonKyThuat.get()) if (kt.duocPhanCong() && kt.getTaiKhoan().getTenDangNhap().equals(tk.getTenDangNhap())) dangLam = true;
+        List<PhieuTiepNhan> ketQua = new ArrayList<>();
+        if (dangLam) for (PhieuTiepNhan p : theoThaoTac.values()) {
+            if (tk.getTenDangNhap().equals(phanCongKiemTra.get(p.getMaPhieu()))) ketQua.add(p);
+        }
         return ketQua;
     }
 

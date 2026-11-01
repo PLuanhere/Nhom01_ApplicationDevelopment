@@ -41,7 +41,7 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
     private static final long serialVersionUID = 1L;
     private final JFrame winChu;
     private final TaiKhoan taiKhoan;
-    private final BaoCaoKiemTraDAO baoCaoDAO = new BaoCaoKiemTraDAO();
+    private final BaoCaoKiemTraDAO baoCaoDAO;
     private final JLabel lblTrangThai = KiemTraUi.taoNhan("", false);
     private final JTextField txtTuKhoa = new JTextField("KT-2026-0112");
     private final JComboBox<String> cmbTrangThai = new JComboBox<String>(
@@ -65,6 +65,11 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
     private String dauVetKetQua;
 
     public BaoCaoKiemTraPanel(JFrame winChu, TaiKhoan taiKhoan) {
+        this(winChu, taiKhoan, new BaoCaoKiemTraDAO());
+    }
+
+    public BaoCaoKiemTraPanel(JFrame winChu, TaiKhoan taiKhoan, BaoCaoKiemTraDAO nguonChung) {
+        this.baoCaoDAO = java.util.Objects.requireNonNull(nguonChung);
         this.winChu = winChu;
         this.taiKhoan = taiKhoan;
         setBackground(UiTheme.WINDOW);

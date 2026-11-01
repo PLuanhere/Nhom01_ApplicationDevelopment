@@ -26,10 +26,32 @@ public final class BaoGiaDAO {
     private final Map<String, BaoGia> danhSach = new LinkedHashMap<>();
     private final Map<String, String> maThaoTac = new LinkedHashMap<>();
     private int soThuTu = 1;
+    private PhuTungSuDungDAO danhMucPhuTung;
 
     public BaoGiaDAO(PhieuTiepNhanDAO phieuDAO, Supplier<List<BaoCaoKiemTra>> nguonBaoCao) {
         this.phieuDAO = Objects.requireNonNull(phieuDAO);
         this.nguonBaoCao = Objects.requireNonNull(nguonBaoCao);
+    }
+
+    public BaoGiaDAO(PhieuTiepNhanDAO phieuDAO, Supplier<List<BaoCaoKiemTra>> nguonBaoCao, PhuTungSuDungDAO danhMuc) {
+        this(phieuDAO, nguonBaoCao);
+        danhMucPhuTung = Objects.requireNonNull(danhMuc);
+    }
+
+    private void kiemTraDanhMuc(List<ChiTietBaoGia> chiTiet) {
+        if (danhMucPhuTung == null || chiTiet == null) return;
+        for (ChiTietBaoGia ct : chiTiet) {
+            if (ct == null) continue;
+            if ("Phụ tùng".equals(ct.getLoai())) {
+                entity.PhuTung pt = danhMucPhuTung.docPhuTung(ct.getMaPhuTung());
+                if (!pt.getTenPhuTung().equals(ct.getTenHangMuc()) || !pt.getDonViTinh().equals(ct.getDonVi())) {
+                    throw new IllegalArgumentException("Tên/đơn vị phụ tùng không khớp danh mục.");
+                }
+                pt.kiemTraSoLuong(ct.getSoLuong());
+            } else if (!"Dịch vụ".equals(ct.getLoai()) || !ct.getMaPhuTung().isEmpty()) {
+                throw new IllegalArgumentException("Loại hạng mục không hợp lệ hoặc dịch vụ chứa mã phụ tùng.");
+            }
+        }
     }
 
     /** Chỉ trả báo cáo hoàn tất của đúng phiếu đã được kho tiếp nhận xác nhận. */
@@ -52,6 +74,7 @@ public final class BaoGiaDAO {
             List<ChiTietBaoGia> chiTiet, LocalDateTime hen) {
         quyen(tk);
         kiemTraMaThaoTac(token);
+        kiemTraDanhMuc(chiTiet);
         BaoCaoKiemTra bc = canCu(tk, maBaoCao);
         String daTao = maThaoTac.get(token);
         if (daTao != null) return kiemTraLap(tk, daTao, bc, chiTiet, hen, null);
@@ -69,6 +92,7 @@ public final class BaoGiaDAO {
     /** Chỉ cập nhật bản nháp đang đọc, chống ghi đè một đối tượng đã được màn khác thay đổi. */
     public synchronized BaoGia suaNhap(TaiKhoan tk, BaoGia daDoc, List<ChiTietBaoGia> chiTiet, LocalDateTime hen) {
         quyen(tk);
+        kiemTraDanhMuc(chiTiet);
         BaoGia cu = banHienTai(daDoc);
         moiNhat(cu);
         if (cu.getTrangThai() != TrangThaiBaoGia.NHAP) throw new IllegalStateException("Bản đã gửi/duyệt chỉ đọc; cần tạo phiên bản mới.");
@@ -81,6 +105,7 @@ public final class BaoGiaDAO {
     public synchronized BaoGia taoDieuChinh(TaiKhoan tk, String token, BaoGia coSo, List<ChiTietBaoGia> chiTiet, LocalDateTime hen) {
         quyen(tk);
         kiemTraMaThaoTac(token);
+        kiemTraDanhMuc(chiTiet);
         Objects.requireNonNull(coSo, "Cần bản cơ sở.");
         BaoGia cu = timTheoMa(tk, coSo.getMaBaoGia());
         BaoCaoKiemTra bc = canCu(tk, cu.getBaoCao().getMaBaoCao());
@@ -174,7 +199,7 @@ public final class BaoGiaDAO {
         if (x.size() != y.size()) return false;
         for (int i = 0; i < x.size(); i++) {
             ChiTietBaoGia m = x.get(i), n = y.get(i);
-            if (!m.getTenHangMuc().equals(n.getTenHangMuc()) || !m.getLoai().equals(n.getLoai()) || !m.getDonVi().equals(n.getDonVi())
+            if (!m.getMaPhuTung().equals(n.getMaPhuTung()) || !m.getTenHangMuc().equals(n.getTenHangMuc()) || !m.getLoai().equals(n.getLoai()) || !m.getDonVi().equals(n.getDonVi())
                     || m.getSoLuong().compareTo(n.getSoLuong()) != 0 || m.getDonGia().compareTo(n.getDonGia()) != 0) return false;
         }
         return true;

@@ -10,8 +10,14 @@ public final class ChiTietBaoGia {
     private final String donVi;
     private final BigDecimal soLuong;
     private final BigDecimal donGia;
+    private final String maPhuTung;
 
     public ChiTietBaoGia(String tenHangMuc, String loai, String donVi, String soLuong, String donGia) {
+        this(tenHangMuc, loai, donVi, soLuong, donGia, "");
+    }
+
+    public ChiTietBaoGia(String tenHangMuc, String loai, String donVi, String soLuong, String donGia, String maPhuTung) {
+        this.maPhuTung = Objects.requireNonNull(maPhuTung).strip();
         this.tenHangMuc = Objects.requireNonNull(tenHangMuc);
         this.loai = Objects.requireNonNull(loai);
         this.donVi = Objects.requireNonNull(donVi);
@@ -22,6 +28,7 @@ public final class ChiTietBaoGia {
         }
     }
 
+    public String getMaPhuTung() { return maPhuTung; }
     public String getTenHangMuc() { return tenHangMuc; }
     public String getLoai() { return loai; }
     public String getDonVi() { return donVi; }

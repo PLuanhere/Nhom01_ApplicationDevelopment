@@ -27,6 +27,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 import dao.TaiKhoanDAO;
+import dao.DuLieuGarageDAO;
 import entity.TaiKhoan;
 import ui.component.LoginBackgroundPanel;
 import ui.component.UiTheme;
@@ -40,6 +41,7 @@ public final class LoginFrame extends JFrame {
     /** Log lỗi kỹ thuật, không ghi tên đăng nhập hoặc mật khẩu. */
     private static final System.Logger LOGGER = System.getLogger(LoginFrame.class.getName());
     /** Nguồn xác thực hiện tại, chưa kết nối database. */
+    private final DuLieuGarageDAO duLieuChung;
     private final TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAO();
     /** Hai ô nhập chỉ vẽ gợi ý khi chưa có dữ liệu; không dùng gợi ý làm giá trị nhập. */
     private final JTextField txtTenDangNhap = new JTextField() {
@@ -69,8 +71,11 @@ public final class LoginFrame extends JFrame {
             "Nhập tài khoản nhân viên được quản lý cấp để tiếp tục công việc.");
 
     /** Tạo cửa sổ co giãn, thẻ nhập ở giữa ảnh và có vùng cuộn khi màn hình thấp. */
-    public LoginFrame() {
+    public LoginFrame() { this(new DuLieuGarageDAO()); }
+
+    public LoginFrame(DuLieuGarageDAO duLieuChung) {
         super("Garage Ô tô Đức Dũng — Đăng nhập");
+        this.duLieuChung = java.util.Objects.requireNonNull(duLieuChung);
         setUndecorated(true);
         setMinimumSize(new Dimension(960, 600));
         setSize(1280, 800);
@@ -327,7 +332,7 @@ public final class LoginFrame extends JFrame {
         txtMatKhau.setText("");
         chkHienMatKhau.setSelected(false);
         txtMatKhau.setEchoChar('•');
-        MainFrame winChinh = new MainFrame(taiKhoan, () -> new LoginFrame().setVisible(true));
+        MainFrame winChinh = new MainFrame(taiKhoan, () -> new LoginFrame(duLieuChung).setVisible(true), duLieuChung);
         winChinh.setVisible(true);
         dispose();
     }

@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Objects;
+import java.util.function.Supplier;
 import entity.BaoCaoKiemTra;
 import entity.BaoGia;
 import entity.ChiTietBaoGia;
@@ -21,22 +23,41 @@ import entity.VaiTro;
 
 // Giữ các DAO dùng chung trong một phiên đăng nhập kỹ thuật.
 public final class KyThuatDAO {
-    private final TaiKhoan taiKhoan;
-    private final PhieuSuaChuaDAO suaChuaDAO = new PhieuSuaChuaDAO();
-    private final BaoCaoKiemTraDAO kiemTraDAO = new BaoCaoKiemTraDAO();
-    private final PhuTungSuDungDAO phuTungDAO = new PhuTungSuDungDAO();
+    private final Supplier<TaiKhoan> phien;
+    private final boolean dungNguonChung;
+    private final PhieuSuaChuaDAO suaChuaDAO;
+    private final BaoCaoKiemTraDAO kiemTraDAO;
+    private final PhuTungSuDungDAO phuTungDAO;
 
     public KyThuatDAO(TaiKhoan taiKhoan) {
-        if (taiKhoan == null || taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT) {
-            throw new SecurityException("Chức năng dành cho kỹ thuật viên đã đăng nhập.");
-        }
-        this.taiKhoan = taiKhoan;
+        this(() -> taiKhoan, new PhieuSuaChuaDAO(), new BaoCaoKiemTraDAO(), new PhuTungSuDungDAO(), false);
+    }
+
+    public KyThuatDAO(Supplier<TaiKhoan> phien, PhieuSuaChuaDAO suaChua,
+            BaoCaoKiemTraDAO kiemTra, PhuTungSuDungDAO phuTung) {
+        this(phien, suaChua, kiemTra, phuTung, true);
+    }
+
+    private KyThuatDAO(Supplier<TaiKhoan> phien, PhieuSuaChuaDAO suaChua,
+            BaoCaoKiemTraDAO kiemTra, PhuTungSuDungDAO phuTung, boolean dungNguonChung) {
+        this.phien = Objects.requireNonNull(phien);
+        phien();
+        suaChuaDAO = Objects.requireNonNull(suaChua);
+        kiemTraDAO = Objects.requireNonNull(kiemTra);
+        phuTungDAO = Objects.requireNonNull(phuTung);
+        this.dungNguonChung = dungNguonChung;
+    }
+
+    private TaiKhoan phien() {
+        TaiKhoan tk = phien.get();
+        if (tk == null || tk.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT) throw new SecurityException("Cần phiên kỹ thuật còn hiệu lực.");
+        return tk;
     }
 
     // Lọc công việc theo phân công, từ khóa và trạng thái thực tế.
     public List<PhieuSuaChua> docLenh(String tuKhoa, String trangThai) {
         List<PhieuSuaChua> ketQua = new ArrayList<PhieuSuaChua>();
-        for (PhieuSuaChua lenh : suaChuaDAO.timKiem(taiKhoan, tuKhoa, "Tất cả")) {
+        for (PhieuSuaChua lenh : suaChuaDAO.timKiem(phien(), tuKhoa, "Tất cả")) {
             if ("Tất cả".equals(trangThai) || docTrangThai(lenh).equals(trangThai)) {
                 ketQua.add(lenh);
             }
@@ -46,7 +67,7 @@ public final class KyThuatDAO {
 
     // Đọc lại lệnh để các màn hình luôn nhận bản dữ liệu sau cập nhật.
     public PhieuSuaChua docLenh(String maLenh) {
-        Optional<PhieuSuaChua> ketQua = suaChuaDAO.timTheoMa(taiKhoan, maLenh);
+        Optional<PhieuSuaChua> ketQua = suaChuaDAO.timTheoMa(phien(), maLenh);
         if (!ketQua.isPresent()) {
             throw new IllegalArgumentException("Lệnh không thuộc phân công hoặc không tồn tại.");
         }
@@ -68,17 +89,17 @@ public final class KyThuatDAO {
 
     // Đọc phiếu tiếp nhận thuộc phạm vi của tài khoản đang đăng nhập.
     public List<PhieuTiepNhan> docPhieu() {
-        return kiemTraDAO.layPhieu(taiKhoan);
+        return kiemTraDAO.layPhieu(phien());
     }
 
     // Tìm báo cáo theo bộ lọc và điều kiện phân quyền hiện có.
     public List<BaoCaoKiemTra> docBaoCao(String tuKhoa, String trangThai) {
-        return kiemTraDAO.timKiem(taiKhoan, tuKhoa, trangThai);
+        return kiemTraDAO.timKiem(phien(), tuKhoa, trangThai);
     }
 
     // Đọc báo cáo đã có của phiếu tiếp nhận được chọn.
     public BaoCaoKiemTra docBaoCao(PhieuTiepNhan phieu) {
-        return kiemTraDAO.timTheoPhieu(taiKhoan, phieu).orElse(null);
+        return kiemTraDAO.timTheoPhieu(phien(), phieu).orElse(null);
     }
 
     // Lưu báo cáo và kiểm tra đủ ba khu vực trước khi hoàn tất.
@@ -91,17 +112,17 @@ public final class KyThuatDAO {
                 }
             }
         }
-        return kiemTraDAO.luu(taiKhoan, baoCao, hoanTat);
+        return kiemTraDAO.luu(phien(), baoCao, hoanTat);
     }
 
     // Xóa báo cáo nháp theo điều kiện bảo vệ dữ liệu của DAO kiểm tra.
     public void xoaBaoCao(BaoCaoKiemTra baoCao) {
-        kiemTraDAO.xoa(taiKhoan, baoCao);
+        kiemTraDAO.xoa(phien(), baoCao);
     }
 
     // Cập nhật tiến độ của đúng hạng mục được chọn.
     public void luuTienDo(String maLenh, int viTri, TrangThaiSuaChua trangThai, String ketQua) {
-        suaChuaDAO.capNhatTienDo(taiKhoan, maLenh, viTri, trangThai, ketQua);
+        suaChuaDAO.capNhatTienDo(phien(), maLenh, viTri, trangThai, ketQua);
     }
 
     // Gửi đề xuất phát sinh và giữ trạng thái chờ lập báo giá bổ sung.
@@ -109,7 +130,7 @@ public final class KyThuatDAO {
         if (hangMuc.isBlank() || moTa.isBlank()) {
             throw new IllegalArgumentException("Hạng mục phát sinh và mô tả là bắt buộc.");
         }
-        suaChuaDAO.guiPhatSinh(taiKhoan, maLenh,
+        suaChuaDAO.guiPhatSinh(phien(), maLenh,
                 new String[] {hangMuc.trim(), moTa.trim(), phuTung.trim(), "", "Chờ lập báo giá bổ sung"});
     }
 
@@ -130,9 +151,9 @@ public final class KyThuatDAO {
     // Đọc phụ tùng phù hợp với hạng mục và báo giá của lệnh hiện tại.
     public List<PhuTung> docPhuTung(String maLenh, int viTri) {
         List<PhuTung> ketQua = new ArrayList<PhuTung>();
-        for (String ma : new String[] {"PT001", "PT005", "PT004"}) {
-            if (docGioiHan(maLenh, viTri, ma).signum() > 0) {
-                ketQua.add(phuTungDAO.docPhuTung(ma));
+        for (PhuTung pt : phuTungDAO.docDanhMuc()) {
+            if (docGioiHan(maLenh, viTri, pt.getMaPhuTung()).signum() > 0) {
+                ketQua.add(pt);
             }
         }
         return ketQua;
@@ -141,6 +162,12 @@ public final class KyThuatDAO {
     // Đối chiếu phụ tùng mẫu với hạng mục và số lượng trong báo giá đã duyệt.
     private BigDecimal docGioiHan(String maLenh, int viTri, String maPhuTung) {
         HangMucSuaChua hangMuc = docHangMuc(maLenh, viTri);
+        if (dungNguonChung) {
+            BaoGia bg = suaChuaDAO.layBaoGia(phien(), maLenh);
+            if (viTri >= bg.getChiTiet().size()) return BigDecimal.ZERO;
+            ChiTietBaoGia ct = bg.getChiTiet().get(viTri);
+            return ct.getMaPhuTung().equals(maPhuTung) ? ct.getSoLuong() : BigDecimal.ZERO;
+        }
         String ten = hangMuc.getTenHangMuc().toLowerCase(Locale.ROOT);
         if ("PT004".equals(maPhuTung)) {
             return hangMuc.isPhatSinh() && ten.contains("rotuyn") ? BigDecimal.ONE : BigDecimal.ZERO;
@@ -148,7 +175,7 @@ public final class KyThuatDAO {
         if (!(ten.contains("dầu") || ten.contains("lọc") || ten.contains("bảo dưỡng"))) {
             return BigDecimal.ZERO;
         }
-        BaoGia baoGia = suaChuaDAO.layBaoGia(taiKhoan, maLenh);
+        BaoGia baoGia = suaChuaDAO.layBaoGia(phien(), maLenh);
         if (!baoGia.isDaDongY()) {
             return BigDecimal.ZERO;
         }
@@ -165,6 +192,7 @@ public final class KyThuatDAO {
 
     // Đọc tồn kho từ cùng DAO phụ tùng trong phiên.
     public BigDecimal docTon(String maPhuTung) {
+        phien();
         return phuTungDAO.docTon(maPhuTung);
     }
 
@@ -176,7 +204,8 @@ public final class KyThuatDAO {
         if (lenh.getTrangThai() == TrangThaiSuaChua.HOAN_THANH) {
             throw new IllegalStateException("Lệnh đã hoàn thành; không ghi nhận thêm phụ tùng.");
         }
-        return phuTungDAO.ghiTheoHangMuc(taiKhoan, maLenh, hangMuc.getTenHangMuc(), maPhuTung,
+        if (dungNguonChung) return phuTungDAO.ghiTheoHangMuc(phien(), maLenh, viTri, maPhuTung, soLuong, maLuot);
+        return phuTungDAO.ghiTheoHangMuc(phien(), maLenh, hangMuc.getTenHangMuc(), maPhuTung,
                 soLuong, docGioiHan(maLenh, viTri, maPhuTung), maLuot);
     }
 
@@ -184,8 +213,8 @@ public final class KyThuatDAO {
     public String docThucDung(String maLenh, int viTri) {
         HangMucSuaChua hangMuc = docHangMuc(maLenh, viTri);
         StringBuilder ketQua = new StringBuilder();
-        for (PhuTungSuDung dong : phuTungDAO.docDanhSach(taiKhoan, maLenh, TrangThaiSuDung.DA_GHI_NHAN)) {
-            if (maLenh.equals(dong.getMaLenhSuaChua()) && (hangMuc.getTenHangMuc().equals(dong.getHangMuc())
+        for (PhuTungSuDung dong : phuTungDAO.docDanhSach(phien(), maLenh, TrangThaiSuDung.DA_GHI_NHAN)) {
+            if (maLenh.equals(dong.getMaLenhSuaChua()) && ((dungNguonChung ? (maLenh + "#" + viTri) : hangMuc.getTenHangMuc()).equals(dong.getHangMuc())
                     || (dong.getHangMuc().isEmpty()
                     && docGioiHan(maLenh, viTri, dong.getPhuTung().getMaPhuTung()).signum() > 0))) {
                 if (ketQua.length() > 0) {
@@ -228,8 +257,8 @@ public final class KyThuatDAO {
 
     // Kiểm tra chứng từ đã ghi nhận của đúng phụ tùng và hạng mục trong lệnh.
     private boolean daGhiNhan(String maLenh, int viTri, String maPhuTung) {
-        String hangMuc = docHangMuc(maLenh, viTri).getTenHangMuc();
-        for (PhuTungSuDung dong : phuTungDAO.docDanhSach(taiKhoan, maLenh, TrangThaiSuDung.DA_GHI_NHAN)) {
+        String hangMuc = dungNguonChung ? maLenh + "#" + viTri : docHangMuc(maLenh, viTri).getTenHangMuc();
+        for (PhuTungSuDung dong : phuTungDAO.docDanhSach(phien(), maLenh, TrangThaiSuDung.DA_GHI_NHAN)) {
             if (maLenh.equals(dong.getMaLenhSuaChua()) && maPhuTung.equals(dong.getPhuTung().getMaPhuTung())
                     && (dong.getHangMuc().isEmpty() || hangMuc.equals(dong.getHangMuc()))) {
                 return true;
@@ -255,7 +284,7 @@ public final class KyThuatDAO {
                 throw new IllegalStateException("Chưa ghi nhận phụ tùng của hạng mục " + (viTri + 1) + ".");
             }
         }
-        suaChuaDAO.hoanTat(taiKhoan, maLenh, new String[] {ketLuan.trim(), "", ""},
+        suaChuaDAO.hoanTat(phien(), maLenh, new String[] {ketLuan.trim(), "", ""},
                 new boolean[] {true, true, true, true});
     }
 }
