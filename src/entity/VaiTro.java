@@ -17,4 +17,8 @@ public enum VaiTro {
     public String getTenHienThi() {
         return tenHienThi;
     }
+
+    /** @return tên vai trò khi hiển thị trong ô lựa chọn */
+    @Override
+    public String toString() { return tenHienThi; }
 }

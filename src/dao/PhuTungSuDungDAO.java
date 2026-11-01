@@ -313,6 +313,7 @@ public final class PhuTungSuDungDAO {
 
     // Kiểm tra tài khoản có vai trò kỹ thuật trước khi thao tác dữ liệu.
     private void kiemTraTaiKhoan(TaiKhoan taiKhoan) {
+        if (taiKhoan != null) { taiKhoan.kiemTraPhien(); }
         if (taiKhoan == null || taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT) {
             throw new SecurityException("Chức năng dành cho nhân viên kỹ thuật đã đăng nhập.");
         }

@@ -278,7 +278,7 @@ public final class LoginFrame extends JFrame {
                 try {
                     // get() lấy kết quả đã hoàn tất, không chặn giao diện.
                     Optional<TaiKhoan> ketQua = get();
-                    if (ketQua.isPresent()) {
+                    if (ketQua.isPresent() && ketQua.get().isPhienHopLe()) {
                         moKhungChinh(ketQua.get());
                     } else {
                         hienThiLoi("Tên đăng nhập hoặc mật khẩu không đúng.");
@@ -289,6 +289,8 @@ public final class LoginFrame extends JFrame {
                 } catch (ExecutionException error) {
                     LOGGER.log(System.Logger.Level.ERROR, "Lỗi xác thực tài khoản.", error.getCause());
                     hienThiLoi("Không thể đăng nhập lúc này. Vui lòng thử lại.");
+                } catch (SecurityException error) {
+                    hienThiLoi("Tài khoản vừa được thay đổi. Vui lòng đăng nhập lại.");
                 }
             }
         }.execute();

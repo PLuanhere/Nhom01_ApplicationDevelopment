@@ -29,30 +29,39 @@ public final class KyThuatDAO {
     private final BaoCaoKiemTraDAO kiemTraDAO;
     private final PhuTungSuDungDAO phuTungDAO;
 
-    public KyThuatDAO(TaiKhoan taiKhoan) {
-        this(() -> taiKhoan, new PhieuSuaChuaDAO(), new BaoCaoKiemTraDAO(), new PhuTungSuDungDAO(), false);
+   public KyThuatDAO(TaiKhoan taiKhoan) {
+    this(() -> taiKhoan, new PhieuSuaChuaDAO(),
+            new BaoCaoKiemTraDAO(), new PhuTungSuDungDAO(), false);
+}
+
+public KyThuatDAO(Supplier<TaiKhoan> phien, PhieuSuaChuaDAO suaChua,
+        BaoCaoKiemTraDAO kiemTra, PhuTungSuDungDAO phuTung) {
+    this(phien, suaChua, kiemTra, phuTung, true);
+}
+
+private KyThuatDAO(Supplier<TaiKhoan> phien, PhieuSuaChuaDAO suaChua,
+        BaoCaoKiemTraDAO kiemTra, PhuTungSuDungDAO phuTung,
+        boolean dungNguonChung) {
+    this.phien = Objects.requireNonNull(phien);
+    phien();
+
+    suaChuaDAO = Objects.requireNonNull(suaChua);
+    kiemTraDAO = Objects.requireNonNull(kiemTra);
+    phuTungDAO = Objects.requireNonNull(phuTung);
+    this.dungNguonChung = dungNguonChung;
+}
+
+// Kiểm tra lại vai trò và hiệu lực phiên trước khi truy cập dữ liệu.
+private TaiKhoan phien() {
+    TaiKhoan tk = phien.get();
+
+    if (tk == null || tk.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT) {
+        throw new SecurityException("Cần phiên kỹ thuật còn hiệu lực.");
     }
 
-    public KyThuatDAO(Supplier<TaiKhoan> phien, PhieuSuaChuaDAO suaChua,
-            BaoCaoKiemTraDAO kiemTra, PhuTungSuDungDAO phuTung) {
-        this(phien, suaChua, kiemTra, phuTung, true);
-    }
-
-    private KyThuatDAO(Supplier<TaiKhoan> phien, PhieuSuaChuaDAO suaChua,
-            BaoCaoKiemTraDAO kiemTra, PhuTungSuDungDAO phuTung, boolean dungNguonChung) {
-        this.phien = Objects.requireNonNull(phien);
-        phien();
-        suaChuaDAO = Objects.requireNonNull(suaChua);
-        kiemTraDAO = Objects.requireNonNull(kiemTra);
-        phuTungDAO = Objects.requireNonNull(phuTung);
-        this.dungNguonChung = dungNguonChung;
-    }
-
-    private TaiKhoan phien() {
-        TaiKhoan tk = phien.get();
-        if (tk == null || tk.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT) throw new SecurityException("Cần phiên kỹ thuật còn hiệu lực.");
-        return tk;
-    }
+    tk.kiemTraPhien();
+    return tk;
+}
 
     // Lọc công việc theo phân công, từ khóa và trạng thái thực tế.
     public List<PhieuSuaChua> docLenh(String tuKhoa, String trangThai) {
