@@ -21,3 +21,5 @@ Icon là bản PNG do Figma xuất từ đúng layer vector để Swing dùng đ
 ## Icon tiếp nhận
 
 `reception-home.png`, `reception-file.png`, `reception-wrench.png`, `reception-key.png` lấy từ asset SVG của frame Figma `2479:10018` (Page 3), chuyển PNG giữ kích thước gốc để Swing đọc bằng ImageIO. Các icon clipboard/users/car tái sử dụng tài nguyên chung.
+
+`reception-car.png`: icon Phương tiện trong sidebar tiếp nhận, layer `2526:8327` (slot `2479:10045`), 17×17, màu #CBD9E6; xuất từ asset SVG Figma giữ kích thước gốc. `car.png` 25×25 tiếp tục dùng cho thương hiệu.

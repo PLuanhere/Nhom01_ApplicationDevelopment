@@ -10,6 +10,11 @@ import javax.swing.event.*;
 import javax.swing.table.DefaultTableModel;
 import dao.KhachHangDAO;
 import dao.XeDAO;
+import dao.TrangChuTiepNhanDAO;
+import entity.PhieuSuaChua;
+import entity.PhuTungSuDung;
+import dao.PhieuTiepNhanDAO;
+import entity.PhieuTiepNhan;
 import entity.KhachHang;
 import entity.TaiKhoan;
 import entity.Xe;
@@ -18,7 +23,12 @@ import ui.component.UiTheme;
 /** Danh sách, form và lối tra cứu lịch sử xe; chỉ thao tác kho trong phiên hiện tại. */
 public final class XePanel extends JPanel {
     private static final long serialVersionUID = 1L;
+    private static final java.time.format.DateTimeFormatter NGAY = java.time.format.DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm");
     private final XeDAO dao;
+    private final PhieuTiepNhanDAO phieuDAO;
+    private TrangChuTiepNhanDAO tienDoDAO;
+    private final DefaultTableModel modelLichSuSuaChua = model("Ngày", "Lệnh sửa chữa", "Nội dung", "Phụ tùng thực dùng", "Kết quả");
+    private final DefaultTableModel modelLichSuTiepNhan = model("Ngày nhận", "Phiếu tiếp nhận", "Yêu cầu khách", "Trạng thái");
     private final KhachHangDAO khachHangDAO;
     private final Supplier<TaiKhoan> phien;
     private final CardLayout boCuc = new CardLayout();
@@ -47,7 +57,12 @@ public final class XePanel extends JPanel {
 
     /** Gọi trên EDT; hai DAO phải cùng nguồn khách hàng của phiên đăng nhập. */
     public XePanel(XeDAO dao, KhachHangDAO khachHangDAO, Supplier<TaiKhoan> phien) {
+        this(dao, khachHangDAO, phien, null);
+    }
+
+    public XePanel(XeDAO dao, KhachHangDAO khachHangDAO, Supplier<TaiKhoan> phien, PhieuTiepNhanDAO phieuDAO) {
         super(new BorderLayout());
+        this.phieuDAO = phieuDAO;
         this.dao = Objects.requireNonNull(dao);
         this.khachHangDAO = Objects.requireNonNull(khachHangDAO);
         this.phien = Objects.requireNonNull(phien);
@@ -58,6 +73,11 @@ public final class XePanel extends JPanel {
         pnlThe.add(taoLichSu(), "LICH_SU");
         add(pnlThe);
         taiDanhSach();
+    }
+
+    public XePanel(XeDAO dao, KhachHangDAO khachHangDAO, Supplier<TaiKhoan> phien,
+            PhieuTiepNhanDAO phieuDAO, TrangChuTiepNhanDAO tienDoDAO) {
+        this(dao, khachHangDAO, phien, phieuDAO); this.tienDoDAO = tienDoDAO;
     }
 
     /** Hủy chuyển màn hình phải giữ nguyên form và mục sidebar hiện tại. */
@@ -156,10 +176,13 @@ public final class XePanel extends JPanel {
         txtTraLichSu.addActionListener(e -> traLichSu());
         tra.add(txtTraLichSu);
         tra.add(nut("Tra cứu", false, this::traLichSu), BorderLayout.EAST);
-        tra.add(nhan("Chưa nối nguồn tiếp nhận/sửa chữa; không hiển thị lịch sử minh họa như dữ liệu thật.", false), BorderLayout.SOUTH);
+        tra.add(nhan("Chứng từ liên kết theo mã xe; chỉ hiển thị dữ liệu đã có trong nguồn của phiên.", false), BorderLayout.SOUTH);
         noiDung.add(tra);
-        noiDung.add(khungLichSu("Lịch sử sửa chữa · UC008", "Ngày", "Lệnh sửa chữa", "Nội dung", "Phụ tùng", "Kết quả"));
-        noiDung.add(khungLichSu("Lịch sử tiếp nhận · UC012", "Ngày nhận", "Phiếu tiếp nhận", "Yêu cầu khách", "Trạng thái"));
+        noiDung.add(khungLichSu("Lịch sử sửa chữa · UC008", modelLichSuSuaChua));
+        JPanel tiepNhan = khung(new BorderLayout(0, 10));
+        tiepNhan.add(nhan("Lịch sử tiếp nhận · UC012", true), BorderLayout.NORTH);
+        tiepNhan.add(new JScrollPane(bang(modelLichSuTiepNhan)));
+        noiDung.add(tiepNhan);
         // Các khung lịch sử cần chiều cao tối thiểu; cuộn thay vì ép mất ô tra cứu.
         noiDung.setPreferredSize(new Dimension(600, 620));
         JPanel neo = nen(new BorderLayout());
@@ -171,10 +194,10 @@ public final class XePanel extends JPanel {
         return pnl;
     }
 
-    private JPanel khungLichSu(String ten, String... cot) {
+    private JPanel khungLichSu(String ten, DefaultTableModel duLieu) {
         JPanel pnl = khung(new BorderLayout(0, 10));
         pnl.add(nhan(ten, true), BorderLayout.NORTH);
-        pnl.add(new JScrollPane(bang(model(cot))));
+        pnl.add(new JScrollPane(bang(duLieu)));
         return pnl;
     }
 
@@ -211,10 +234,27 @@ public final class XePanel extends JPanel {
 
     private void traLichSu() {
         lblXeLichSu.setText("Không tìm thấy phương tiện.");
+        modelLichSuTiepNhan.setRowCount(0);
+        modelLichSuSuaChua.setRowCount(0);
         try {
             String khoa = Xe.chuanHoaBienSo(txtTraLichSu.getText());
             for (Xe xe : dao.timKiem(phien.get(), txtTraLichSu.getText())) {
                 if (Xe.chuanHoaBienSo(xe.getBienSo()).equals(khoa)) {
+                    if (phieuDAO != null) for (PhieuTiepNhan phieu : phieuDAO.lichSuTheoXe(phien.get(), xe.getMaXe())) {
+                        modelLichSuTiepNhan.addRow(new Object[] {phieu.getThoiGianNhan().format(NGAY), phieu.getMaPhieu(),
+                                phieu.getYeuCau(), tienDoDAO == null ? phieu.getTrangThai().getTenHienThi() : tienDoDAO.trangThaiPhieu(phien.get(), phieu.getMaPhieu())});
+                    }
+                    if (tienDoDAO != null) for (PhieuSuaChua lenh : tienDoDAO.layLenhTheoXe(phien.get(), xe.getMaXe())) {
+                        StringBuilder phuTung = new StringBuilder();
+                        for (PhuTungSuDung dong : tienDoDAO.layThucDung(phien.get(), lenh.getMaPhieu())) {
+                            if (phuTung.length() > 0) phuTung.append("; ");
+                            phuTung.append(dong.getPhuTung().getTenPhuTung()).append(": ").append(dong.getSoLuong().toPlainString()).append(" ").append(dong.getPhuTung().getDonViTinh());
+                        }
+                        StringBuilder congViec = new StringBuilder();
+                        for (entity.HangMucSuaChua hm : lenh.getDanhSachHangMuc()) { if (congViec.length() > 0) congViec.append("; "); congViec.append(hm.getTenHangMuc()); }
+                        modelLichSuSuaChua.addRow(new Object[] {(lenh.getThoiDiemHoanTat() == null ? lenh.getThoiDiemPhatHanh() : lenh.getThoiDiemHoanTat()).format(NGAY),
+                                lenh.getMaPhieu(), congViec.toString(), phuTung.toString(), lenh.getThoiDiemHoanTat() == null ? lenh.getTrangThai().getTenHienThi() : lenh.getKetQuaHoanTat()[0]});
+                    }
                     lblXeLichSu.setText(xe.getBienSo() + " · " + khachHangDAO.timTheoMa(phien.get(), xe.getMaKH()).getHoTen());
                     return;
                 }
@@ -307,7 +347,15 @@ public final class XePanel extends JPanel {
         };
     }
     private static JTable bang(DefaultTableModel model) {
-        JTable tbl = new JTable(model);
+        JTable tbl = new JTable(model) {
+            private static final long serialVersionUID = 1L;
+            @Override public String getToolTipText(java.awt.event.MouseEvent e) {
+                int row = rowAtPoint(e.getPoint()), col = columnAtPoint(e.getPoint());
+                Object value = row < 0 || col < 0 ? null : getValueAt(row, col);
+                return value == null ? null : value.toString();
+            }
+        };
+        tbl.setToolTipText("");
         tbl.setRowHeight(44); tbl.setFont(UiTheme.APP_FONT); tbl.setAutoCreateRowSorter(true);
         tbl.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); tbl.setShowVerticalLines(false);
         tbl.setGridColor(UiTheme.APP_BORDER); tbl.getTableHeader().setFont(UiTheme.APP_BOLD_FONT);
