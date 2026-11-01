@@ -330,7 +330,7 @@ public final class MainFrame extends JFrame implements ActionListener {
                 new TiepNhanNavigationPanel(this::dieuHuongTiepNhan);
         pnlTrangChuTiepNhan =
                 new TrangChuTiepNhanPanel(this::dieuHuongTiepNhan,
-                        duLieuChung == null ? null : duLieuChung.getTrangChuDAO(), this::getTaiKhoanDangNhap);
+                        duLieuChung == null ? null : duLieuChung.getTrangChuDAO(), this::getTaiKhoanDangNhap, this::moBanGiaoTuTongQuan);
 
         setSidebarContent(pnlDieuHuongTiepNhan);
         dieuHuongTiepNhan("Tổng quan tiếp nhận");
@@ -399,6 +399,7 @@ public final class MainFrame extends JFrame implements ActionListener {
                         khachHangDAO, xeDAO, phieuTiepNhanDAO, this::getTaiKhoanDangNhap,
                         duLieuChung == null ? null : duLieuChung.getTrangChuDAO());
             }
+            else if (!"Phiếu tiếp nhận".equals(mucTiepNhanDangMo)) pnlTiepNhan.moDanhSach();
 
             setScreen(pnlTiepNhan);
             mucTiepNhanDangMo = muc;
@@ -438,6 +439,7 @@ public final class MainFrame extends JFrame implements ActionListener {
 
         } else if ("Bàn giao xe".equals(muc)) {
             if (pnlBanGiao == null) pnlBanGiao = new BanGiaoXePanel(banGiaoDAO, this::getTaiKhoanDangNhap);
+            else if (!"Bàn giao xe".equals(mucTiepNhanDangMo)) pnlBanGiao.moDanhSach();
             setScreen(pnlBanGiao); mucTiepNhanDangMo = muc; pnlDieuHuongTiepNhan.chonMuc(muc);
             setStatus("Bàn giao xe · Đối chiếu căn cứ thanh toán/phê duyệt từ nguồn phụ trách");
 
@@ -452,6 +454,13 @@ public final class MainFrame extends JFrame implements ActionListener {
             pnlDieuHuongTiepNhan.chonMuc(mucTiepNhanDangMo);
             setStatus(muc + ": chức năng chưa triển khai.");
         }
+    }
+
+    private void moBanGiaoTuTongQuan(String maLenh) {
+        dieuHuongTiepNhan("Bàn giao xe");
+        if (!"Bàn giao xe".equals(mucTiepNhanDangMo)) return;
+        if (maLenh == null) pnlBanGiao.moDanhSachChoGiao();
+        else pnlBanGiao.moTheoLenh(maLenh);
     }
 
     /** @return true nếu được rời màn hình Tiếp nhận hiện tại */

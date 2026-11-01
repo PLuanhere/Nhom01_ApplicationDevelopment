@@ -99,7 +99,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
         this(khachHangDAO, xeDAO, phieuDAO, phien);
         this.tienDoDAO = tienDoDAO;
         if (tienDoDAO != null) {
-            for (String ten : new String[] {"Đang kiểm tra", "Đã kiểm tra", "Nháp", "Chờ khách xác nhận", "Đã đồng ý", "Yêu cầu điều chỉnh", "Từ chối", "Chờ sửa chữa", "Đang sửa", "Chờ phụ tùng", "Hoàn thành"}) cboTrangThai.addItem(ten);
+            for (String ten : new String[] {"Đang kiểm tra", "Đã kiểm tra", "Nháp", "Chờ khách xác nhận", "Đã đồng ý", "Yêu cầu điều chỉnh", "Từ chối", "Chờ sửa chữa", "Đang sửa", "Chờ phụ tùng", "Chờ xác nhận thanh toán", "Chờ bàn giao", "Đã bàn giao"}) cboTrangThai.addItem(ten);
         }
         locDanhSach();
     }
@@ -358,15 +358,22 @@ public final class PhieuTiepNhanPanel extends JPanel {
 
     private void locDanhSach() {
         TaiKhoan tk = kiemTraPhien();
-        modelDanhSach.setRowCount(0);
-        TrangThaiTiepNhan trangThai = tienDoDAO == null && cboTrangThai.getSelectedIndex() > 0 ? TrangThaiTiepNhan.CHO_KIEM_TRA : null;
-        for (PhieuTiepNhan phieu : phieuDAO.timKiem(tk, txtLoc.getText(), trangThai)) {
-            String hienThi = tienDoDAO == null ? phieu.getTrangThai().getTenHienThi() : tienDoDAO.trangThaiPhieu(phien.get(), phieu.getMaPhieu());
-            if (tienDoDAO != null && cboTrangThai.getSelectedIndex() > 0 && !hienThi.equals(cboTrangThai.getSelectedItem())) continue;
-            modelDanhSach.addRow(new Object[] {phieu.getMaPhieu(), phieu.getBienSo(), phieu.getTenKhach(),
-                    phieu.getThoiGianNhan().format(DINH_DANG_NGAY), phieu.getYeuCau(), hienThi});
+        try {
+            java.util.List<Object[]> cacDong = new java.util.ArrayList<>();
+            TrangThaiTiepNhan trangThai = tienDoDAO == null && cboTrangThai.getSelectedIndex() > 0 ? TrangThaiTiepNhan.CHO_KIEM_TRA : null;
+            for (PhieuTiepNhan phieu : phieuDAO.timKiem(tk, txtLoc.getText(), trangThai)) {
+                String hienThi = tienDoDAO == null ? phieu.getTrangThai().getTenHienThi() : tienDoDAO.trangThaiPhieu(phien.get(), phieu.getMaPhieu());
+                if (tienDoDAO != null && cboTrangThai.getSelectedIndex() > 0 && !hienThi.equals(cboTrangThai.getSelectedItem())) continue;
+                cacDong.add(new Object[] {phieu.getMaPhieu(), phieu.getBienSo(), phieu.getTenKhach(),
+                        phieu.getThoiGianNhan().format(DINH_DANG_NGAY), phieu.getYeuCau(), hienThi});
+            }
+            // Chỉ thay bảng sau khi đã đọc đủ trạng thái; lỗi nguồn không để lại danh sách bị nạp dở.
+            modelDanhSach.setRowCount(0);
+            for (Object[] dong : cacDong) modelDanhSach.addRow(dong);
+            lblDanhSach.setText(modelDanhSach.getRowCount() + " phiếu · Dữ liệu trong bộ nhớ, chưa lưu lâu dài.");
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
+            lblDanhSach.setText("Chưa cập nhật được danh sách: " + e.getMessage());
         }
-        lblDanhSach.setText(modelDanhSach.getRowCount() + " phiếu · Dữ liệu trong bộ nhớ, chưa lưu lâu dài.");
     }
 
     private void luuPhieu() {
