@@ -24,6 +24,8 @@ public final class PhieuSuaChua {
 
     private String[] ketQuaHoanTat = {"", "", ""};
     private LocalDateTime thoiDiemHoanTat;
+    private String nguoiPhatHanh = "";
+    private LocalDateTime thoiDiemPhatHanh;
 
     public PhieuSuaChua(String maPhieu, String maBaoGia, String bienSo, String kyThuatChinh,
             String kyThuatPhoiHop, LocalDateTime hanHoanThanh, String ghiChu, TrangThaiSuaChua trangThai,
@@ -43,12 +45,30 @@ public final class PhieuSuaChua {
         }
     }
 
+    /** Giữ constructor cũ cho kỹ thuật; lệnh tiếp nhận mới có thêm dấu vết phát hành. */
+    public PhieuSuaChua(String maPhieu, String maBaoGia, String bienSo, String kyThuatChinh,
+            String kyThuatPhoiHop, LocalDateTime hanHoanThanh, String ghiChu,
+            List<HangMucSuaChua> hangMuc, String nguoiPhatHanh, LocalDateTime thoiDiemPhatHanh) {
+        this(maPhieu, maBaoGia, bienSo, kyThuatChinh, kyThuatPhoiHop, hanHoanThanh,
+                ghiChu, TrangThaiSuaChua.CHO_SUA_CHUA, hangMuc, null);
+        if (nguoiPhatHanh == null || nguoiPhatHanh.isBlank() || thoiDiemPhatHanh == null) {
+            throw new IllegalArgumentException("Cần người và thời điểm phát hành lệnh.");
+        }
+        this.nguoiPhatHanh = nguoiPhatHanh.strip();
+        this.thoiDiemPhatHanh = thoiDiemPhatHanh;
+    }
+
     public PhieuSuaChua(PhieuSuaChua phieu) {
         this(phieu.maPhieu, phieu.maBaoGia, phieu.bienSo, phieu.kyThuatChinh, phieu.kyThuatPhoiHop,
                 phieu.hanHoanThanh, phieu.ghiChu, phieu.trangThai, phieu.danhSachHangMuc, phieu.phatSinh);
         ketQuaHoanTat = phieu.ketQuaHoanTat.clone();
         thoiDiemHoanTat = phieu.thoiDiemHoanTat;
+        nguoiPhatHanh = phieu.nguoiPhatHanh;
+        thoiDiemPhatHanh = phieu.thoiDiemPhatHanh;
     }
+
+    public String getNguoiPhatHanh() { return nguoiPhatHanh; }
+    public LocalDateTime getThoiDiemPhatHanh() { return thoiDiemPhatHanh; }
 
     public String getMaPhieu() { return maPhieu; }
     public String getMaBaoGia() { return maBaoGia; }
