@@ -144,17 +144,17 @@ public final class ThuNganShell {
 
         javax.swing.JLabel lblIcon = new javax.swing.JLabel(icon, javax.swing.SwingConstants.CENTER);
         lblIcon.setFont(ui.component.UiTheme.HEADING_FONT.deriveFont(48.0f));
-        lblIcon.setAlignmentX(CENTER_ALIGNMENT);
+        lblIcon.setAlignmentX(javax.swing.JComponent.CENTER_ALIGNMENT);
 
         javax.swing.JLabel lblTitle = new javax.swing.JLabel(tieuDe, javax.swing.SwingConstants.CENTER);
         lblTitle.setFont(ui.component.UiTheme.HEADING_FONT.deriveFont(java.awt.Font.BOLD, 20.0f));
         lblTitle.setForeground(ui.component.UiTheme.TEXT);
-        lblTitle.setAlignmentX(CENTER_ALIGNMENT);
+        lblTitle.setAlignmentX(javax.swing.JComponent.CENTER_ALIGNMENT);
 
         javax.swing.JLabel lblNote = new javax.swing.JLabel(ghiChu, javax.swing.SwingConstants.CENTER);
         lblNote.setFont(ui.component.UiTheme.BODY_FONT);
         lblNote.setForeground(ui.component.UiTheme.MUTED);
-        lblNote.setAlignmentX(CENTER_ALIGNMENT);
+        lblNote.setAlignmentX(javax.swing.JComponent.CENTER_ALIGNMENT);
 
         center.add(lblIcon);
         center.add(javax.swing.Box.createVerticalStrut(16));

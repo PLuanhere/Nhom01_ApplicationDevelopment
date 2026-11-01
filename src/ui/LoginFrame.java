@@ -332,10 +332,6 @@ public final class LoginFrame extends JFrame {
         txtMatKhau.setEchoChar('•');
         Runnable quayDangNhap = () -> new LoginFrame().setVisible(true);
         MainFrame winChinh = new MainFrame(taiKhoan, quayDangNhap);
-        // Khởi động shell tương ứng với vai trò; bổ sung các vai trò khác tại đây.
-        if (taiKhoan.getVaiTro() == VaiTro.THU_NGAN) {
-            new ThuNganShell(winChinh, quayDangNhap).start();
-        }
         winChinh.setVisible(true);
         dispose();
     }
