@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
+import java.beans.PropertyChangeListener;
 import java.util.Objects;
 
 import javax.swing.BorderFactory;
@@ -14,12 +15,14 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingConstants;
 
 import dao.KhachHangDAO;
 import dao.PhuTungSuDungDAO;
 import dao.TrangChuKyThuatDAO;
 import dao.XeDAO;
+import dao.TaiKhoanDAO;
 import entity.TaiKhoan;
 import entity.VaiTro;
 import ui.component.AppHeaderPanel;
@@ -33,7 +36,9 @@ import ui.component.WindowTitlePanel;
 import ui.screen.BaoCaoKiemTraPanel;
 import ui.screen.KhachHangPanel;
 import ui.screen.KhongGianKyThuatPanel;
-import ui.screen.NhanVienPanel;
+import ui.screen.quanly.NhanVienPanel;
+import ui.screen.quanly.TaiKhoanPanel;
+import ui.screen.quanly.DichVuPanel;
 import ui.screen.PhieuTiepNhanPanel;
 import ui.screen.PhieuSuaChuaPanel;
 import ui.screen.PhuTungSuDungPanel;
@@ -56,6 +61,12 @@ public final class MainFrame extends JFrame implements ActionListener {
     // Phân hệ Quản lý.
     private NhanVienPanel pnlNhanVien;
     private QuanLyNavigationPanel pnlDieuHuongQuanLy;
+    private TaiKhoanPanel pnlTaiKhoan;
+    private DichVuPanel pnlDichVu;
+    private String mucQuanLyDangMo = "Tổng quan điều hành";
+    private final TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAO();
+    private final PropertyChangeListener theoDoiTaiKhoan = event ->
+            SwingUtilities.invokeLater(this::kiemTraPhienDangNhap);
 
     // Phân hệ Tiếp nhận, cùng dùng một nguồn hồ sơ trong phiên.
     private KhachHangDAO khachHangDAO;
@@ -82,8 +93,10 @@ public final class MainFrame extends JFrame implements ActionListener {
 
         taiKhoanDangNhap = Objects.requireNonNull(
                 taiKhoan, "Cần tài khoản đã đăng nhập.");
+        taiKhoanDangNhap.kiemTraPhien();
         this.khiDangXuat = Objects.requireNonNull(
                 khiDangXuat, "Cần thao tác quay lại trang đăng nhập.");
+        taiKhoanDAO.themTheoDoi(theoDoiTaiKhoan);
 
         setTitle(getTitle() + " — " + taiKhoan.getVaiTro().getTenHienThi());
         setUndecorated(true);
@@ -172,6 +185,7 @@ public final class MainFrame extends JFrame implements ActionListener {
         if (taiKhoanDangNhap == null) {
             throw new IllegalStateException("Phiên đăng nhập đã kết thúc.");
         }
+        taiKhoanDangNhap.kiemTraPhien();
         return taiKhoanDangNhap;
     }
 
@@ -229,6 +243,8 @@ public final class MainFrame extends JFrame implements ActionListener {
     private void dangXuat() {
         if (taiKhoanDangNhap != null
                 && choPhepRoiNhanVien()
+                && choPhepRoiTaiKhoan()
+                && choPhepRoiDichVu()
                 && choPhepRoiTiepNhan()) {
             taiKhoanDangNhap = null;
             dispose();
@@ -238,21 +254,34 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** @param tenMuc mục Quản lý vừa chọn */
     private void dieuHuongQuanLy(String tenMuc) {
+        boolean daCo = "Tổng quan điều hành".equals(tenMuc) || "Nhân viên".equals(tenMuc)
+                || "Tài khoản & phân quyền".equals(tenMuc) || "Dịch vụ và bảng giá".equals(tenMuc);
+        if (!daCo) {
+            pnlDieuHuongQuanLy.chonMuc(mucQuanLyDangMo);
+            setStatus(tenMuc + ": chức năng chưa triển khai.");
+            return;
+        }
+        if (!tenMuc.equals(mucQuanLyDangMo) && (!choPhepRoiNhanVien() || !choPhepRoiTaiKhoan() || !choPhepRoiDichVu())) {
+            pnlDieuHuongQuanLy.chonMuc(mucQuanLyDangMo);
+            return;
+        }
         if ("Tổng quan điều hành".equals(tenMuc)) {
-            if (!choPhepRoiNhanVien()) {
-                pnlDieuHuongQuanLy.chonMuc("Nhân viên");
-                return;
-            }
-
             JPanel pnlTrong = new JPanel();
             pnlTrong.setOpaque(false);
             setScreen(pnlTrong);
             setStatus("Tổng quan điều hành: chưa triển khai.");
         } else if ("Nhân viên".equals(tenMuc)) {
             moDanhSachNhanVien();
-        } else {
-            setStatus(tenMuc + ": chức năng chưa triển khai.");
+        } else if ("Tài khoản & phân quyền".equals(tenMuc)) {
+            if (pnlTaiKhoan == null) { pnlTaiKhoan = new TaiKhoanPanel(getTaiKhoanDangNhap()); }
+            setScreen(pnlTaiKhoan);
+            setStatus("Tài khoản & phân quyền");
+        } else if ("Dịch vụ và bảng giá".equals(tenMuc)) {
+            if (pnlDichVu == null) { pnlDichVu = new DichVuPanel(getTaiKhoanDangNhap()); }
+            setScreen(pnlDichVu);
+            setStatus("Danh sách dịch vụ và bảng giá");
         }
+        mucQuanLyDangMo = tenMuc;
     }
 
     /** Mở trang Nhân viên trong layout chung. */
@@ -272,11 +301,37 @@ public final class MainFrame extends JFrame implements ActionListener {
                 || pnlNhanVien.choPhepRoiTrang();
     }
 
+    /** @return true nếu không có biểu mẫu tài khoản chưa lưu hoặc người dùng đồng ý rời */
+    private boolean choPhepRoiTaiKhoan() {
+        return pnlTaiKhoan == null || !pnlNoiDung.isAncestorOf(pnlTaiKhoan) || pnlTaiKhoan.choPhepRoiTrang();
+    }
+
+    /** @return đã xử lý thay đổi dịch vụ trước khi rời màn hình */
+    private boolean choPhepRoiDichVu() {
+        return pnlDichVu == null || !pnlNoiDung.isAncestorOf(pnlDichVu) || pnlDichVu.choPhepRoiTrang();
+    }
+
+    /** Thu hồi ngay phiên bị thay đổi, gồm cả cửa sổ con; không cho tiếp tục sửa bằng quyền cũ. */
+    private void kiemTraPhienDangNhap() {
+        if (taiKhoanDangNhap != null && !taiKhoanDangNhap.isPhienHopLe()) {
+            taiKhoanDangNhap = null;
+            dispose();
+            khiDangXuat.run();
+        }
+    }
+
+    /** Gỡ theo dõi khi đóng cửa sổ để không giữ lại các khung của phiên cũ. */
+    @Override
+    public void dispose() {
+        taiKhoanDAO.boTheoDoi(theoDoiTaiKhoan);
+        super.dispose();
+    }
+
     /** Kiểm tra dữ liệu chưa lưu trước khi đóng cửa sổ. */
     @Override
     protected void processWindowEvent(WindowEvent event) {
         if (event.getID() == WindowEvent.WINDOW_CLOSING
-                && (!choPhepRoiNhanVien() || !choPhepRoiTiepNhan())) {
+                && (!choPhepRoiNhanVien() || !choPhepRoiTaiKhoan() || !choPhepRoiDichVu() || !choPhepRoiTiepNhan())) {
             return;
         }
 

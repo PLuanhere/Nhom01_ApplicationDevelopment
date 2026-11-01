@@ -138,6 +138,7 @@ public final class BaoCaoKiemTraDAO {
 
     // Chặn truy cập khi tài khoản không có vai trò kỹ thuật.
     private void kiemTraQuyen(TaiKhoan taiKhoan) {
+        if (taiKhoan != null) { taiKhoan.kiemTraPhien(); }
         if (taiKhoan == null || taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT) {
             throw new SecurityException("Chức năng này dành cho nhân viên kỹ thuật.");
         }

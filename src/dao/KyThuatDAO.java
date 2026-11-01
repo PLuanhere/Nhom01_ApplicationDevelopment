@@ -27,6 +27,7 @@ public final class KyThuatDAO {
     private final PhuTungSuDungDAO phuTungDAO = new PhuTungSuDungDAO();
 
     public KyThuatDAO(TaiKhoan taiKhoan) {
+        if (taiKhoan != null) { taiKhoan.kiemTraPhien(); }
         if (taiKhoan == null || taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT) {
             throw new SecurityException("Chức năng dành cho kỹ thuật viên đã đăng nhập.");
         }

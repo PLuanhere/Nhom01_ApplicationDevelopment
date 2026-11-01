@@ -122,6 +122,7 @@ public final class NhanVienDAO {
      */
     private void kiemTraQuyen(TaiKhoan taiKhoan) {
         Objects.requireNonNull(taiKhoan, "Cần tài khoản đã đăng nhập.");
+        taiKhoan.kiemTraPhien();
         if (taiKhoan.getVaiTro() != VaiTro.QUAN_LY) {
             throw new SecurityException("Chỉ Quản lý được quản lý hồ sơ nhân viên.");
         }

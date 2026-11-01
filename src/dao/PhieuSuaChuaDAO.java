@@ -20,14 +20,11 @@ import entity.VaiTro;
 // Nghiệp vụ sửa chữa trên dữ liệu mẫu trong bộ nhớ
 public final class PhieuSuaChuaDAO {
     private final List<PhieuSuaChua> danhSachPhieu = new ArrayList<PhieuSuaChua>();
-    private final List<BaoGia> danhSachBaoGia = new ArrayList<BaoGia>();
+    // Báo giá dùng chung để kiểm tra tham chiếu dịch vụ, kể cả khi chưa mở màn sửa chữa.
+    private static final List<BaoGia> danhSachBaoGia = taoDanhSachBaoGia();
     private int soTiepTheo = 113;
 
     public PhieuSuaChuaDAO() {
-        danhSachBaoGia.add(new BaoGia("BG-2026-0111", "51K-001.23", true, taoChiTietBaoGia(false)));
-        danhSachBaoGia.add(new BaoGia("BG-2026-0108", "51H-246.80", true, taoChiTietBaoGia(true)));
-        danhSachBaoGia.add(new BaoGia("BG-2026-0113", "51H-135.79", true, taoChiTietBaoGia(false)));
-        danhSachBaoGia.add(new BaoGia("BG-2026-0114", "51F-112.34", false, taoChiTietBaoGia(false)));
         danhSachPhieu.add(new PhieuSuaChua("SC-2026-0112", "BG-2026-0111", "51K-001.23", "", "",
                 LocalDateTime.of(2026, 10, 6, 11, 0), "Kiểm tra điều hòa và hệ thống làm lạnh.",
                 TrangThaiSuaChua.CHO_SUA_CHUA, taoHangMuc("Điều hòa", false), null));
@@ -39,7 +36,6 @@ public final class PhieuSuaChuaDAO {
             TrangThaiPhatSinh trangThai = soThuTu == 109 ? TrangThaiPhatSinh.DA_DUYET
                     : soThuTu == 110 ? TrangThaiPhatSinh.TU_CHOI : TrangThaiPhatSinh.CHO_DUYET;
             String maBaoGia = "BG-MAU-" + soThuTu;
-            danhSachBaoGia.add(new BaoGia(maBaoGia, "51H-246.80", true, taoChiTietBaoGia(true)));
             List<HangMucSuaChua> hangMuc = taoHangMuc("Bảo dưỡng", true);
             if (trangThai == TrangThaiPhatSinh.DA_DUYET) {
                 hangMuc.add(new HangMucSuaChua("Thay rotuyn lái", "kythuat", "",
@@ -324,6 +320,7 @@ public final class PhieuSuaChuaDAO {
     /** @param taiKhoan phiên đăng nhập */
     // Chặn các vai trò không thuộc phân hệ sửa chữa.
     private void kiemTraVaiTro(TaiKhoan taiKhoan) {
+        if (taiKhoan != null) { taiKhoan.kiemTraPhien(); }
         if (taiKhoan == null || (taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN
                 && taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT)) {
             throw new SecurityException("Chức năng dành cho tiếp nhận và kỹ thuật.");
@@ -357,20 +354,43 @@ public final class PhieuSuaChuaDAO {
         return ketQua;
     }
 
+    /** Kiểm tra tham chiếu bằng mã, không phụ thuộc tên dịch vụ hoặc trạng thái duyệt báo giá. */
+    public static boolean daSuDungDichVu(TaiKhoan taiKhoan, String maDichVu) {
+        taiKhoan.kiemTraPhien();
+        if (taiKhoan.getVaiTro() != VaiTro.QUAN_LY) {
+            throw new SecurityException("Chỉ Quản lý được kiểm tra xóa dịch vụ.");
+        }
+        return danhSachBaoGia.stream().flatMap(bg -> bg.getChiTiet().stream())
+                .anyMatch(dong -> dong.getMaDichVu().equals(maDichVu));
+    }
+
+    /** @return báo giá tạo sẵn, giữ nguyên giá cũ và liên kết mã danh mục */
+    private static List<BaoGia> taoDanhSachBaoGia() {
+        List<BaoGia> ketQua = new ArrayList<>();
+        ketQua.add(new BaoGia("BG-2026-0111", "51K-001.23", true, taoChiTietBaoGia(false)));
+        ketQua.add(new BaoGia("BG-2026-0108", "51H-246.80", true, taoChiTietBaoGia(true)));
+        ketQua.add(new BaoGia("BG-2026-0113", "51H-135.79", true, taoChiTietBaoGia(false)));
+        ketQua.add(new BaoGia("BG-2026-0114", "51F-112.34", false, taoChiTietBaoGia(false)));
+        for (int so = 109; so <= 111; so++) {
+            ketQua.add(new BaoGia("BG-MAU-" + so, "51H-246.80", true, taoChiTietBaoGia(true)));
+        }
+        return List.copyOf(ketQua);
+    }
+
     /**
      * @param baoDuong nhóm bảo dưỡng hoặc điều hòa
      * @return các dòng báo giá mẫu
      */
     // Tạo chi tiết báo giá mẫu để kiểm tra bố cục và điều kiện phân công.
-    private List<ChiTietBaoGia> taoChiTietBaoGia(boolean baoDuong) {
+    private static List<ChiTietBaoGia> taoChiTietBaoGia(boolean baoDuong) {
         List<ChiTietBaoGia> ketQua = new ArrayList<ChiTietBaoGia>();
         if (baoDuong) {
-            ketQua.add(new ChiTietBaoGia("Bảo dưỡng định kỳ", "Dịch vụ / tiền công", "", "1", "300000"));
-            ketQua.add(new ChiTietBaoGia("Vệ sinh phanh trước", "Tiền công", "", "1", "100000"));
+            ketQua.add(new ChiTietBaoGia("DV001", "Bảo dưỡng định kỳ", "Dịch vụ / tiền công", "", "1", "300000"));
+            ketQua.add(new ChiTietBaoGia("DV002", "Vệ sinh phanh trước", "Tiền công", "", "1", "100000"));
             ketQua.add(new ChiTietBaoGia("Dầu động cơ 5W-30", "Phụ tùng", "lít", "4", "180000"));
             ketQua.add(new ChiTietBaoGia("Lọc dầu động cơ", "Phụ tùng", "cái", "1", "150000"));
         } else {
-            ketQua.add(new ChiTietBaoGia("Kiểm tra điều hòa", "Dịch vụ / tiền công", "", "1", "300000"));
+            ketQua.add(new ChiTietBaoGia("DV003", "Kiểm tra điều hòa", "Dịch vụ / tiền công", "", "1", "300000"));
         }
         return ketQua;
     }

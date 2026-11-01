@@ -84,6 +84,7 @@ public final class XeDAO {
     }
 
     private void kiemTraQuyen(TaiKhoan taiKhoan) {
+        Objects.requireNonNull(taiKhoan, "Cần phiên đăng nhập.").kiemTraPhien();
         if (Objects.requireNonNull(taiKhoan, "Cần phiên đăng nhập.").getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN) {
             throw new SecurityException("Chỉ nhân viên tiếp nhận được quản lý hồ sơ xe.");
         }

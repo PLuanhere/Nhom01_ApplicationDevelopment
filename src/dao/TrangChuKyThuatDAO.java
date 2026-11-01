@@ -22,6 +22,7 @@ public final class TrangChuKyThuatDAO {
         if (taiKhoan == null) {
             throw new IllegalArgumentException("Cần tài khoản đã đăng nhập.");
         }
+        taiKhoan.kiemTraPhien();
         if (taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT
                 || !"kythuat".equals(taiKhoan.getTenDangNhap())) {
             throw new SecurityException("Dữ liệu mẫu chỉ dành cho tài khoản kythuat.");

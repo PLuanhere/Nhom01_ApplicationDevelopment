@@ -79,7 +79,8 @@ public final class QuanLyNavigationPanel extends JPanel {
         btnMuc.setBackground(UiTheme.SIDEBAR_BACKGROUND);
         btnMuc.setContentAreaFilled(false);
         btnMuc.setOpaque(false);
-        boolean daCo = "Nhân viên".equals(tenMuc);
+        boolean daCo = "Nhân viên".equals(tenMuc) || "Tài khoản & phân quyền".equals(tenMuc)
+                || "Dịch vụ và bảng giá".equals(tenMuc);
         btnMuc.setToolTipText(daCo ? "Mở " + tenMuc.toLowerCase(Locale.ROOT)
                 : tenMuc + ": chức năng chưa triển khai.");
         btnMuc.getAccessibleContext().setAccessibleDescription(btnMuc.getToolTipText());
