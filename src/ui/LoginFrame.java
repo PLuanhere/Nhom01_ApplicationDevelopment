@@ -31,6 +31,7 @@ import dao.DuLieuGarageDAO;
 import entity.TaiKhoan;
 import ui.component.LoginBackgroundPanel;
 import ui.component.UiTheme;
+import ui.screen.ThuNganShell;
 import ui.component.WindowMouseHandler;
 import ui.component.WindowTitlePanel;
 
@@ -327,7 +328,9 @@ public final class LoginFrame extends JFrame {
     }
 
     /**
-     * Mở khung chung với danh tính đã xác thực; đăng xuất tạo form trống mới.
+     * Mở khung chung với danh tính đã xác thực; khởi động shell theo vai trò.
+     * Đổi vai trò hoặc đăng xuất đều tạo form trống mới để chọn lại tài khoản.
+     *
      * @param taiKhoan tài khoản do DAO trả về sau đăng nhập thành công
      */
     private void moKhungChinh(TaiKhoan taiKhoan) {

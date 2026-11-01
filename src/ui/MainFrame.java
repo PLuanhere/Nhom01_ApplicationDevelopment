@@ -30,6 +30,7 @@ import dao.PhieuSuaChuaDAO;
 import dao.PhuTungSuDungDAO;
 import dao.TrangChuKyThuatDAO;
 import dao.XeDAO;
+import dao.ThuNganDAO;
 import dao.TaiKhoanDAO;
 import entity.TaiKhoan;
 import entity.VaiTro;
@@ -37,6 +38,7 @@ import ui.component.AppHeaderPanel;
 import ui.component.KyThuatUi;
 import ui.component.QuanLyNavigationPanel;
 import ui.component.SidebarPanel;
+import ui.component.ThuNganNavigationPanel;
 import ui.component.TiepNhanNavigationPanel;
 import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
@@ -52,6 +54,9 @@ import ui.screen.quanly.TaiKhoanPanel;
 import ui.screen.quanly.DichVuPanel;
 import ui.screen.PhieuTiepNhanPanel;
 import ui.screen.PhieuSuaChuaPanel;
+import ui.screen.CashPaymentConfirmPanel;
+import ui.screen.PaymentCenterPanel;
+import ui.screen.PendingCollectionPanel;
 import ui.screen.PhuTungSuDungPanel;
 import ui.screen.TrangChuKyThuatPanel;
 import ui.screen.TrangChuTiepNhanPanel;
@@ -79,6 +84,11 @@ public final class MainFrame extends JFrame implements ActionListener {
     private final TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAO();
     private final PropertyChangeListener theoDoiTaiKhoan = event ->
             SwingUtilities.invokeLater(this::kiemTraPhienDangNhap);
+
+    // Phân hệ Thu ngân.
+    private ThuNganDAO thuNganDAO;
+    private ThuNganNavigationPanel pnlDieuHuongThuNgan;
+    private String mucThuNganDangMo = "Trung tâm thanh toán";
 
     // Phân hệ Tiếp nhận, cùng dùng một nguồn hồ sơ trong phiên.
     private KhachHangDAO khachHangDAO;
@@ -173,6 +183,8 @@ public final class MainFrame extends JFrame implements ActionListener {
             khoiTaoTrangChuKyThuat();
         } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_TIEP_NHAN) {
             khoiTaoTrangChuTiepNhan();
+        } else if (taiKhoan.getVaiTro() == VaiTro.THU_NGAN) {
+            khoiTaoThuNgan();
         }
     }
 
@@ -622,5 +634,79 @@ public final class MainFrame extends JFrame implements ActionListener {
             setStatus(
                     tenManHinh + " thuộc nhánh tiếp theo, chưa được tích hợp vào dashboard.");
         }
+    }
+
+    /** Khởi tạo sidebar và màn hình mặc định cho vai trò Thu ngân. */
+    private void khoiTaoThuNgan() {
+        thuNganDAO = new ThuNganDAO();
+        pnlDieuHuongThuNgan = new ThuNganNavigationPanel(this::dieuHuongThuNgan);
+        setSidebarContent(pnlDieuHuongThuNgan);
+        dieuHuongThuNgan("Trung tâm thanh toán");
+    }
+
+    /**
+     * Điều hướng các mục Thu ngân; mở màn hình tương ứng hoặc báo chưa triển khai.
+     *
+     * @param muc tên mục vừa chọn trên sidebar
+     */
+    private void dieuHuongThuNgan(String muc) {
+        mucThuNganDangMo = muc;
+        pnlDieuHuongThuNgan.chonMuc(muc);
+        switch (muc) {
+            case "Trung tâm thanh toán" -> {
+                PaymentCenterPanel.Navigation nav = new PaymentCenterPanel.Navigation();
+                nav.costReconciliation = () -> dieuHuongThuNgan("Đối chiếu chi phí");
+                nav.pendingInvoices    = () -> dieuHuongThuNgan("Phiếu chờ thu");
+                nav.paidDocuments      = () -> dieuHuongThuNgan("Hoá đơn đã thanh toán");
+                nav.documentSearch     = () -> setStatus("Tra cứu hóa đơn · Chưa tích hợp");
+                nav.cashPayment        = this::moThanhToanTienMat;
+                nav.bankTransfer       = () -> setStatus("Chuyển khoản / QR · Chưa tích hợp");
+                setScreen(new PaymentCenterPanel(thuNganDAO, nav));
+                setStatus("Trung tâm thanh toán");
+            }
+            case "Phiếu chờ thu" -> {
+                setScreen(new PendingCollectionPanel(
+                        () -> dieuHuongThuNgan("Đối chiếu chi phí"),
+                        () -> setStatus("Xem chi tiết phiếu · Chưa tích hợp")));
+                setStatus("Phiếu chờ thu");
+            }
+            case "Đối chiếu chi phí" -> {
+                setScreen(taoManHinhTrong());
+                setStatus("Đối chiếu chi phí · Chưa tích hợp");
+            }
+            case "Hoá đơn đã thanh toán" -> {
+                setScreen(taoManHinhTrong());
+                setStatus("Hoá đơn đã thanh toán · Chưa tích hợp");
+            }
+            default -> setStatus(muc + ": chức năng chưa triển khai.");
+        }
+    }
+
+    /** Tạo panel trống giữ chỗ cho màn hình chưa tích hợp. */
+    private JPanel taoManHinhTrong() {
+        JPanel pnl = new JPanel();
+        pnl.setOpaque(false);
+        return pnl;
+    }
+
+    /**
+     * Mở màn hình thanh toán tiền mặt với phiếu đầu tiên trong danh sách chờ.
+     * Nếu không có phiếu, báo trên thanh trạng thái.
+     */
+    private void moThanhToanTienMat() {
+        java.util.List<dao.ThuNganDAO.PhieuChoThu> danhSach =
+                thuNganDAO.layPhieuChoThu();
+        if (danhSach.isEmpty()) {
+            setStatus("Không có phiếu chờ thu tiền mặt.");
+            return;
+        }
+        dao.ThuNganDAO.PhieuChoThu phieu = danhSach.get(0);
+        setScreen(new CashPaymentConfirmPanel(
+                thuNganDAO,
+                phieu,
+                taiKhoanDangNhap,
+                () -> dieuHuongThuNgan("Trung tâm thanh toán"),
+                () -> dieuHuongThuNgan("Trung tâm thanh toán")));
+        setStatus("Thanh toán tiền mặt · " + phieu.getMaPhieu());
     }
 }
