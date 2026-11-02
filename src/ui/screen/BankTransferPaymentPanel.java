@@ -7,6 +7,7 @@ import java.awt.GridLayout;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -38,14 +39,14 @@ public class BankTransferPaymentPanel extends JPanel {
     private JTextField referenceField;
     private JLabel statusLabel;
     private JButton confirmButton;
-    private final Runnable onConfirm;
+    private final Consumer<String> onConfirm;
 
     public BankTransferPaymentPanel() {
-        this(null, null, null, () -> {}, () -> {});
+        this(null, null, null, () -> {}, maHoaDon -> {});
     }
 
     public BankTransferPaymentPanel(ThuNganDAO dao, PhieuChoThu phieu, TaiKhoan taiKhoan,
-            Runnable onBack, Runnable onConfirm) {
+            Runnable onBack, Consumer<String> onConfirm) {
         this.dao = dao != null ? dao : new ThuNganDAO();
         this.phieu = phieu != null ? phieu : new PhieuChoThu("SC-2026-0108", "51H-246.80", "Nguyễn Văn An", new BigDecimal("1270000"), null);
         this.taiKhoan = taiKhoan;
@@ -178,13 +179,13 @@ public class BankTransferPaymentPanel extends JPanel {
                 String maGiaoDich = referenceField.getText().trim();
                 String nguoiDuyet = taiKhoan != null ? taiKhoan.getTenDangNhap() : "thungan";
                 
-                dao.xacNhanThanhToanChuyenKhoan(
+                String maHoaDon = dao.xacNhanThanhToanChuyenKhoan(
                     phieu.getMaPhieu(),
                     BigDecimal.valueOf(soTienNhan),
                     maGiaoDich,
                     nguoiDuyet);
                 
-                if (onConfirm != null) onConfirm.run();
+                if (onConfirm != null) onConfirm.accept(maHoaDon);
             } catch (IllegalStateException ex) {
                 javax.swing.JOptionPane.showMessageDialog(this, ex.getMessage(),
                         "Lỗi xác nhận thanh toán", javax.swing.JOptionPane.ERROR_MESSAGE);

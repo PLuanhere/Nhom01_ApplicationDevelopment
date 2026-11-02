@@ -22,6 +22,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 
+import java.util.function.Consumer;
+
 import dao.ThuNganDAO;
 import entity.HoaDon;
 
@@ -41,9 +43,9 @@ public class PaidInvoicesPanel extends JPanel {
     private final JComboBox<String> statusFilter;
     private final JLabel resultLabel;
     private final JLabel footerLabel;
-    private final Runnable onViewInvoice;
+    private final Consumer<String> onViewInvoice;
 
-    public PaidInvoicesPanel(ThuNganDAO dao, Runnable onViewInvoice) {
+    public PaidInvoicesPanel(ThuNganDAO dao, Consumer<String> onViewInvoice) {
         this.dao = dao;
         this.onViewInvoice = onViewInvoice;
         setLayout(new BorderLayout());
@@ -133,7 +135,9 @@ public class PaidInvoicesPanel extends JPanel {
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (e.getClickCount() == 2 && table.getSelectedRow() >= 0 && PaidInvoicesPanel.this.onViewInvoice != null) {
-                    PaidInvoicesPanel.this.onViewInvoice.run();
+                    int row = table.getSelectedRow();
+                    String maHoaDon = (String) table.getValueAt(row, 0);
+                    PaidInvoicesPanel.this.onViewInvoice.accept(maHoaDon);
                 }
             }
         });
@@ -180,7 +184,17 @@ public class PaidInvoicesPanel extends JPanel {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         btnPanel.setOpaque(false);
         JButton view = primaryButton("Xem / in hóa đơn");
-        view.addActionListener(e -> { if (this.onViewInvoice != null) this.onViewInvoice.run(); });
+        view.addActionListener(e -> { 
+            if (this.onViewInvoice != null) {
+                int row = table.getSelectedRow();
+                if (row >= 0) {
+                    String maHoaDon = (String) table.getValueAt(row, 0);
+                    this.onViewInvoice.accept(maHoaDon);
+                } else {
+                    javax.swing.JOptionPane.showMessageDialog(this, "Vui lòng chọn một hóa đơn", "Thông báo", javax.swing.JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        });
         btnPanel.add(view);
         heading.add(btnPanel, BorderLayout.EAST);
 
