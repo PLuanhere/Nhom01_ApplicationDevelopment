@@ -2,7 +2,7 @@ package entity;
 
 import java.time.LocalDateTime;
 
-/** Nhật ký quản trị tài khoản; chỉ lưu hành động, không lưu mật khẩu hoặc hash. */
+/** Lưu người thực hiện, thời điểm và nội dung thay đổi tài khoản. */
 public record NhatKyTaiKhoan(LocalDateTime thoiDiem, String nguoiThucHien,
         String maTaiKhoan, String hanhDong, String lyDo) {
 }

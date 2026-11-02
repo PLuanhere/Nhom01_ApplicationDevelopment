@@ -1,77 +1,63 @@
 package entity;
 
-import java.math.BigDecimal;
-import java.util.Objects;
-
-/** Danh mục dịch vụ và đơn giá hiện hành; không thay đổi giá trên chứng từ đã lập. */
+/** Lưu thông tin dịch vụ, đơn giá và trạng thái áp dụng. */
 public final class DichVu {
 
-    /** Thông tin theo REPORT; nhóm, thời gian dự kiến và điều kiện theo Figma Page 3. */
     private final String maDichVu;
     private final String tenDichVu;
     private final String nhomDichVu;
     private final String donViTinh;
-    private final BigDecimal donGia;
+    private final long donGia;
     private final String moTa;
     private final String thoiGianDuKien;
     private final String dieuKienApDung;
     private final boolean dangApDung;
 
-    /**
-     * @param maDichVu mã không rỗng; tính duy nhất do DAO kiểm tra khi lưu
-     * @param tenDichVu tên bắt buộc
-     * @param nhomDichVu nhóm hiển thị, có thể trống
-     * @param donViTinh đơn vị tính bắt buộc
-     * @param donGia đơn giá không âm, dùng BigDecimal cho tiền
-     * @param moTa mô tả tùy chọn
-     * @param thoiGianDuKien thời gian/quy trình dự kiến, có thể trống
-     * @param dieuKienApDung điều kiện áp dụng, có thể trống
-     * @param dangApDung false nếu dịch vụ tạm dừng
-     */
+    /** Tạo dịch vụ và kiểm tra mã, tên, đơn vị tính, đơn giá. */
     public DichVu(String maDichVu, String tenDichVu, String nhomDichVu, String donViTinh,
-            BigDecimal donGia, String moTa, String thoiGianDuKien, String dieuKienApDung, boolean dangApDung) {
+        long donGia, String moTa, String thoiGianDuKien, String dieuKienApDung, boolean dangApDung) {
         this.maDichVu = batBuoc(maDichVu, "Mã dịch vụ");
         this.tenDichVu = batBuoc(tenDichVu, "Tên dịch vụ");
         this.nhomDichVu = nhomDichVu == null ? "" : nhomDichVu.trim();
         this.donViTinh = batBuoc(donViTinh, "Đơn vị tính");
-        this.donGia = Objects.requireNonNull(donGia, "Đơn giá không được null.");
-        if (donGia.signum() < 0) { throw new IllegalArgumentException("Đơn giá không được âm."); }
+        this.donGia = donGia;
+        if (donGia < 0) { throw new IllegalArgumentException("Đơn giá không được âm."); }
         this.moTa = moTa == null ? "" : moTa.trim();
         this.thoiGianDuKien = thoiGianDuKien == null ? "" : thoiGianDuKien.trim();
         this.dieuKienApDung = dieuKienApDung == null ? "" : dieuKienApDung.trim();
         this.dangApDung = dangApDung;
     }
 
-    /** @return nội dung bắt buộc đã bỏ khoảng trắng hai đầu */
+    /** Kiểm tra trường bắt buộc không rỗng và trả về nội dung đã bỏ khoảng trắng. */
     private static String batBuoc(String chu, String ten) {
         if (chu == null || chu.isBlank()) { throw new IllegalArgumentException(ten + " không được rỗng."); }
         return chu.trim();
     }
 
-    /** @return mã danh mục */
+    /** Trả về mã dịch vụ. */
     public String getMaDichVu() { return maDichVu; }
 
-    /** @return tên dịch vụ */
+    /** Trả về tên dịch vụ. */
     public String getTenDichVu() { return tenDichVu; }
 
-    /** @return nhóm dịch vụ */
+    /** Trả về nhóm dịch vụ. */
     public String getNhomDichVu() { return nhomDichVu; }
 
-    /** @return đơn vị tính tiền công/dịch vụ */
+    /** Trả về đơn vị tính. */
     public String getDonViTinh() { return donViTinh; }
 
-    /** @return đơn giá hiện hành */
-    public BigDecimal getDonGia() { return donGia; }
+    /** Trả về đơn giá đã lưu. */
+    public long getDonGia() { return donGia; }
 
-    /** @return mô tả, có thể rỗng */
+    /** Trả về mô tả dịch vụ. */
     public String getMoTa() { return moTa; }
 
-    /** @return thời gian hoặc quy trình dự kiến */
+    /** Trả về thời gian thực hiện dự kiến. */
     public String getThoiGianDuKien() { return thoiGianDuKien; }
 
-    /** @return điều kiện áp dụng dịch vụ */
+    /** Trả về điều kiện áp dụng dịch vụ. */
     public String getDieuKienApDung() { return dieuKienApDung; }
 
-    /** @return dịch vụ có đang được áp dụng hay không */
+    /** Cho biết dịch vụ có đang được áp dụng hay không. */
     public boolean isDangApDung() { return dangApDung; }
 }
