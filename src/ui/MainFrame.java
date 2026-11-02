@@ -43,24 +43,24 @@ import ui.component.TiepNhanNavigationPanel;
 import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
 import ui.component.WindowTitlePanel;
-import ui.screen.BaoCaoKiemTraPanel;
 import ui.screen.KhachHangPanel;
 import ui.screen.BaoGiaPanel;
 import ui.screen.BanGiaoXePanel;
 import ui.screen.LenhSuaChuaTiepNhanPanel;
-import ui.screen.KhongGianKyThuatPanel;
 import ui.screen.quanly.NhanVienPanel;
 import ui.screen.quanly.TaiKhoanPanel;
 import ui.screen.quanly.DichVuPanel;
 import ui.screen.PhieuTiepNhanPanel;
-import ui.screen.PhieuSuaChuaPanel;
 import ui.screen.CashPaymentConfirmPanel;
 import ui.screen.PaymentCenterPanel;
 import ui.screen.PendingCollectionPanel;
-import ui.screen.PhuTungSuDungPanel;
-import ui.screen.TrangChuKyThuatPanel;
 import ui.screen.TrangChuTiepNhanPanel;
 import ui.screen.XePanel;
+import ui.screen.kythuat.BaoCaoKiemTraPanel;
+import ui.screen.kythuat.KhongGianKyThuatPanel;
+import ui.screen.kythuat.PhieuSuaChuaPanel;
+import ui.screen.kythuat.PhuTungSuDungPanel;
+import ui.screen.kythuat.TrangChuKyThuatPanel;
 
 /** Khung chung và điều hướng các phân hệ theo tài khoản đăng nhập. */
 public final class MainFrame extends JFrame implements ActionListener {
