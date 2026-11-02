@@ -19,8 +19,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
 import dao.ThuNganDAO;
-import dao.ThuNganDAO.HoaDonThuNgan;
 import dao.ThuNganDAO.PhieuChoThu;
+import entity.HoaDon;
 import ui.component.UiTheme;
 
 /**
@@ -58,28 +58,33 @@ public final class PaymentCenterPanel extends JPanel {
         Navigation n    = nav != null ? nav  : new Navigation();
 
         setLayout(new BorderLayout(0, 12));
-        setBackground(UiTheme.WINDOW);
-        setBorder(BorderFactory.createEmptyBorder(16, 16, 14, 16));
+        setOpaque(false);
+        setBorder(BorderFactory.createEmptyBorder(20, 26, 18, 26));
 
-        add(createIntro(),                          BorderLayout.NORTH);
+        add(buildHeading(),                         BorderLayout.NORTH);
         add(createScrollBody(d, n),                 BorderLayout.CENTER);
         add(createFooter(),                         BorderLayout.SOUTH);
     }
 
     // ── Intro ─────────────────────────────────────────────────────────────────
 
-    private JPanel createIntro() {
-        JPanel pnl = new JPanel();
+    private JPanel buildHeading() {
+        JPanel pnl = new JPanel(new BorderLayout(0, 5));
         pnl.setOpaque(false);
-        pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS));
-        pnl.add(lbl("Thu ngân / Hệ thống / Trung tâm thanh toán",
-                UiTheme.CAPTION_FONT, MUTED));
-        pnl.add(Box.createVerticalStrut(6));
-        pnl.add(lbl("Trung tâm thanh toán",
-                UiTheme.BRAND_FONT.deriveFont(Font.BOLD, 20f), UiTheme.TEXT));
-        pnl.add(lbl("Chỉ thu từ phiếu sửa chữa hoàn thành và chưa có hóa đơn hợp lệ.",
-                UiTheme.CAPTION_FONT, MUTED));
-        pnl.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+        pnl.add(new JLabel("Thu ngân  /  Nghiệp vụ  /  Trung tâm thanh toán") {{
+            setFont(new Font("Dialog", Font.PLAIN, 11));
+            setForeground(MUTED);
+        }}, BorderLayout.NORTH);
+        JPanel titles = new JPanel(new BorderLayout(0, 5));
+        titles.setOpaque(false);
+        titles.add(lbl("Trung tâm thanh toán",
+                new Font("Dialog", Font.BOLD, 24), UiTheme.TEXT), BorderLayout.NORTH);
+        titles.add(new JLabel("Chỉ thu từ phiếu sửa chữa hoàn thành và chưa có hóa đơn hợp lệ.") {{
+            setFont(new Font("Dialog", Font.PLAIN, 12));
+            setForeground(MUTED);
+        }}, BorderLayout.SOUTH);
+        pnl.add(titles, BorderLayout.CENTER);
+        pnl.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         return pnl;
     }
 
@@ -181,8 +186,8 @@ public final class PaymentCenterPanel extends JPanel {
             list.add(receiptRow(
                     p.getNhanHangDau(),
                     p.getNhanHangHai(),
-                    "Chờ lập hóa đơn", AMBER,
-                    "Đối chiếu chi phí", nav.costReconciliation));
+                    "Chờ thu tiền", AMBER,
+                    "Lập hóa đơn", nav.costReconciliation));
             if (i < danhSach.size() - 1) {
                 list.add(rowDivider());
             }
@@ -193,13 +198,13 @@ public final class PaymentCenterPanel extends JPanel {
     // ── Danh sách hóa đơn đã thu ──────────────────────────────────────────────
 
     /**
-     * Tạo danh sách hóa đơn đã thu từ DAO.
+     * Tạo danh sách hóa đơn đã thu từ DAO — dùng entity HoaDon thực.
      *
      * @param danhSach danh sách hóa đơn từ DAO
      * @param nav      callback điều hướng
      * @return panel danh sách
      */
-    private JPanel createCompletedList(List<HoaDonThuNgan> danhSach, Navigation nav) {
+    private JPanel createCompletedList(List<HoaDon> danhSach, Navigation nav) {
         JPanel list = new JPanel();
         list.setOpaque(false);
         list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
@@ -210,10 +215,16 @@ public final class PaymentCenterPanel extends JPanel {
         }
 
         for (int i = 0; i < danhSach.size(); i++) {
-            HoaDonThuNgan hd = danhSach.get(i);
+            HoaDon hd = danhSach.get(i);
+            // Dòng đầu: mã hóa đơn + tên khách
+            String line1 = hd.getMaHoaDon() + " · " + hd.getTenKhachHang();
+            // Dòng thứ hai: tổng tiền + hình thức + ghi chú
+            String line2 = FMT.format(hd.getTongTien()) + "đ · " + 
+                           hd.getHinhThucThanhToan().getTenHienThi() + 
+                           " · gửi tiếp nhận bàn giao";
             list.add(receiptRow(
-                    hd.getNhanHangDau(),
-                    hd.getNhanHangHai(),
+                    line1,
+                    line2,
                     "Đã thanh toán", GREEN,
                     "Xem chứng từ", nav.paidDocuments));
             if (i < danhSach.size() - 1) {
@@ -226,10 +237,9 @@ public final class PaymentCenterPanel extends JPanel {
     // ── Đường tắt ─────────────────────────────────────────────────────────────
 
     private JPanel createShortcuts(Navigation nav) {
-        JPanel p = new JPanel(new GridLayout(2, 2, 8, 8));
+        JPanel p = new JPanel(new GridLayout(1, 3, 8, 8));
         p.setOpaque(false);
         p.add(actionBtn("Phiếu chờ thu",          false, nav.pendingInvoices));
-        p.add(actionBtn("Đối chiếu chi phí",       false, nav.costReconciliation));
         p.add(actionBtn("Hóa đơn đã thanh toán",   false, nav.paidDocuments));
         p.add(actionBtn("Tra cứu hóa đơn",         false, nav.documentSearch));
         return p;
@@ -241,10 +251,6 @@ public final class PaymentCenterPanel extends JPanel {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setOpaque(false);
         footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, GRID));
-        JLabel txt = lbl("Garage Đức Dũng · Nội bộ nhân viên",
-                UiTheme.CAPTION_FONT, MUTED);
-        txt.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
-        footer.add(txt, BorderLayout.WEST);
         return footer;
     }
 
@@ -308,10 +314,9 @@ public final class PaymentCenterPanel extends JPanel {
         text.add(lbl(detail, UiTheme.CAPTION_FONT, MUTED));
         row.add(text, BorderLayout.CENTER);
 
-        // Badge + nút bên phải
-        JPanel end = new JPanel();
+        // Badge góc phải trên, nút góc phải dưới
+        JPanel end = new JPanel(new BorderLayout());
         end.setOpaque(false);
-        end.setLayout(new BoxLayout(end, BoxLayout.Y_AXIS));
 
         JLabel badge = lbl(status,
                 UiTheme.CAPTION_FONT.deriveFont(Font.BOLD, 10f), statusColor);
@@ -319,15 +324,14 @@ public final class PaymentCenterPanel extends JPanel {
         badge.setBackground(statusColor == GREEN
                 ? new Color(0xE8F7EF) : new Color(0xFFF3DB));
         badge.setBorder(BorderFactory.createEmptyBorder(3, 7, 3, 7));
-        end.add(badge);
+        badge.setHorizontalAlignment(JLabel.CENTER);
+        end.add(badge, BorderLayout.NORTH);
 
         JButton btn = actionBtn(btnText, false, action);
         btn.setFont(UiTheme.CAPTION_FONT);
         btn.setPreferredSize(new Dimension(120, 27));
         btn.setMaximumSize(new Dimension(140, 27));
-        btn.setAlignmentX(RIGHT_ALIGNMENT);
-        end.add(Box.createVerticalStrut(4));
-        end.add(btn);
+        end.add(btn, BorderLayout.SOUTH);
         row.add(end, BorderLayout.EAST);
         return row;
     }

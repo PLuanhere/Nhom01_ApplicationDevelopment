@@ -44,13 +44,11 @@ public final class ThuNganNavigationPanel extends JPanel {
         String[] tenCacMuc = {
             "Trung tâm thanh toán",
             "Phiếu chờ thu",
-            "Đối chiếu chi phí",
             "Hoá đơn đã thanh toán"
         };
         String[] tenIcon = {
             "chart",
             "clipboard",
-            "search",
             "package"
         };
 

@@ -5,6 +5,7 @@ import java.util.Objects;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
+import dao.DoiChieuChiPhiDAO;
 import ui.MainFrame;
 
 /**
@@ -93,8 +94,22 @@ public final class ThuNganShell {
                 () -> winChinh.setScreen(new DocumentSearchPanel(
                         this::xuLyTraCuu,
                         this::moManHinhPhieuCho)),
-                () -> { /* đối chiếu — tích hợp sau */ },
+                () -> moManHinhDoiChieu("SC-2026-0108"),
                 () -> chuyenTrang(ThuNganShellPage.TRANG_CHU)));
+    }
+
+    /**
+     * Mở màn hình đối chiếu chi phí cho một phiếu sửa chữa đã hoàn tất.
+     *
+     * @param maPhieu mã phiếu cần đối chiếu
+     */
+    private void moManHinhDoiChieu(String maPhieu) {
+        DoiChieuChiPhiDAO dao = new DoiChieuChiPhiDAO();
+        winChinh.setScreen(new DoiChieuChiPhiPanel(
+                dao,
+                maPhieu,
+                () -> moManHinhPhieuCho(),   // onChoosePayment → quay về danh sách (tích hợp hình thức thanh toán sau)
+                () -> moManHinhPhieuCho()));  // onBack → quay về danh sách phiếu chờ
     }
 
     /**

@@ -9,6 +9,7 @@ import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Objects;
 import java.util.List;
+import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -54,7 +55,9 @@ import ui.screen.quanly.TaiKhoanPanel;
 import ui.screen.quanly.DichVuPanel;
 import ui.screen.PhieuTiepNhanPanel;
 import ui.screen.PhieuSuaChuaPanel;
+import dao.DoiChieuChiPhiDAO;
 import ui.screen.CashPaymentConfirmPanel;
+import ui.screen.DoiChieuChiPhiPanel;
 import ui.screen.PaymentCenterPanel;
 import ui.screen.PendingCollectionPanel;
 import ui.screen.PhuTungSuDungPanel;
@@ -655,7 +658,7 @@ public final class MainFrame extends JFrame implements ActionListener {
         switch (muc) {
             case "Trung tâm thanh toán" -> {
                 PaymentCenterPanel.Navigation nav = new PaymentCenterPanel.Navigation();
-                nav.costReconciliation = () -> dieuHuongThuNgan("Đối chiếu chi phí");
+                nav.costReconciliation = () -> moDoiChieuChiPhi(null);
                 nav.pendingInvoices    = () -> dieuHuongThuNgan("Phiếu chờ thu");
                 nav.paidDocuments      = () -> dieuHuongThuNgan("Hoá đơn đã thanh toán");
                 nav.documentSearch     = () -> setStatus("Tra cứu hóa đơn · Chưa tích hợp");
@@ -666,20 +669,91 @@ public final class MainFrame extends JFrame implements ActionListener {
             }
             case "Phiếu chờ thu" -> {
                 setScreen(new PendingCollectionPanel(
-                        () -> dieuHuongThuNgan("Đối chiếu chi phí"),
+                        thuNganDAO,
+                        this::moDoiChieuChiPhi,
                         () -> setStatus("Xem chi tiết phiếu · Chưa tích hợp")));
                 setStatus("Phiếu chờ thu");
             }
-            case "Đối chiếu chi phí" -> {
-                setScreen(taoManHinhTrong());
-                setStatus("Đối chiếu chi phí · Chưa tích hợp");
-            }
             case "Hoá đơn đã thanh toán" -> {
-                setScreen(taoManHinhTrong());
-                setStatus("Hoá đơn đã thanh toán · Chưa tích hợp");
+                setScreen(new ui.screen.PaidInvoicesPanel(
+                        thuNganDAO,
+                        () -> setStatus("Xem / in hóa đơn · Chưa tích hợp")));
+                setStatus("Hoá đơn đã thanh toán");
             }
             default -> setStatus(muc + ": chức năng chưa triển khai.");
         }
+    }
+
+
+    /**
+     * Mở màn hình đối chiếu chi phí cho mã phiếu chỉ định.
+     * Được gọi từ nút "Lập hóa đơn" trong PendingCollectionPanel (truyền mã phiếu).
+     *
+     * @param maPhieu mã phiếu sửa chữa cần đối chiếu
+     */
+    private void moDoiChieuChiPhi(String maPhieu) {
+        DoiChieuChiPhiDAO dao = new DoiChieuChiPhiDAO();
+        String ma = (maPhieu != null && !maPhieu.isBlank()) ? maPhieu
+                : (dao.layDanhSachMaPhieu().isEmpty() ? "SC-2026-0108" : dao.layDanhSachMaPhieu().get(0));
+        // Giữ highlight "Phiếu chờ thu" trên sidebar vì đối chiếu là bước con của luồng này
+        pnlDieuHuongThuNgan.chonMuc("Phiếu chờ thu");
+        mucThuNganDangMo = "Phiếu chờ thu";
+        setScreen(new DoiChieuChiPhiPanel(
+                dao, ma,
+                ht -> {
+                    // Điều hướng dựa trên hình thức thanh toán được chọn
+                    if (ht == entity.HinhThucThanhToan.TIEN_MAT) {
+                        moThanhToanTienMatTuPhieu(ma);
+                    } else if (ht == entity.HinhThucThanhToan.CHUYEN_KHOAN) {
+                        moThanhToanChuyenKhoanTuPhieu(ma);
+                    }
+                },
+                () -> dieuHuongThuNgan("Phiếu chờ thu")));
+        setStatus("Đối chiếu chi phí · " + ma);
+    }
+
+    /**
+     * Mở màn hình thanh toán tiền mặt cho phiếu chỉ định (từ đối chiếu chi phí).
+     */
+    private void moThanhToanTienMatTuPhieu(String maPhieu) {
+        java.util.List<dao.ThuNganDAO.PhieuChoThu> danhSach = thuNganDAO.layPhieuChoThu();
+        dao.ThuNganDAO.PhieuChoThu phieu = danhSach.stream()
+                .filter(p -> p.getMaPhieu().equals(maPhieu))
+                .findFirst()
+                .orElse(danhSach.isEmpty() ? null : danhSach.get(0));
+        if (phieu == null) {
+            setStatus("Không tìm thấy phiếu " + maPhieu);
+            return;
+        }
+        setScreen(new CashPaymentConfirmPanel(
+                thuNganDAO,
+                phieu,
+                taiKhoanDangNhap,
+                () -> dieuHuongThuNgan("Trung tâm thanh toán"),
+                () -> dieuHuongThuNgan("Trung tâm thanh toán")));
+        setStatus("Thanh toán tiền mặt · " + phieu.getMaPhieu());
+    }
+
+    /**
+     * Mở màn hình thanh toán chuyển khoản / QR cho phiếu chỉ định (từ đối chiếu chi phí).
+     */
+    private void moThanhToanChuyenKhoanTuPhieu(String maPhieu) {
+        java.util.List<dao.ThuNganDAO.PhieuChoThu> danhSach = thuNganDAO.layPhieuChoThu();
+        dao.ThuNganDAO.PhieuChoThu phieu = danhSach.stream()
+                .filter(p -> p.getMaPhieu().equals(maPhieu))
+                .findFirst()
+                .orElse(danhSach.isEmpty() ? null : danhSach.get(0));
+        if (phieu == null) {
+            setStatus("Không tìm thấy phiếu " + maPhieu);
+            return;
+        }
+        setScreen(new ui.screen.BankTransferPaymentPanel(
+                thuNganDAO,
+                phieu,
+                taiKhoanDangNhap,
+                () -> dieuHuongThuNgan("Trung tâm thanh toán"),
+                () -> dieuHuongThuNgan("Trung tâm thanh toán")));
+        setStatus("Thanh toán chuyển khoản / QR · " + phieu.getMaPhieu());
     }
 
     /** Tạo panel trống giữ chỗ cho màn hình chưa tích hợp. */
@@ -696,6 +770,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     private void moThanhToanTienMat() {
         java.util.List<dao.ThuNganDAO.PhieuChoThu> danhSach =
                 thuNganDAO.layPhieuChoThu();
+        System.out.println("[DEBUG] moThanhToanTienMat: " + danhSach.size() + " phiếu chờ");
         if (danhSach.isEmpty()) {
             setStatus("Không có phiếu chờ thu tiền mặt.");
             return;
@@ -705,7 +780,10 @@ public final class MainFrame extends JFrame implements ActionListener {
                 thuNganDAO,
                 phieu,
                 taiKhoanDangNhap,
-                () -> dieuHuongThuNgan("Trung tâm thanh toán"),
+                () -> {
+                    System.out.println("[DEBUG] Callback sau xác nhận thanh toán");
+                    dieuHuongThuNgan("Trung tâm thanh toán");
+                },
                 () -> dieuHuongThuNgan("Trung tâm thanh toán")));
         setStatus("Thanh toán tiền mặt · " + phieu.getMaPhieu());
     }
