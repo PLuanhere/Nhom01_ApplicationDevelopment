@@ -62,7 +62,6 @@ import ui.screen.thungan.BankTransferPaymentPanel;
 import ui.screen.thungan.DoiChieuChiPhiPanel;
 import ui.screen.thungan.PaidInvoicesPanel;
 import ui.screen.thungan.PaidInvoiceDetailPanel;
-import ui.screen.thungan.CashReceiptPanel;
 import ui.screen.thungan.PaymentCenterPanel;
 import ui.screen.thungan.PendingCollectionPanel;
 import ui.screen.tiepnhan.BanGiaoXePanel;
@@ -108,7 +107,6 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     private HoaDonDAO thuNganDAO;
     private ThuNganNavigationPanel pnlDieuHuongThuNgan;
-    private String mucThuNganDangMo = "Trung tâm thanh toán";
 
     private KhachHangDAO khachHangDAO;
     private XeDAO xeDAO;
@@ -762,7 +760,6 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Mở màn Thu ngân theo mục sidebar được chọn. */
     private void dieuHuongThuNgan(String muc) {
-        mucThuNganDangMo = muc;
         pnlDieuHuongThuNgan.chonMuc(muc);
         switch (muc) {
         case "Trung tâm thanh toán": {
@@ -831,7 +828,6 @@ public final class MainFrame extends JFrame implements ActionListener {
         }
             break;
         case "Đối chiếu chi phí": {
-            mucThuNganDangMo = "Phiếu chờ thu";
             pnlDieuHuongThuNgan.chonMuc("Phiếu chờ thu");
             setScreen(new PendingCollectionPanel(thuNganDAO, getTaiKhoanDangNhap(), this));
             setStatus("Đối chiếu chi phí · Chọn phiếu để kiểm tra và lập hóa đơn");
@@ -906,13 +902,6 @@ public final class MainFrame extends JFrame implements ActionListener {
         setStatus("Thanh toán chuyển khoản / QR · " + maPhieu);
     }
 
-    /** Tạo vùng giữ chỗ cho chức năng chưa triển khai. */
-    private JPanel taoManHinhTrong() {
-        JPanel pnl = new JPanel();
-        pnl.setOpaque(false);
-        return pnl;
-    }
-
     /** Mở màn xác nhận thu tiền mặt cho phiếu được chọn. */
     private void moThanhToanTienMat() {
         List<PhieuChoThu> danhSach = thuNganDAO.layPhieuChoThu(getTaiKhoanDangNhap());
@@ -954,7 +943,6 @@ public final class MainFrame extends JFrame implements ActionListener {
             return;
         }
         pnlDieuHuongThuNgan.chonMuc("Hoá đơn đã thanh toán");
-        mucThuNganDangMo = "Hoá đơn đã thanh toán";
         setScreen(new PaidInvoiceDetailPanel(thuNganDAO, getTaiKhoanDangNhap(), ma, new ActionListener() {
             /** Quay về danh sách đã thanh toán và đọc lại dữ liệu. */
             @Override

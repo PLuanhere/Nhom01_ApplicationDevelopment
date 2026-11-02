@@ -1042,13 +1042,4 @@ public final class PhuTungSuDungPanel extends JPanel
         return null;
     }
 
-    /** Tìm ô giao diện thuộc mã phụ tùng được chọn. */
-    private JTextArea timMoTaTon(String ma) {
-        for (JTextArea o : cacTonDuKien) {
-            if (ma.equals(o.getName())) {
-                return o;
-            }
-        }
-        return null;
-    }
 }

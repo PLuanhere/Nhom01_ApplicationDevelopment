@@ -3,12 +3,15 @@ package dao.suachua;
 import dao.baogia.BaoGiaDAO;
 import dao.nhansu.NhanVienDAO;
 import dao.nhansu.TaiKhoanDAO;
+import dao.phutung.PhuTungSuDungDAO;
 import entity.baogia.BaoGia;
 import entity.baogia.ChiTietBaoGia;
 import entity.khachhang.Xe;
 import entity.nhansu.KyThuatVienPhanCong;
 import entity.nhansu.TaiKhoan;
 import entity.nhansu.VaiTro;
+import entity.phutung.PhuTungSuDung;
+import entity.phutung.TrangThaiSuDung;
 import entity.suachua.HangMucSuaChua;
 import entity.suachua.PhatSinhSuaChua;
 import entity.suachua.PhieuSuaChua;
@@ -24,12 +27,12 @@ import java.util.Locale;
 // Nghiệp vụ sửa chữa trên dữ liệu mẫu trong bộ nhớ
 public final class PhieuSuaChuaDAO {
     private final List<PhieuSuaChua> danhSachPhieu = new ArrayList<PhieuSuaChua>();
-    // Báo giá dùng chung để kiểm tra tham chiếu dịch vụ, kể cả khi chưa mở màn sửa chữa.
-    private static final List<BaoGia> danhSachBaoGia = taoDanhSachBaoGia();
+    private final List<BaoGia> danhSachBaoGia = new ArrayList<>();
     private int soTiepTheo = 113;
 
     private BaoGiaDAO nguonBaoGia;
     private NhanVienDAO nguonKyThuat;
+    private PhuTungSuDungDAO nguonThucDung;
     private final List<String[]> luotPhatHanh = new ArrayList<>();
 
     /** Kho tiếp nhận mới nhận nguồn có kiểm soát, không trộn lệnh/báo giá mẫu của kỹ thuật. */
@@ -47,6 +50,7 @@ public final class PhieuSuaChuaDAO {
 
     /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     public PhieuSuaChuaDAO() {
+        danhSachBaoGia.addAll(taoDanhSachBaoGia());
         danhSachPhieu.add(new PhieuSuaChua("SC-2026-0112", "BG-2026-0111", "51K-001.23", "", "",
                 LocalDateTime.of(2026, 10, 6, 11, 0), "Kiểm tra điều hòa và hệ thống làm lạnh.",
                 TrangThaiSuaChua.CHO_SUA_CHUA, taoHangMuc("Điều hòa", false), null));
@@ -71,6 +75,14 @@ public final class PhieuSuaChuaDAO {
                     LocalDateTime.of(2026, 10, 5, 17, 0), "Bảo dưỡng, vệ sinh phanh.", TrangThaiSuaChua.DANG_SUA,
                     hangMuc, phatSinh));
         }
+    }
+
+    /** Nhận nguồn thực dùng để chặn hoàn tất khi chưa ghi nhận phụ tùng. */
+    public void noiNguonThucDung(PhuTungSuDungDAO nguon) {
+        if (nguon == null || nguonThucDung != null) {
+            throw new IllegalStateException("Nguồn phụ tùng thiếu hoặc đã được kết nối.");
+        }
+        nguonThucDung = nguon;
     }
 
     // Lấy báo giá của chính lệnh đang chọn để đối chiếu hạng mục, số lượng và giá tiền.
@@ -347,6 +359,9 @@ public final class PhieuSuaChuaDAO {
     /** Thực hiện cap nhat tien do cho thành phần hiện tại. */
     public void capNhatTienDo(TaiKhoan taiKhoan, String maPhieu, int viTri, TrangThaiSuaChua trangThai, String ketQua) {
         PhieuSuaChua phieu = layPhieuKyThuat(taiKhoan, maPhieu);
+        if (viTri < 0 || viTri >= phieu.getDanhSachHangMuc().size() || trangThai == null) {
+            throw new IllegalArgumentException("Chọn hạng mục và trạng thái hợp lệ.");
+        }
         HangMucSuaChua hangMuc = phieu.getDanhSachHangMuc().get(viTri);
         // Người chính điều phối tiến độ lệnh; người phối hợp chỉ cập nhật công việc được giao.
         if (!hangMuc.getTaiKhoanThucHien().equals(taiKhoan.getTenDangNhap())
@@ -357,7 +372,7 @@ public final class PhieuSuaChuaDAO {
                 && (phieu.getPhatSinh() == null || phieu.getPhatSinh().getTrangThai() != TrangThaiPhatSinh.DA_DUYET)) {
             throw new IllegalStateException("Phát sinh chưa được duyệt, chỉ tiếp tục các công việc đã được duyệt.");
         }
-        if (ketQua.isBlank()) {
+        if (ketQua == null || ketQua.isBlank()) {
             throw new IllegalArgumentException("Kết quả thực hiện là bắt buộc.");
         }
         phieu.capNhatHangMuc(viTri, new HangMucSuaChua(hangMuc.getTenHangMuc(), hangMuc.getTaiKhoanThucHien(),
@@ -378,7 +393,8 @@ public final class PhieuSuaChuaDAO {
         if (!phieu.getKyThuatChinh().equals(taiKhoan.getTenDangNhap())) {
             throw new SecurityException("Chỉ kỹ thuật viên chính được xác nhận hoàn thành lệnh.");
         }
-        if (daDoiChieu.length != 4 || ketQua.length != 3) {
+        if (daDoiChieu == null || ketQua == null || daDoiChieu.length != 4 || ketQua.length != 3
+                || ketQua[0] == null || ketQua[0].isBlank()) {
             throw new IllegalArgumentException("Thông tin kiểm tra cuối chưa đủ.");
         }
         for (boolean daChon : daDoiChieu) {
@@ -394,7 +410,38 @@ public final class PhieuSuaChuaDAO {
                 throw new IllegalStateException("Còn công việc chưa hoàn thành: " + hangMuc.getTenHangMuc());
             }
         }
+        kiemTraThucDung(taiKhoan, phieu);
         phieu.hoanTat(ketQua, LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
+    }
+
+    /** Mỗi dòng phụ tùng phải có chứng từ thực dùng trước khi chuyển sang chờ thu. */
+    private void kiemTraThucDung(TaiKhoan taiKhoan, PhieuSuaChua phieu) {
+        if (nguonBaoGia == null) {
+            return;
+        }
+        if (nguonThucDung == null) {
+            throw new IllegalStateException("Chưa kết nối nguồn phụ tùng thực dùng.");
+        }
+        List<ChiTietBaoGia> chiTiet = layBaoGia(taiKhoan, phieu.getMaPhieu()).getChiTiet();
+        List<PhuTungSuDung> thucDung = nguonThucDung.docDanhSach(taiKhoan, phieu.getMaPhieu(),
+                TrangThaiSuDung.DA_GHI_NHAN);
+        for (int i = 0; i < chiTiet.size(); i++) {
+            ChiTietBaoGia dong = chiTiet.get(i);
+            if (!"Phụ tùng".equals(dong.getLoai())) {
+                continue;
+            }
+            boolean daGhi = false;
+            for (PhuTungSuDung daDung : thucDung) {
+                if (phieu.getMaPhieu().equals(daDung.getMaLenhSuaChua())
+                        && (phieu.getMaPhieu() + "#" + i).equals(daDung.getHangMuc())
+                        && dong.getMaPhuTung().equals(daDung.getPhuTung().getMaPhuTung())) {
+                    daGhi = true;
+                }
+            }
+            if (!daGhi) {
+                throw new IllegalStateException("Chưa ghi nhận phụ tùng thực dùng ở hạng mục " + (i + 1) + ".");
+            }
+        }
     }
 
     // Kiểm tra vai trò kỹ thuật, phân công và trạng thái trước mọi thao tác tiến độ.
@@ -471,7 +518,7 @@ public final class PhieuSuaChuaDAO {
         if (taiKhoan.getVaiTro() != VaiTro.QUAN_LY) {
             throw new SecurityException("Chỉ Quản lý được kiểm tra xóa dịch vụ.");
         }
-        for (BaoGia baoGia : danhSachBaoGia) {
+        for (BaoGia baoGia : taoDanhSachBaoGia()) {
             for (ChiTietBaoGia dong : baoGia.getChiTiet()) {
                 if (dong.getMaDichVu().equals(maDichVu)) {
                     return true;

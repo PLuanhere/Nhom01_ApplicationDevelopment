@@ -252,6 +252,7 @@ public final class DichVuPanel extends JPanel implements DocumentListener, Actio
     private void lamMoi() {
         txtTim.setText("");
         cmbTrangThai.setSelectedIndex(0);
+        cmbSapXep.setSelectedIndex(0);
         locDanhSach();
     }
 
@@ -314,10 +315,7 @@ public final class DichVuPanel extends JPanel implements DocumentListener, Actio
         } else if ("sapXep".equals(lenh)) {
             locDanhSach();
         } else if ("lamMoi".equals(lenh)) {
-            txtTim.setText("");
-            cmbTrangThai.setSelectedIndex(0);
-            cmbSapXep.setSelectedIndex(0);
-            locDanhSach();
+            lamMoi();
         }
     }
 }

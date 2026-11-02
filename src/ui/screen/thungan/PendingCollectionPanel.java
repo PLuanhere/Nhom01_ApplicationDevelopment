@@ -145,7 +145,7 @@ public class PendingCollectionPanel extends JPanel {
             @Override
             public void mouseClicked(MouseEvent event) {
                 if (event.getClickCount() == 2 || table.columnAtPoint(event.getPoint()) == 7) {
-                    moThanhToan();
+                    moChiTiet();
                 }
             }
         });
@@ -424,6 +424,17 @@ public class PendingCollectionPanel extends JPanel {
     /** Mở ney khi người dùng yêu cầu. */
     private static String money(long value) {
         return String.format(Locale.forLanguageTag("vi-VN"), "%,d", value).replace(',', '.');
+    }
+
+    /** Mở chi tiết đúng phiếu; dùng luồng đối chiếu chung khi không có callback riêng. */
+    private void moChiTiet() {
+        int dong = table.getSelectedRow();
+        if (onViewDetails == null || winChinh != null || dong < 0) {
+            moThanhToan();
+            return;
+        }
+        String ma = model.getValueAt(table.convertRowIndexToModel(dong), 0).toString();
+        onViewDetails.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, ma));
     }
 
     /** Mở xác nhận thu tiền cho đúng phiếu được chọn, không tự lấy phiếu đầu tiên. */

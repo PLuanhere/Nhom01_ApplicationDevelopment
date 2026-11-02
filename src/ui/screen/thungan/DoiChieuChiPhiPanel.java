@@ -44,7 +44,6 @@ public final class DoiChieuChiPhiPanel extends JPanel {
     private static final Color BLUE = new Color(34, 100, 166);
 
     private final ActionListener onChoosePayment;
-    private final ActionListener onBack;
 
     public DoiChieuChiPhiPanel() {
         this(new DoiChieuChiPhiDAO(), "SC-2026-0111", null, null);
@@ -53,7 +52,6 @@ public final class DoiChieuChiPhiPanel extends JPanel {
     public DoiChieuChiPhiPanel(DoiChieuChiPhiDAO dao, String maPhieu, ActionListener onChoosePayment,
             ActionListener onBack) {
         this.onChoosePayment = onChoosePayment;
-        this.onBack = onBack;
 
         setLayout(new BorderLayout());
         setBackground(PAGE);
@@ -327,35 +325,6 @@ public final class DoiChieuChiPhiPanel extends JPanel {
 
     private static String formatMoney(long value) {
         return String.format(Locale.forLanguageTag("vi-VN"), "%,d", value).replace(',', '.');
-    }
-
-    private static class ScrollablePanel extends JPanel implements javax.swing.Scrollable {
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public java.awt.Dimension getPreferredScrollableViewportSize() {
-            return getPreferredSize();
-        }
-
-        @Override
-        public int getScrollableUnitIncrement(java.awt.Rectangle r, int o, int d) {
-            return 16;
-        }
-
-        @Override
-        public int getScrollableBlockIncrement(java.awt.Rectangle r, int o, int d) {
-            return 60;
-        }
-
-        @Override
-        public boolean getScrollableTracksViewportWidth() {
-            return true;
-        }
-
-        @Override
-        public boolean getScrollableTracksViewportHeight() {
-            return false;
-        }
     }
 
     private static class MoneyRenderer extends DefaultTableCellRenderer {

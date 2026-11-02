@@ -47,8 +47,6 @@ public class HomeCashDashboardThuNganN4 extends JPanel {
     private static final Color WINDOW = new Color(240, 240, 240);
     private static final Color SURFACE = Color.WHITE;
     private static final Color BORDER = new Color(184, 194, 207);
-    private static final Color NAV = new Color(233, 238, 244);
-    private static final Color SELECTED = new Color(220, 234, 254);
     private static final Color PRIMARY = new Color(36, 95, 168);
     private static final Color TEXT = new Color(32, 43, 56);
     private static final Color MUTED = new Color(90, 104, 120);

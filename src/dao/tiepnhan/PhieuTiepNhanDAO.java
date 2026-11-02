@@ -195,6 +195,7 @@ public final class PhieuTiepNhanDAO {
         if (tk == null || tk.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT) {
             throw new SecurityException("Chỉ kỹ thuật được đọc phiếu kiểm tra đã giao.");
         }
+        tk.kiemTraPhien();
         boolean dangLam = false;
         for (KyThuatVienPhanCong kt : nguonKyThuat.layLienKetKyThuat(new TaiKhoanDAO())) {
             if (kt.duocPhanCong() && kt.getTaiKhoan().getTenDangNhap().equals(tk.getTenDangNhap())) {
@@ -227,6 +228,7 @@ public final class PhieuTiepNhanDAO {
         if (tk == null) {
             throw new NullPointerException("Cần phiên đăng nhập.");
         }
+        tk.kiemTraPhien();
         if (tk.getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN) {
             throw new SecurityException("Chỉ nhân viên tiếp nhận được truy cập kho phiếu.");
         }
