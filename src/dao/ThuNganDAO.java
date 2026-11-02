@@ -3,12 +3,14 @@ package dao;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+
+import entity.HinhThucThanhToan;
+import entity.HoaDon;
 
 /**
  * Dữ liệu dành riêng cho vai trò Thu ngân.
@@ -23,8 +25,8 @@ public final class ThuNganDAO {
 
     /** Danh sách phiếu chờ thu tiền (phiếu sửa chữa đã HOAN_THANH, chưa lập hóa đơn). */
     private final List<PhieuChoThu>  danhSachPhieuCho = new ArrayList<>();
-    /** Danh sách hóa đơn đã phát hành trong phiên. */
-    private final List<HoaDonThuNgan> danhSachHoaDon  = new ArrayList<>();
+    /** Danh sách hóa đơn đã phát hành trong phiên — dùng entity HoaDon thực. */
+    private final List<HoaDon> danhSachHoaDon  = new ArrayList<>();
 
     /** Tạo DAO với dữ liệu mẫu khớp màn hình UI. */
     public ThuNganDAO() {
@@ -36,15 +38,22 @@ public final class ThuNganDAO {
         danhSachPhieuCho.add(new PhieuChoThu("SC-2026-0111", "51H-135.79", "Trần Thị Bình",
                 new BigDecimal("800000"),
                 LocalDateTime.of(2026, 10, 5, 11, 0)));
-        danhSachPhieuCho.add(new PhieuChoThu("SC-2026-0124", "51H-246.80", "Nguyễn Văn An",
+        PhieuChoThu phieu0108 = new PhieuChoThu("SC-2026-0108", "51H-246.80", "Nguyễn Văn An",
                 new BigDecimal("1270000"),
-                LocalDateTime.of(2026, 10, 5, 15, 30)));
+                LocalDateTime.of(2026, 10, 5, 15, 30));
+        danhSachPhieuCho.add(phieu0108);
 
-        // ── Hóa đơn đã thu (dữ liệu mẫu) ──
-        danhSachHoaDon.add(new HoaDonThuNgan("HD-2026-0108", "SC-2026-0108", "Nguyễn Văn An",
-                new BigDecimal("1270000"), "Chuyển khoản", "05/10/2026 14:30", "thungan"));
-        danhSachHoaDon.add(new HoaDonThuNgan("HD-2026-0104", "SC-2026-0104", "Lê Văn Cường",
-                new BigDecimal("1000000"), "Tiền mặt", "04/10/2026 10:15", "thungan"));
+        // ── Hóa đơn đã thu (dữ liệu mẫu) — dùng entity HoaDon thực ──
+        // Hóa đơn: dùng HinhThucThanhToan enum + LocalDateTime
+        danhSachHoaDon.add(new HoaDon("HD-2026-0108", "SC-2026-0108", "Nguyễn Văn An", "51H-246.80",
+                new BigDecimal("1270000"), HinhThucThanhToan.CHUYEN_KHOAN,
+                LocalDateTime.of(2026, 10, 5, 14, 30), "thungan"));
+        danhSachHoaDon.add(new HoaDon("HD-2026-0104", "SC-2026-0104", "Lê Văn Cường", "51G-789.12",
+                new BigDecimal("1000000"), HinhThucThanhToan.TIEN_MAT,
+                LocalDateTime.of(2026, 10, 4, 10, 15), "thungan"));
+        
+        // Xóa phiếu khỏi danh sách chờ khi đã thanh toán (logic transaction)
+        danhSachPhieuCho.remove(phieu0108);
     }
 
     // ── Phiếu chờ thu ────────────────────────────────────────────────────────
@@ -82,125 +91,153 @@ public final class ThuNganDAO {
                 .findFirst();
     }
 
+
     // ── Xác nhận thanh toán ──────────────────────────────────────────────────
 
     /**
      * Xác nhận thanh toán tiền mặt: kiểm tra điều kiện, lưu hóa đơn,
-     * xóa phiếu khỏi danh sách chờ.
+     * xóa phiếu khỏi danh sách chờ trong một transaction logic.
      *
-     * <p>Điều kiện:</p>
-     * <ul>
-     *   <li>Phiếu phải tồn tại trong danh sách chờ.</li>
-     *   <li>Số tiền thực nhận không thấp hơn tổng phải thu.</li>
-     *   <li>Người thu không được rỗng.</li>
-     * </ul>
-     * Khi kết nối DB: thay bằng INSERT HoaDon + UPDATE TrangThai trong cùng transaction.
-     *
-     * @param maPhieu    mã phiếu cần thu tiền
-     * @param soTienNhan số tiền thực nhận (đồng)
-     * @param nguoiThu   tên đăng nhập của thu ngân
-     * @return mã hóa đơn vừa tạo
+     * @param maPhieu     mã phiếu cần thanh toán
+     * @param soTienNhan  số tiền khách đưa
+     * @param nguoiDuyet  tên tài khoản thu ngân
+     * @return mã hóa đơn được tạo
      * @throws NullPointerException     nếu bất kỳ tham số nào là null
-     * @throws IllegalArgumentException nếu nguoiThu rỗng
-     * @throws IllegalStateException    nếu phiếu không tồn tại hoặc tiền chưa đủ
+     * @throws IllegalArgumentException nếu phiếu không tồn tại hoặc điều kiện không hợp lệ
      */
-    public String xacNhanThanhToanTienMat(String maPhieu,
-            BigDecimal soTienNhan, String nguoiThu) {
+    public String xacNhanThanhToanTienMat(String maPhieu, BigDecimal soTienNhan, String nguoiDuyet) {
         Objects.requireNonNull(maPhieu,    "Mã phiếu không được null.");
-        Objects.requireNonNull(soTienNhan, "Số tiền nhận không được null.");
-        Objects.requireNonNull(nguoiThu,   "Người thu không được null.");
-        if (nguoiThu.isBlank()) {
-            throw new IllegalArgumentException("Người thu không được rỗng.");
+        Objects.requireNonNull(soTienNhan, "Số tiền không được null.");
+        Objects.requireNonNull(nguoiDuyet, "Người duyệt không được null.");
+
+        // Tìm phiếu chờ thu
+        Optional<PhieuChoThu> opt = timPhieuChoThuTheoMa(maPhieu);
+        if (!opt.isPresent()) {
+            throw new IllegalArgumentException("Phiếu không tồn tại hoặc đã thanh toán: " + maPhieu);
         }
 
-        PhieuChoThu phieu = timPhieuChoThuTheoMa(maPhieu)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Phiếu không tồn tại hoặc đã thanh toán: " + maPhieu));
-
+        PhieuChoThu phieu = opt.get();
         if (soTienNhan.compareTo(phieu.getTongTien()) < 0) {
-            throw new IllegalStateException(
-                    "Số tiền nhận chưa đủ. Cần: " + phieu.getTongTien()
-                    + " · Nhận: " + soTienNhan);
+            throw new IllegalArgumentException("Số tiền khách đưa không đủ.");
         }
 
-        // Sinh mã hóa đơn — khi có DB dùng SEQUENCE hoặc UUID.
-        String maHoaDon = "HD-" + LocalDateTime.now().getYear()
-                + "-" + String.format("%04d", danhSachHoaDon.size() + 1001);
+        // Tạo hóa đơn
+        String maHoaDon = "HD-" + System.currentTimeMillis(); // Mock: sinh mã tạm thời
+        HoaDon hoaDon = new HoaDon(maHoaDon, maPhieu, phieu.getTenKhach(), phieu.getBienSo(),
+                phieu.getTongTien(), HinhThucThanhToan.TIEN_MAT,
+                LocalDateTime.now(), nguoiDuyet);
 
-        danhSachHoaDon.add(new HoaDonThuNgan(
-                maHoaDon, maPhieu, phieu.getTenKhach(),
-                phieu.getTongTien(), "Tiền mặt",
-                LocalDateTime.now().format(
-                        DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")),
-                nguoiThu));
+        // Lưu hóa đơn và xóa phiếu khỏi danh sách chờ
+        danhSachHoaDon.add(hoaDon);
+        danhSachPhieuCho.remove(phieu);
 
-        // Xóa phiếu khỏi danh sách chờ sau khi lưu hóa đơn thành công.
-        danhSachPhieuCho.removeIf(p -> p.getMaPhieu().equals(maPhieu.trim()));
         return maHoaDon;
     }
 
-    // ── Hóa đơn đã thu ───────────────────────────────────────────────────────
+    /**
+     * Xác nhận thanh toán chuyển khoản/QR: kiểm tra điều kiện, lưu hóa đơn,
+     * xóa phiếu khỏi danh sách chờ trong một transaction logic.
+     *
+     * @param maPhieu        mã phiếu cần thanh toán
+     * @param soTienNhan     số tiền thực nhận qua ngân hàng
+     * @param maGiaoDich     mã tham chiếu giao dịch
+     * @param nguoiDuyet     tên tài khoản thu ngân
+     * @return mã hóa đơn được tạo
+     * @throws NullPointerException     nếu bất kỳ tham số nào là null
+     * @throws IllegalArgumentException nếu phiếu không tồn tại hoặc điều kiện không hợp lệ
+     */
+    public String xacNhanThanhToanChuyenKhoan(String maPhieu, BigDecimal soTienNhan,
+            String maGiaoDich, String nguoiDuyet) {
+        Objects.requireNonNull(maPhieu,     "Mã phiếu không được null.");
+        Objects.requireNonNull(soTienNhan,  "Số tiền không được null.");
+        Objects.requireNonNull(maGiaoDich,  "Mã giao dịch không được null.");
+        Objects.requireNonNull(nguoiDuyet,  "Người duyệt không được null.");
+
+        String maGD = maGiaoDich.trim();
+        if (maGD.isEmpty()) {
+            throw new IllegalArgumentException("Mã giao dịch không được rỗng.");
+        }
+
+        // Tìm phiếu chờ thu
+        Optional<PhieuChoThu> opt = timPhieuChoThuTheoMa(maPhieu);
+        if (!opt.isPresent()) {
+            throw new IllegalArgumentException("Phiếu không tồn tại hoặc đã thanh toán: " + maPhieu);
+        }
+
+        PhieuChoThu phieu = opt.get();
+        if (soTienNhan.compareTo(phieu.getTongTien()) < 0) {
+            throw new IllegalArgumentException("Số tiền nhận không đủ.");
+        }
+
+        // Tạo hóa đơn
+        String maHoaDon = "HD-" + System.currentTimeMillis(); // Mock: sinh mã tạm thời
+        HoaDon hoaDon = new HoaDon(maHoaDon, maPhieu, phieu.getTenKhach(), phieu.getBienSo(),
+                phieu.getTongTien(), HinhThucThanhToan.CHUYEN_KHOAN,
+                LocalDateTime.now(), nguoiDuyet);
+
+        // Lưu hóa đơn và xóa phiếu khỏi danh sách chờ
+        danhSachHoaDon.add(hoaDon);
+        danhSachPhieuCho.remove(phieu);
+
+        return maHoaDon;
+    }
+
+    // ── Hóa đơn đã thanh toán ────────────────────────────────────────────────
 
     /**
-     * Lấy danh sách hóa đơn đã thanh toán.
-     * Khi kết nối DB: thay bằng SELECT từ bảng HoaDon.
+     * Lấy danh sách hóa đơn đã thanh toán — dùng entity HoaDon thực.
      *
-     * @return bản sao danh sách; bao gồm hóa đơn vừa tạo trong phiên
+     * @return bản sao danh sách; rỗng nếu không có
      */
-    public List<HoaDonThuNgan> layHoaDonDaThu() {
+    public List<HoaDon> layHoaDonDaThu() {
         return new ArrayList<>(danhSachHoaDon);
     }
 
     /**
-     * Đếm số hóa đơn đã thu — dùng cho thẻ thống kê dashboard.
+     * Tìm hóa đơn theo mã.
      *
-     * @return số hóa đơn đã phát hành
+     * @param maHoaDon mã hóa đơn cần tìm
+     * @return hóa đơn tương ứng hoặc Optional rỗng
+     * @throws NullPointerException nếu maHoaDon là null
+     */
+    public Optional<HoaDon> timHoaDonTheoMa(String maHoaDon) {
+        Objects.requireNonNull(maHoaDon, "Mã hóa đơn không được null.");
+        String ma = maHoaDon.trim();
+        return danhSachHoaDon.stream()
+                .filter(hd -> hd.getMaHoaDon().equals(ma))
+                .findFirst();
+    }
+
+    /**
+     * Đếm số hóa đơn đã thanh toán — dùng cho thẻ thống kê dashboard.
+     *
+     * @return số hóa đơn
      */
     public int demHoaDonDaThu() {
         return danhSachHoaDon.size();
     }
 
     /**
-     * Tính tổng tiền đã thu (tất cả hình thức) — dùng cho thẻ thống kê.
+     * Tính tổng tiền đã thu theo hình thức thanh toán.
      *
-     * @return tổng tiền đã thu
+     * @param tenHinhThuc tên hình thức (ví dụ: "Tiền mặt", "Chuyển khoản")
+     * @return tổng tiền; {@code BigDecimal.ZERO} nếu không có
      */
-    public BigDecimal tinhTongDaThu() {
-        return danhSachHoaDon.stream()
-                .map(HoaDonThuNgan::getTongTien)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    public BigDecimal tinhTongTheoHinhThuc(String tenHinhThuc) {
+        Objects.requireNonNull(tenHinhThuc, "Tên hình thức không được null.");
+        BigDecimal tong = BigDecimal.ZERO;
+        for (HoaDon hd : danhSachHoaDon) {
+            if (hd.getHinhThucThanhToan().getTenHienThi().equals(tenHinhThuc)) {
+                tong = tong.add(hd.getTongTien());
+            }
+        }
+        return tong;
     }
 
-    /**
-     * Tính tổng tiền đã thu theo hình thức — dùng cho thẻ thống kê.
-     *
-     * @param hinhThuc "Tiền mặt" hoặc "Chuyển khoản"
-     * @return tổng tiền theo hình thức
-     */
-    public BigDecimal tinhTongTheoHinhThuc(String hinhThuc) {
-        return danhSachHoaDon.stream()
-                .filter(hd -> hd.getHinhThuc().equals(hinhThuc))
-                .map(HoaDonThuNgan::getTongTien)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
+    // ── Phiếu chờ thu — DTOs nội bộ ───────────────────────────────────────────
 
     /**
-     * Tính tổng chi phí của một phiếu — dùng khi hiển thị chi tiết đối chiếu.
-     *
-     * @param maPhieu mã phiếu cần tính
-     * @return tổng tiền; {@code BigDecimal.ZERO} nếu không tìm thấy
-     */
-    public BigDecimal tinhTongTheoPhieu(String maPhieu) {
-        Objects.requireNonNull(maPhieu, "Mã phiếu không được null.");
-        return timPhieuChoThuTheoMa(maPhieu)
-                .map(PhieuChoThu::getTongTien)
-                .orElse(BigDecimal.ZERO);
-    }
-
-    // ── DTO ──────────────────────────────────────────────────────────────────
-
-    /**
-     * Dữ liệu phiếu chờ thu tiền trả ra cho UI.
+     * Dữ liệu tạm cho phiếu chờ thu — không phải entity, chỉ nhóm dữ liệu từ phiếu sửa chữa.
      */
     public static final class PhieuChoThu {
         private final String maPhieu;
@@ -235,51 +272,6 @@ public final class ThuNganDAO {
             NumberFormat fmt = NumberFormat.getNumberInstance(
                     Locale.forLanguageTag("vi-VN"));
             return "Tổng cần thu: " + fmt.format(tongTien) + "đ · đã hoàn tất sửa";
-        }
-    }
-
-    /**
-     * Dữ liệu hóa đơn đã thu trả ra cho UI.
-     */
-    public static final class HoaDonThuNgan {
-        private final String maHoaDon;
-        private final String maPhieu;
-        private final String tenKhach;
-        private final BigDecimal tongTien;
-        private final String hinhThuc;
-        private final String thoiDiem;
-        private final String nguoiThu;
-
-        /** Tạo hóa đơn đã thu với đầy đủ thông tin. */
-        public HoaDonThuNgan(String maHoaDon, String maPhieu, String tenKhach,
-                BigDecimal tongTien, String hinhThuc, String thoiDiem, String nguoiThu) {
-            this.maHoaDon = Objects.requireNonNull(maHoaDon);
-            this.maPhieu  = Objects.requireNonNull(maPhieu);
-            this.tenKhach = Objects.requireNonNull(tenKhach);
-            this.tongTien = Objects.requireNonNull(tongTien);
-            this.hinhThuc = Objects.requireNonNull(hinhThuc);
-            this.thoiDiem = Objects.requireNonNull(thoiDiem);
-            this.nguoiThu = Objects.requireNonNull(nguoiThu);
-        }
-
-        public String getMaHoaDon()       { return maHoaDon; }
-        public String getMaPhieu()        { return maPhieu; }
-        public String getTenKhach()       { return tenKhach; }
-        public BigDecimal getTongTien()   { return tongTien; }
-        public String getHinhThuc()       { return hinhThuc; }
-        public String getThoiDiem()       { return thoiDiem; }
-        public String getNguoiThu()       { return nguoiThu; }
-
-        /** Nhãn hàng đầu. */
-        public String getNhanHangDau() {
-            return maHoaDon + " · " + tenKhach;
-        }
-
-        /** Chi tiết phụ. */
-        public String getNhanHangHai() {
-            NumberFormat fmt = NumberFormat.getNumberInstance(
-                    Locale.forLanguageTag("vi-VN"));
-            return fmt.format(tongTien) + "đ · " + hinhThuc + " · gửi tiếp nhận bàn giao";
         }
     }
 }

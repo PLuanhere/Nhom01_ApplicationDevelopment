@@ -8,7 +8,7 @@ import java.util.Objects;
  * Hóa đơn thanh toán được lập sau khi phiếu sửa chữa hoàn thành.
  * Một phiếu chỉ có tối đa một hóa đơn; ràng buộc này được giữ tại DAO.
  *
- * <p>Kiểm tra nội tại: mã hóa đơn, mã phiếu, tên khách không rỗng;
+ * <p>Kiểm tra nội tại: mã hóa đơn, mã phiếu, tên khách, biển số không rỗng;
  * tổng tiền không âm.</p>
  */
 public final class HoaDon {
@@ -16,6 +16,7 @@ public final class HoaDon {
     private final String maHoaDon;
     private final String maPhieuSuaChua;
     private final String tenKhachHang;
+    private final String bienSo;
     private final BigDecimal tongTien;
     private final HinhThucThanhToan hinhThucThanhToan;
     private final LocalDateTime thoiDiemThanhToan;
@@ -27,6 +28,7 @@ public final class HoaDon {
      * @param maHoaDon           mã hóa đơn duy nhất, không rỗng
      * @param maPhieuSuaChua     mã phiếu liên kết, không rỗng
      * @param tenKhachHang       tên khách tại thời điểm lập, không rỗng
+     * @param bienSo             biển số xe tại thời điểm lập, không rỗng
      * @param tongTien           tổng tiền thực thu, không âm
      * @param hinhThucThanhToan  hình thức thanh toán
      * @param thoiDiemThanhToan  thời điểm xác nhận thu tiền
@@ -34,12 +36,13 @@ public final class HoaDon {
      * @throws NullPointerException     nếu bất kỳ tham số nào là null
      * @throws IllegalArgumentException nếu mã/tên rỗng hoặc tổng tiền âm
      */
-    public HoaDon(String maHoaDon, String maPhieuSuaChua, String tenKhachHang,
+    public HoaDon(String maHoaDon, String maPhieuSuaChua, String tenKhachHang, String bienSo,
             BigDecimal tongTien, HinhThucThanhToan hinhThucThanhToan,
             LocalDateTime thoiDiemThanhToan, String nguoiThucHien) {
         this.maHoaDon          = requireNonBlank(maHoaDon,       "Mã hóa đơn");
         this.maPhieuSuaChua    = requireNonBlank(maPhieuSuaChua, "Mã phiếu sửa chữa");
         this.tenKhachHang      = requireNonBlank(tenKhachHang,   "Tên khách hàng");
+        this.bienSo            = requireNonBlank(bienSo,         "Biển số xe");
         this.nguoiThucHien     = requireNonBlank(nguoiThucHien,  "Người thực hiện");
         this.tongTien          = Objects.requireNonNull(tongTien,           "Tổng tiền không được null.");
         this.hinhThucThanhToan = Objects.requireNonNull(hinhThucThanhToan,  "Hình thức thanh toán không được null.");
@@ -53,6 +56,7 @@ public final class HoaDon {
     public String getMaHoaDon()            { return maHoaDon; }
     public String getMaPhieuSuaChua()      { return maPhieuSuaChua; }
     public String getTenKhachHang()        { return tenKhachHang; }
+    public String getBienSo()              { return bienSo; }
     public BigDecimal getTongTien()        { return tongTien; }
     public HinhThucThanhToan getHinhThucThanhToan() { return hinhThucThanhToan; }
     public LocalDateTime getThoiDiemThanhToan()     { return thoiDiemThanhToan; }
