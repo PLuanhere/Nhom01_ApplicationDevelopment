@@ -28,9 +28,9 @@ public final class QuanLyNavigationPanel extends JPanel {
         setOpaque(false);
         JPanel pnlDanhSach = new JPanel(new GridLayout(0, 1, 0, 2));
         pnlDanhSach.setOpaque(false);
-        String[] ten = {"Tổng quan điều hành", "Nhân viên", "Tài khoản & phân quyền",
-                "Dịch vụ và bảng giá", "Phụ tùng", "Báo cáo và thống kê"};
-        String[] icon = {"dashboard", "users", "shield", "clipboard", "package", "chart"};
+        String[] ten = { "Tổng quan điều hành", "Nhân viên", "Tài khoản & phân quyền", "Dịch vụ và bảng giá",
+                "Phụ tùng", "Báo cáo và thống kê" };
+        String[] icon = { "dashboard", "users", "shield", "clipboard", "package", "chart" };
         for (int i = 0; i < ten.length; i++) {
             JToggleButton btn = taoMuc(ten[i], khiChonMuc);
             btn.setIcon(UiTheme.icon(icon[i]));
@@ -42,7 +42,10 @@ public final class QuanLyNavigationPanel extends JPanel {
     /** Chọn lại mục sidebar mà không phát thêm sự kiện điều hướng. */
     public void chonMuc(String tenMuc) {
         for (JToggleButton btn : cacMuc) {
-            if (btn.getText().equals(tenMuc)) { btn.setSelected(true); return; }
+            if (btn.getText().equals(tenMuc)) {
+                btn.setSelected(true);
+                return;
+            }
         }
     }
 
@@ -59,12 +62,14 @@ public final class QuanLyNavigationPanel extends JPanel {
         btn.setContentAreaFilled(false);
         btn.setOpaque(true);
         boolean daCo = "Nhân viên".equals(ten) || "Tài khoản & phân quyền".equals(ten)
-                || "Dịch vụ và bảng giá".equals(ten) || "Phụ tùng".equals(ten);
+                || "Dịch vụ và bảng giá".equals(ten) || "Phụ tùng".equals(ten) || "Tổng quan điều hành".equals(ten)
+                || "Báo cáo và thống kê".equals(ten);
         btn.setToolTipText(daCo ? "Mở " + ten.toLowerCase() : ten + ": chức năng chưa triển khai.");
         btn.getAccessibleContext().setAccessibleDescription(btn.getToolTipText());
         btn.addItemListener(new ItemListener() {
             /** Cập nhật nền, màu chữ và font của mục sidebar được chọn. */
-            @Override public void itemStateChanged(ItemEvent event) {
+            @Override
+            public void itemStateChanged(ItemEvent event) {
                 btn.setBackground(btn.isSelected() ? UiTheme.SIDEBAR_ACTIVE : UiTheme.SIDEBAR_BACKGROUND);
                 btn.setForeground(btn.isSelected() ? Color.WHITE : UiTheme.SIDEBAR_TEXT);
                 btn.setFont(UiTheme.APP_FONT.deriveFont(btn.isSelected() ? Font.BOLD : Font.PLAIN));

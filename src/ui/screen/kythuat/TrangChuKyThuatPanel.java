@@ -1,5 +1,8 @@
 package ui.screen.kythuat;
 
+import entity.baocao.ThongKeNgayKyThuat;
+import entity.baocao.TongQuanKyThuat;
+
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Cursor;
@@ -14,7 +17,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -26,11 +28,9 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
-import entity.ThongKeNgayKyThuat;
-import entity.TongQuanKyThuat;
 import ui.component.KyThuatUi;
 import ui.component.UiTheme;
-import ui.dialog.ChiTietCongViecHoanTatDialog;
+import ui.dialog.kythuat.ChiTietCongViecHoanTatDialog;
 
 // Hiển thị dashboard kỹ thuật bên trong MainFrame, không tạo lại khung ứng dụng chung.
 public final class TrangChuKyThuatPanel extends JPanel implements ActionListener {
@@ -42,16 +42,21 @@ public final class TrangChuKyThuatPanel extends JPanel implements ActionListener
     private final List<ThongKeNgayKyThuat> thongKeNgay;
     private final JButton[] btnCotNgay;
 
-    /**
-     * @param tongQuan dữ liệu tổng quan của kỹ thuật viên
-     * @param winChu khung chung chứa dashboard
-     * @param boXuLyDieuHuong đối tượng xử lý chuyển chức năng
-     */
+    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     public TrangChuKyThuatPanel(TongQuanKyThuat tongQuan, JFrame winChu, ActionListener boXuLyDieuHuong) {
         super(new BorderLayout(8, 8));
-        this.tongQuan = Objects.requireNonNull(tongQuan, "Cần dữ liệu dashboard.");
-        this.winChu = Objects.requireNonNull(winChu, "Cần khung chung.");
-        this.boXuLyDieuHuong = Objects.requireNonNull(boXuLyDieuHuong, "Cần đối tượng xử lý điều hướng.");
+        if (tongQuan == null) {
+            throw new NullPointerException("Cần dữ liệu dashboard.");
+        }
+        this.tongQuan = tongQuan;
+        if (winChu == null) {
+            throw new NullPointerException("Cần khung chung.");
+        }
+        this.winChu = winChu;
+        if (boXuLyDieuHuong == null) {
+            throw new NullPointerException("Cần đối tượng xử lý điều hướng.");
+        }
+        this.boXuLyDieuHuong = boXuLyDieuHuong;
         thongKeNgay = tongQuan.getThongKeNgay();
         btnCotNgay = new JButton[thongKeNgay.size()];
         setBackground(UiTheme.WINDOW);
@@ -79,25 +84,27 @@ public final class TrangChuKyThuatPanel extends JPanel implements ActionListener
             if (nguon == btnCotNgay[i]) {
                 moChiTiet(thongKeNgay.get(i));
                 return;
+
             }
         }
     }
 
-    /** @return panel chứa tiêu đề và mô tả dashboard */
     // Tạo tiêu đề cùng thông tin kỹ thuật viên và ngày báo cáo.
+    /** Tạo phan dau cho giao diện. */
     private JPanel taoPhanDau() {
         JPanel pnlPhanDau = new JPanel(new BorderLayout(0, 8));
         pnlPhanDau.setOpaque(false);
-        pnlPhanDau.add(KyThuatUi.taoNhan("Trang chủ • Kỹ thuật",
-                UiTheme.BRAND_FONT.deriveFont(22.0f)), BorderLayout.NORTH);
-        pnlPhanDau.add(KyThuatUi.taoNhan("Dashboard công việc cá nhân • " + tongQuan.getTenKyThuatVien()
-                + " • " + tongQuan.getNgayBaoCao().format(DATE_FORMAT),
-                UiTheme.SHELL_FONT.deriveFont(12.0f)), BorderLayout.CENTER);
+        pnlPhanDau.add(KyThuatUi.taoNhan("Trang chủ • Kỹ thuật", UiTheme.BRAND_FONT.deriveFont(22.0f)),
+                BorderLayout.NORTH);
+        pnlPhanDau.add(
+                KyThuatUi.taoNhan("Dashboard công việc cá nhân • " + tongQuan.getTenKyThuatVien() + " • "
+                        + tongQuan.getNgayBaoCao().format(DATE_FORMAT), UiTheme.SHELL_FONT.deriveFont(12.0f)),
+                BorderLayout.CENTER);
         return pnlPhanDau;
     }
 
-    /** @return panel chứa các thẻ dashboard */
     // Xếp các chỉ số, biểu đồ, lưu ý và lối vào theo thứ tự thiết kế.
+    /** Tạo noi dung cho giao diện. */
     private JPanel taoNoiDung() {
         JPanel pnlNoiDung = new JPanel();
         pnlNoiDung.setLayout(new BoxLayout(pnlNoiDung, BoxLayout.Y_AXIS));
@@ -116,12 +123,8 @@ public final class TrangChuKyThuatPanel extends JPanel implements ActionListener
         return pnlNoiDung;
     }
 
-    /**
-     * @param pnlCha panel chứa các thẻ
-     * @param pnlThe thẻ cần thêm
-     * @param chieuCao chiều cao thiết kế, tính bằng pixel
-     */
     // Giữ chiều cao thiết kế hoặc tăng theo nội dung khi font cần thêm không gian.
+    /** Thực hiện them the cho thành phần hiện tại. */
     private void themThe(JPanel pnlCha, JPanel pnlThe, int chieuCao) {
         chieuCao = Math.max(chieuCao, pnlThe.getPreferredSize().height);
         pnlThe.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -134,13 +137,8 @@ public final class TrangChuKyThuatPanel extends JPanel implements ActionListener
         pnlCha.add(pnlThe);
     }
 
-    /**
-     * @param nhan tên chỉ số
-     * @param soLuong giá trị thống kê
-     * @param nguCanh phạm vi thống kê
-     * @return thẻ chỉ số
-     */
     // Xếp nhãn, số và mô tả theo chiều cao riêng để số lớn không bị cắt.
+    /** Tạo chi so cho giao diện. */
     private JPanel taoChiSo(String nhan, int soLuong, String nguCanh) {
         JPanel pnlThe = KyThuatUi.taoThe();
         JPanel pnlChu = new JPanel();
@@ -155,8 +153,8 @@ public final class TrangChuKyThuatPanel extends JPanel implements ActionListener
         return pnlThe;
     }
 
-    /** @return panel biểu đồ số công việc hoàn tất theo ngày */
     // Tạo biểu đồ và đăng ký sự kiện mở chi tiết cho từng cột.
+    /** Tạo bieu do cho giao diện. */
     private JPanel taoBieuDo() {
         JPanel pnlBieuDo = KyThuatUi.taoThe();
         JPanel pnlTieuDe = new JPanel(new GridLayout(2, 1, 0, 8));
@@ -191,11 +189,8 @@ public final class TrangChuKyThuatPanel extends JPanel implements ActionListener
         return pnlBieuDo;
     }
 
-    /**
-     * @param thongKe thống kê của ngày cần biểu diễn
-     * @return nút chứa giá trị, thanh cột và nhãn ngày
-     */
     // Tạo cột biểu đồ bằng các panel và nhãn đặt bên trong một nút trong suốt.
+    /** Tạo cot cho giao diện. */
     private JButton taoCot(ThongKeNgayKyThuat thongKe) {
         JButton btnCot = new JButton();
         btnCot.setLayout(new BorderLayout());
@@ -231,14 +226,14 @@ public final class TrangChuKyThuatPanel extends JPanel implements ActionListener
         return btnCot;
     }
 
-    /** @return thẻ lưu ý về các đề xuất chờ duyệt */
     // Hiển thị nội dung cần chú ý và cho phép văn bản xuống dòng khi cửa sổ hẹp.
+    /** Tạo tom tat cho giao diện. */
     private JPanel taoTomTat() {
         JPanel pnlThe = KyThuatUi.taoThe();
         pnlThe.add(KyThuatUi.taoNhan("Tóm tắt cần chú ý", UiTheme.BRAND_FONT), BorderLayout.NORTH);
-        JTextArea txaLuuY = new JTextArea(tongQuan.getChoKhachDuyet()
-                + " đề xuất phát sinh đang chờ khách duyệt. Chỉ tạm dừng hạng mục liên quan"
-                + " và tiếp tục các phần đã được duyệt.");
+        JTextArea txaLuuY = new JTextArea(
+                tongQuan.getChoKhachDuyet() + " đề xuất phát sinh đang chờ khách duyệt. Chỉ tạm dừng hạng mục liên quan"
+                        + " và tiếp tục các phần đã được duyệt.");
         txaLuuY.setFont(UiTheme.SHELL_FONT);
         txaLuuY.setForeground(UiTheme.TEXT);
         txaLuuY.setBackground(UiTheme.SURFACE);
@@ -263,16 +258,16 @@ public final class TrangChuKyThuatPanel extends JPanel implements ActionListener
         return pnlThe;
     }
 
-    /** @return thẻ chứa các nút đi đến chức năng liên quan */
     // Tạo các nút lối vào và đăng ký đối tượng xử lý điều hướng của MainFrame.
+    /** Tạo loi vao cho giao diện. */
     private JPanel taoLoiVao() {
         JPanel pnlThe = KyThuatUi.taoThe();
         pnlThe.add(KyThuatUi.taoNhan("Lối vào công việc", UiTheme.BRAND_FONT), BorderLayout.NORTH);
         JPanel pnlNut = new JPanel();
         pnlNut.setLayout(new BoxLayout(pnlNut, BoxLayout.X_AXIS));
         pnlNut.setOpaque(false);
-        String[] nhanNut = {"Công việc được giao", "Xe chờ kiểm tra", "Báo cáo kiểm tra", "Tiến độ sửa chữa"};
-        int[] chieuRong = {176, 150, 152, 152};
+        String[] nhanNut = { "Công việc được giao", "Xe chờ kiểm tra", "Báo cáo kiểm tra", "Tiến độ sửa chữa" };
+        int[] chieuRong = { 176, 150, 152, 152 };
         for (int i = 0; i < nhanNut.length; i++) {
             String nhan = nhanNut[i];
             JButton btnLoiVao = KyThuatUi.taoNut(nhan, chieuRong[i]);
@@ -288,11 +283,11 @@ public final class TrangChuKyThuatPanel extends JPanel implements ActionListener
         return pnlThe;
     }
 
-    /** @param thongKe thống kê của ngày được chọn */
     // Mở hộp thoại modal hiển thị đúng ngày và số liệu người dùng đã chọn.
+    /** Mở chi tiet khi người dùng yêu cầu. */
     private void moChiTiet(ThongKeNgayKyThuat thongKe) {
-        ChiTietCongViecHoanTatDialog winChiTiet = new ChiTietCongViecHoanTatDialog(
-                winChu, tongQuan.getTenKyThuatVien(), thongKe);
+        ChiTietCongViecHoanTatDialog winChiTiet = new ChiTietCongViecHoanTatDialog(winChu, tongQuan.getTenKyThuatVien(),
+                thongKe);
         winChiTiet.setVisible(true);
     }
 }

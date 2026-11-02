@@ -1,5 +1,14 @@
 package ui.screen.kythuat;
 
+import dao.phutung.LenhPhuTungDAO;
+import dao.phutung.PhuTungSuDungDAO;
+import entity.nhansu.TaiKhoan;
+import entity.phutung.LenhPhuTung;
+import entity.phutung.LuongPhuTung;
+import entity.phutung.PhuTung;
+import entity.phutung.PhuTungSuDung;
+import entity.phutung.TrangThaiSuDung;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -11,11 +20,8 @@ import java.awt.Insets;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -37,16 +43,9 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
-import dao.LenhPhuTungDAO;
-import dao.PhuTungSuDungDAO;
-import entity.LenhPhuTung;
-import entity.PhuTung;
-import entity.PhuTungSuDung;
-import entity.TaiKhoan;
-import entity.TrangThaiSuDung;
 import ui.component.PhuTungUi;
 import ui.component.UiTheme;
-import ui.dialog.PhuTungSuDungDialog;
+import ui.dialog.kythuat.PhuTungSuDungDialog;
 
 public final class PhuTungSuDungPanel extends JPanel
         implements ActionListener, DocumentListener, ListSelectionListener {
@@ -54,23 +53,22 @@ public final class PhuTungSuDungPanel extends JPanel
     private final TaiKhoan taiKhoan;
     private final PhuTungSuDungDAO dao;
     private final LenhPhuTungDAO lenhDAO;
-    private final DefaultTableModel modelDanhSach = PhuTungUi.taoModel(
-            "Số ghi nhận", "Lệnh sửa chữa", "Phụ tùng", "Số lượng", "Trạng thái");
+    private final DefaultTableModel modelDanhSach = PhuTungUi.taoModel("Số ghi nhận", "Lệnh sửa chữa", "Phụ tùng",
+            "Số lượng", "Trạng thái");
     private final JTable tblDanhSach = PhuTungUi.taoBang(modelDanhSach);
     private final List<PhuTungSuDung> cacDong = new ArrayList<PhuTungSuDung>();
     private final JTextField txtTimKiem = new JTextField();
     private final JComboBox<String> cmbTrangThai = new JComboBox<String>(
-            new String[] {"Tất cả", "Nháp", "Đã ghi nhận"});
+            new String[] { "Tất cả", "Nháp", "Đã ghi nhận" });
     private final JLabel lblTrangThai = PhuTungUi.taoNhan(" ", false);
-    private final Map<String, JTextField> cacLuong = new LinkedHashMap<String, JTextField>();
-    private final Map<String, JTextArea> cacTonDuKien = new LinkedHashMap<String, JTextArea>();
+    private final List<JTextField> cacLuong = new ArrayList<>();
+    private final List<JTextArea> cacTonDuKien = new ArrayList<>();
     private final JTextArea txaGhiChu = new JTextArea(3, 24);
     private final JComboBox<String> cmbTienDo = new JComboBox<String>(
-            new String[] {"Đang sửa chữa", "Chờ phụ tùng", "Hoàn tất"});
+            new String[] { "Đang sửa chữa", "Chờ phụ tùng", "Hoàn tất" });
     private final JTextField txtKetQuaCongViec = new JTextField();
-    private final JTextField[] cacTruongPhatSinh = {
-            new JTextField(), new JTextField(), new JTextField(), new JTextField()
-    };
+    private final JTextField[] cacTruongPhatSinh = { new JTextField(), new JTextField(), new JTextField(),
+            new JTextField() };
     private final JTextArea txaGhiChuPhatSinh = new JTextArea(3, 24);
     private final JCheckBox[] cacKiemTra = new JCheckBox[4];
     private final JTextField txtKetLuan = new JTextField();
@@ -83,11 +81,7 @@ public final class PhuTungSuDungPanel extends JPanel
     private String loiVuotTon;
     private boolean dangNap;
 
-    /**
-     * Tạo các màn phụ tùng cho phiên kỹ thuật.
-     * @param taiKhoan tài khoản đã đăng nhập
-     * @param dao DAO phụ tùng dùng chung trong phiên
-     */
+    /** Tạo các màn phụ tùng cho phiên kỹ thuật. */
     public PhuTungSuDungPanel(TaiKhoan taiKhoan, PhuTungSuDungDAO dao) {
         super(new BorderLayout());
         this.taiKhoan = taiKhoan;
@@ -103,15 +97,14 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Xóa bộ lọc và tải dữ liệu mới nhất khi chọn mục phụ tùng sử dụng.
+    /** Mở danh sach khi người dùng yêu cầu. */
     public void moDanhSach() {
         tuKhoaDangLoc = "";
         trangThaiDangLoc = null;
         hienDanhSach();
     }
 
-    /**
-     * Mở lệnh hiện tại từ sidebar.
-     */
+    /** Mở lệnh hiện tại từ sidebar. */
     // Dùng lệnh đang làm hoặc lệnh của dòng được chọn để mở chi tiết tiến độ.
     public void moLenhDangChon() {
         if (maLenhDangMo == null) {
@@ -121,6 +114,7 @@ public final class PhuTungSuDungPanel extends JPanel
                 List<String> cacMaLenh = dao.docLenhDaDuyet(taiKhoan);
                 if (cacMaLenh.isEmpty()) {
                     thongBao("Lệnh sửa chữa", "Chưa có lệnh được phân công.");
+
                     return;
                 }
                 maLenhDangMo = cacMaLenh.get(0);
@@ -130,80 +124,102 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Điều phối thao tác giữa danh sách, biểu mẫu và các màn của cùng một lệnh.
+    /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
     @Override
     public void actionPerformed(ActionEvent suKien) {
         try {
             switch (suKien.getActionCommand()) {
-                case "TIM":
-                    hienTimKiem();
-                    break;
-                case "LOC":
-                    timKiem();
-                    break;
-                case "DANH_SACH":
-                    moDanhSach();
-                    break;
-                case "THEM":
-                    moBieuMau(null, false, false);
-                    break;
-                case "XEM":
-                    moBieuMau(docDongChon(), true, false);
-                    break;
-                case "SUA":
-                    PhuTungSuDung banSua = docDongChon();
-                    kiemTraCoTheSua(banSua);
-                    moBieuMau(banSua, false, false);
-                    break;
-                case "XOA":
-                    xoaHoSo(docDongChon());
-                    break;
-                case "LIEN_QUAN":
-                    moBieuMau(docDongChon(), true, true);
-                    break;
-                case "MO_XAC_NHAN":
-                    batDauXacNhan();
-                    break;
-                case "DA_DUYET":
-                    hienDaDuyet();
-                    break;
-                case "NHAP_LUONG":
-                    hienNhapLuong();
-                    break;
-                case "XAC_NHAN":
-                    xacNhanThucDung();
-                    break;
-                case "VE_LENH":
-                    hienChiTietLenh();
-                    break;
-                case "CHO_PHU_TUNG":
-                    lenhDAO.chuyenChoPhuTung(taiKhoan, maLenhDangMo, nhapDangXacNhan);
-                    hienChiTietLenh();
-                    break;
-                case "GHI_NHAN_TU_LENH":
-                    batDauTuLenh();
-                    break;
-                case "CAP_NHAT_CONG_VIEC":
-                    hienCapNhatCongViec();
-                    break;
-                case "LUU_TIEN_DO":
-                    lenhDAO.capNhatTienDo(taiKhoan, maLenhDangMo,
-                            (String) cmbTienDo.getSelectedItem(), txtKetQuaCongViec.getText());
-                    hienChiTietLenh();
-                    break;
-                case "BAO_PHAT_SINH":
-                    hienBaoPhatSinh();
-                    break;
-                case "LUU_PHAT_SINH":
-                    luuPhatSinh();
-                    break;
-                case "KIEM_TRA_HOAN_TAT":
-                    hienKiemTraHoanTat(true);
-                    break;
-                case "HOAN_TAT":
-                    hoanTatLenh();
-                    break;
-                default:
-                    throw new IllegalArgumentException("Thao tác không hợp lệ.");
+            case "TIM":
+                hienTimKiem();
+
+                break;
+            case "LOC":
+                timKiem();
+
+                break;
+            case "DANH_SACH":
+                moDanhSach();
+
+                break;
+            case "THEM":
+                moBieuMau(null, false, false);
+                break;
+
+            case "XEM":
+                moBieuMau(docDongChon(), true, false);
+                break;
+
+            case "SUA":
+                PhuTungSuDung banSua = docDongChon();
+                kiemTraCoTheSua(banSua);
+                moBieuMau(banSua, false, false);
+
+                break;
+            case "XOA":
+                xoaHoSo(docDongChon());
+
+                break;
+            case "LIEN_QUAN":
+                moBieuMau(docDongChon(), true, true);
+
+                break;
+            case "MO_XAC_NHAN":
+                batDauXacNhan();
+
+                break;
+            case "DA_DUYET":
+                hienDaDuyet();
+
+                break;
+            case "NHAP_LUONG":
+                hienNhapLuong();
+
+                break;
+            case "XAC_NHAN":
+                xacNhanThucDung();
+
+                break;
+            case "VE_LENH":
+                hienChiTietLenh();
+                break;
+
+            case "CHO_PHU_TUNG":
+                lenhDAO.chuyenChoPhuTung(taiKhoan, maLenhDangMo, nhapDangXacNhan);
+                hienChiTietLenh();
+
+                break;
+            case "GHI_NHAN_TU_LENH":
+                batDauTuLenh();
+
+                break;
+            case "CAP_NHAT_CONG_VIEC":
+                hienCapNhatCongViec();
+                break;
+
+            case "LUU_TIEN_DO":
+                lenhDAO.capNhatTienDo(taiKhoan, maLenhDangMo, (String) cmbTienDo.getSelectedItem(),
+                        txtKetQuaCongViec.getText());
+                hienChiTietLenh();
+
+                break;
+            case "BAO_PHAT_SINH":
+                hienBaoPhatSinh();
+
+                break;
+            case "LUU_PHAT_SINH":
+                luuPhatSinh();
+
+                break;
+            case "KIEM_TRA_HOAN_TAT":
+                hienKiemTraHoanTat(true);
+
+                break;
+            case "HOAN_TAT":
+                hoanTatLenh();
+                break;
+
+            default:
+                throw new IllegalArgumentException("Thao tác không hợp lệ.");
             }
         } catch (IllegalArgumentException | IllegalStateException | SecurityException loi) {
             thongBao("Không thể thực hiện", loi.getMessage());
@@ -211,6 +227,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Cập nhật mã hồ sơ đang chọn bên dưới danh sách.
+    /** Thực hiện value changed cho thành phần hiện tại. */
     @Override
     public void valueChanged(ListSelectionEvent suKien) {
         if (!suKien.getValueIsAdjusting()) {
@@ -219,29 +236,34 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Tính lại tồn dự kiến khi nhập thêm ký tự.
+    /** Thực hiện insert update cho thành phần hiện tại. */
     @Override
     public void insertUpdate(DocumentEvent suKien) {
         capNhatDuKien();
     }
 
     // Tính lại tồn dự kiến khi xóa ký tự.
+    /** Thực hiện remove update cho thành phần hiện tại. */
     @Override
     public void removeUpdate(DocumentEvent suKien) {
         capNhatDuKien();
     }
 
     // Tính lại tồn dự kiến khi thuộc tính tài liệu thay đổi.
+    /** Thực hiện changed update cho thành phần hiện tại. */
     @Override
     public void changedUpdate(DocumentEvent suKien) {
         capNhatDuKien();
     }
+
     // Hiển thị thanh công cụ căn trái và bảng cao tối đa 400 px theo thiết kế.
+    /** Thực hiện hien danh sach cho thành phần hiện tại. */
     private void hienDanhSach() {
         JPanel pnlTrang = taoTrang("Danh sách phụ tùng sử dụng", null);
         JPanel pnlNut = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         pnlNut.setOpaque(false);
-        String[] nhan = {"Tìm kiếm", "Thêm", "Xem", "Sửa", "Xóa", "Dữ liệu liên quan", "Xác nhận thực dùng"};
-        String[] lenh = {"TIM", "THEM", "XEM", "SUA", "XOA", "LIEN_QUAN", "MO_XAC_NHAN"};
+        String[] nhan = { "Tìm kiếm", "Thêm", "Xem", "Sửa", "Xóa", "Dữ liệu liên quan", "Xác nhận thực dùng" };
+        String[] lenh = { "TIM", "THEM", "XEM", "SUA", "XOA", "LIEN_QUAN", "MO_XAC_NHAN" };
         for (int viTri = 0; viTri < nhan.length; viTri++) {
             JButton btnNut = PhuTungUi.taoNut(nhan[viTri], viTri == 1, viTri == 4);
             if (viTri == 0) {
@@ -260,11 +282,9 @@ public final class PhuTungSuDungPanel extends JPanel
         cacDong.addAll(dao.docDanhSach(taiKhoan, tuKhoaDangLoc, trangThaiDangLoc));
         modelDanhSach.setRowCount(0);
         for (PhuTungSuDung banGhi : cacDong) {
-            modelDanhSach.addRow(new Object[] {
-                    banGhi.getMaGhiNhan(), banGhi.getMaLenhSuaChua(), banGhi.getPhuTung(),
+            modelDanhSach.addRow(new Object[] { banGhi.getMaGhiNhan(), banGhi.getMaLenhSuaChua(), banGhi.getPhuTung(),
                     PhuTungUi.dinhDangLuong(banGhi.getSoLuong()) + " " + banGhi.getPhuTung().getDonViTinh(),
-                    banGhi.getTrangThai().getTenHienThi()
-            });
+                    banGhi.getTrangThai().getTenHienThi() });
         }
         if (!cacDong.isEmpty()) {
             tblDanhSach.setRowSelectionInterval(0, 0);
@@ -291,6 +311,7 @@ public final class PhuTungSuDungPanel extends JPanel
             private static final long serialVersionUID = 1L;
 
             // Giảm chiều cao bảng khi cần để phần hướng dẫn và số hồ sơ không bị khuất.
+            /** Thực hiện do layout cho thành phần hiện tại. */
             @Override
             public void doLayout() {
                 int chieuCaoCon = getHeight() - pnlThanhCongCu.getPreferredSize().height
@@ -310,22 +331,24 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Ghi số hồ sơ và mã dòng đang được chọn theo model bảng.
+    /** Thực hiện cap nhat trang thai cho thành phần hiện tại. */
     private void capNhatTrangThai() {
         int dong = tblDanhSach.getSelectedRow();
         int dongModel = dong < 0 ? -1 : tblDanhSach.convertRowIndexToModel(dong);
         String daChon = dongModel >= 0 && dongModel < cacDong.size()
-                ? "Đã chọn " + cacDong.get(dongModel).getMaGhiNhan() + " · " : "";
+                ? "Đã chọn " + cacDong.get(dongModel).getMaGhiNhan() + " · "
+                : "";
         lblTrangThai.setText(daChon + cacDong.size() + " hồ sơ");
         lblTrangThai.setFont(UiTheme.CAPTION_FONT);
         lblTrangThai.setForeground(UiTheme.MUTED);
     }
 
     // Hiển thị tiêu chí tìm kiếm theo từ khóa và trạng thái.
+    /** Thực hiện hien tim kiem cho thành phần hiện tại. */
     private void hienTimKiem() {
         JPanel pnlTrang = taoTrang("Tìm kiếm phụ tùng sử dụng", "Nhập tiêu chí để tìm hồ sơ phù hợp.");
         txtTimKiem.setText(tuKhoaDangLoc);
-        cmbTrangThai.setSelectedIndex(trangThaiDangLoc == null ? 0
-                : trangThaiDangLoc == TrangThaiSuDung.NHAP ? 1 : 2);
+        cmbTrangThai.setSelectedIndex(trangThaiDangLoc == null ? 0 : trangThaiDangLoc == TrangThaiSuDung.NHAP ? 1 : 2);
         JPanel pnlTruong = taoLuoi();
         themONhap(pnlTruong, "Số ghi nhận, lệnh sửa chữa hoặc mã phụ tùng", txtTimKiem);
         themONhap(pnlTruong, "Trạng thái ghi nhận", cmbTrangThai);
@@ -342,6 +365,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Áp dụng tiêu chí vào danh sách mà không thay đổi dữ liệu gốc.
+    /** Thực hiện tim kiem cho thành phần hiện tại. */
     private void timKiem() {
         tuKhoaDangLoc = txtTimKiem.getText().trim();
         trangThaiDangLoc = cmbTrangThai.getSelectedIndex() == 0 ? null
@@ -350,6 +374,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Lấy đúng entity của dòng đang chọn trên bảng.
+    /** Đọc dong chon từ dữ liệu hiện tại. */
     private PhuTungSuDung docDongChon() {
         int dong = tblDanhSach.getSelectedRow();
         if (dong < 0) {
@@ -359,6 +384,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Chặn sửa, xóa hoặc xác nhận lại hồ sơ đã ghi nhận.
+    /** Kiểm tra co the sua trước khi xử lý. */
     private void kiemTraCoTheSua(PhuTungSuDung banGhi) {
         if (banGhi.getTrangThai() != TrangThaiSuDung.NHAP) {
             throw new IllegalStateException("Hồ sơ đã ghi nhận xuất kho; không được sửa, xóa hoặc xác nhận lại.");
@@ -369,9 +395,9 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Dùng lại hộp thoại cũ cho thêm, sửa, xem và dữ liệu liên quan.
+    /** Mở bieu mau khi người dùng yêu cầu. */
     private void moBieuMau(PhuTungSuDung banGhi, boolean chiDoc, boolean lienQuan) {
-        PhuTungSuDungDialog winBieuMau = new PhuTungSuDungDialog(
-                docCuaSo(), dao, taiKhoan, banGhi, chiDoc, lienQuan);
+        PhuTungSuDungDialog winBieuMau = new PhuTungSuDungDialog(docCuaSo(), dao, taiKhoan, banGhi, chiDoc, lienQuan);
         winBieuMau.setVisible(true);
         if (winBieuMau.isYeuCauXoa()) {
             xoaHoSo(banGhi);
@@ -381,18 +407,19 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Xác nhận xóa nháp bằng nút chữ đỏ và viền đỏ của component chung.
+    /** Thực hiện xoa ho so cho thành phần hiện tại. */
     private void xoaHoSo(PhuTungSuDung banGhi) {
         kiemTraCoTheSua(banGhi);
-        if (PhuTungUi.hienHopThoai(docCuaSo(), "Xác nhận xóa",
-                "Xóa " + banGhi.getMaGhiNhan() + " — " + banGhi.getMaLenhSuaChua()
-                        + "?\n\nHồ sơ chưa ghi nhận xuất kho. " + PhuTungUi.QUY_TAC,
-                "Xóa", true, true)) {
+        if (PhuTungUi.hienHopThoai(docCuaSo(), "Xác nhận xóa", "Xóa " + banGhi.getMaGhiNhan() + " — "
+                + banGhi.getMaLenhSuaChua() + "?\n\nHồ sơ chưa ghi nhận xuất kho. " + PhuTungUi.QUY_TAC, "Xóa", true,
+                true)) {
             dao.xoaNhap(taiKhoan, banGhi);
             hienDanhSach();
         }
     }
 
     // Khởi tạo xác nhận thực dùng từ bản nháp đang chọn.
+    /** Thực hiện bat dau xac nhan cho thành phần hiện tại. */
     private void batDauXacNhan() {
         nhapDangXacNhan = docDongChon();
         kiemTraCoTheSua(nhapDangXacNhan);
@@ -402,6 +429,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Mở phạm vi được duyệt từ màn lệnh mà không tự trừ kho hoặc tự lưu nháp.
+    /** Thực hiện bat dau tu lenh cho thành phần hiện tại. */
     private void batDauTuLenh() {
         LenhPhuTung lenh = lenhDAO.docLenh(taiKhoan, maLenhDangMo);
         if ("Hoàn thành".equals(lenh.getTrangThai())) {
@@ -411,6 +439,7 @@ public final class PhuTungSuDungPanel extends JPanel
         for (PhuTungSuDung nhap : dao.docDanhSach(taiKhoan, maLenhDangMo, TrangThaiSuDung.NHAP)) {
             if (maLenhDangMo.equals(nhap.getMaLenhSuaChua())) {
                 nhapDangXacNhan = nhap;
+
                 break;
             }
         }
@@ -419,38 +448,42 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Nạp lượng còn được dùng và ưu tiên giá trị của bản nháp cùng lệnh.
+    /** Đọc lại dữ liệu và cập nhật phần hiển thị. */
     private void napLuongThucDung() {
         dangNap = true;
         cacTonDuKien.clear();
         cacLuong.clear();
         List<PhuTungSuDung> cacNhap = dao.docDanhSach(taiKhoan, maLenhDangMo, TrangThaiSuDung.NHAP);
-        for (String maPhuTung : dao.docPhamViDuyet(taiKhoan, maLenhDangMo).keySet()) {
-            BigDecimal soLuong = dao.docLuongConLai(taiKhoan, maLenhDangMo, maPhuTung);
+        for (LuongPhuTung dongPhamVi : dao.docPhamViDuyet(taiKhoan, maLenhDangMo)) {
+            String maPhuTung = dongPhamVi.getMaPhuTung();
+            double soLuong = dao.docLuongConLai(taiKhoan, maLenhDangMo, maPhuTung);
             for (PhuTungSuDung nhap : cacNhap) {
                 if (maLenhDangMo.equals(nhap.getMaLenhSuaChua())
                         && maPhuTung.equals(nhap.getPhuTung().getMaPhuTung())) {
                     soLuong = nhap.getSoLuong();
                     break;
+
                 }
             }
             JTextField txtLuong = new JTextField(PhuTungUi.dinhDangLuong(soLuong));
             txtLuong.getDocument().addDocumentListener(this);
-            cacLuong.put(maPhuTung, txtLuong);
+            txtLuong.setName(maPhuTung);
+            cacLuong.add(txtLuong);
         }
         txaGhiChu.setText(nhapDangXacNhan == null ? "" : nhapDangXacNhan.getGhiChu());
         dangNap = false;
     }
 
     // Hiển thị màn nhập thực dùng V1 hoặc V2 với tồn dự kiến cập nhật theo lượng nhập.
+    /** Thực hiện hien nhap luong cho thành phần hiện tại. */
     private void hienNhapLuong() {
         LenhPhuTung lenh = lenhDAO.docLenh(taiKhoan, maLenhDangMo);
-        JPanel pnlTrang = taoTrang(lenh.isBaoGiaV2()
-                ? "Ghi nhận phụ tùng — báo giá V2" : "Ghi nhận phụ tùng đã dùng",
+        JPanel pnlTrang = taoTrang(lenh.isBaoGiaV2() ? "Ghi nhận phụ tùng — báo giá V2" : "Ghi nhận phụ tùng đã dùng",
                 maLenhDangMo + " · Kho chỉ trừ khi xác nhận lượng dùng thực tế.");
         JPanel pnlNhap = taoLuoi();
-        for (Map.Entry<String, JTextField> dong : cacLuong.entrySet()) {
-            PhuTung phuTung = dao.docPhuTung(dong.getKey());
-            themONhap(pnlNhap, phuTung.toString() + " * (" + phuTung.getDonViTinh() + ")", dong.getValue());
+        for (JTextField dong : cacLuong) {
+            PhuTung phuTung = dao.docPhuTung(dong.getName());
+            themONhap(pnlNhap, phuTung.toString() + " * (" + phuTung.getDonViTinh() + ")", dong);
         }
         themONhap(pnlNhap, "Người xác nhận", PhuTungUi.taoNhan(lenh.getKyThuatVien(), false));
         themONhap(pnlNhap, "Ghi chú", bocVungNhap(txaGhiChu));
@@ -458,25 +491,28 @@ public final class PhuTungSuDungPanel extends JPanel
         themThe(pnlCot, PhuTungUi.taoThe("Lượng đã dùng thực tế", pnlNhap));
         JPanel pnlTon = taoLuoi();
         cacTonDuKien.clear();
-        for (String maPhuTung : cacLuong.keySet()) {
+        for (JTextField oNhapLuong : cacLuong) {
+            String maPhuTung = oNhapLuong.getName();
             JTextArea txaTon = PhuTungUi.taoMoTa(" ");
             txaTon.setForeground(UiTheme.TEXT);
-            cacTonDuKien.put(maPhuTung, txaTon);
+            txaTon.setName(maPhuTung);
+            cacTonDuKien.add(txaTon);
             themONhap(pnlTon, maPhuTung, txaTon);
         }
         themThe(pnlCot, PhuTungUi.taoThe("Tồn kho sau khi ghi nhận", pnlTon));
         themThe(pnlCot, taoCanhBaoKhongXuatHaiLan());
         if (lenh.isBaoGiaV2()) {
-            themThe(pnlCot, taoThongDiep("Kiểm tra trước khi ghi sổ",
-                    "Chỉ ghi nhận phụ tùng thực dùng trong phạm vi báo giá V2 khách đã duyệt. "
-                            + "Mỗi phiếu chỉ ghi nhận một lần; không trừ tồn khi mới báo giá.",
-                    UiTheme.SURFACE));
+            themThe(pnlCot,
+                    taoThongDiep("Kiểm tra trước khi ghi sổ",
+                            "Chỉ ghi nhận phụ tùng thực dùng trong phạm vi báo giá V2 khách đã duyệt. "
+                                    + "Mỗi phiếu chỉ ghi nhận một lần; không trừ tồn khi mới báo giá.",
+                            UiTheme.SURFACE));
         }
         pnlTrang.add(bocVungCuon(pnlCot), BorderLayout.CENTER);
         JPanel pnlNut = taoHangNut();
         themNut(pnlNut, "Quay lại lệnh", "VE_LENH", false, false);
-        themNut(pnlNut, lenh.isBaoGiaV2() ? "Xác nhận thực dùng" : "Xác nhận phụ tùng đã dùng",
-                "XAC_NHAN", true, false);
+        themNut(pnlNut, lenh.isBaoGiaV2() ? "Xác nhận thực dùng" : "Xác nhận phụ tùng đã dùng", "XAC_NHAN", true,
+                false);
         themNut(pnlNut, "Xem phụ tùng đã duyệt", "DA_DUYET", false, false);
         pnlTrang.add(pnlNut, BorderLayout.SOUTH);
         doiTrang(pnlTrang);
@@ -484,47 +520,47 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Tính tồn sau ghi nhận để hiển thị, không cập nhật dữ liệu tồn kho.
+    /** Thực hiện cap nhat du kien cho thành phần hiện tại. */
     private void capNhatDuKien() {
         if (dangNap) {
+
             return;
         }
-        for (Map.Entry<String, JTextArea> dong : cacTonDuKien.entrySet()) {
+        for (JTextArea dong : cacTonDuKien) {
             try {
-                BigDecimal luong = PhuTungUi.docSoLuong(cacLuong.get(dong.getKey()));
-                if (luong.signum() < 0) {
+                double luong = PhuTungUi.docSoLuong(timOLuong(dong.getName()));
+                if ((luong < 0)) {
                     throw new IllegalArgumentException("Số lượng không được âm.");
                 }
-                PhuTung phuTung = dao.docPhuTung(dong.getKey());
-                BigDecimal ton = dao.docTon(dong.getKey());
-                BigDecimal sau = ton.subtract(luong);
-                String moTa = PhuTungUi.dinhDangLuong(ton) + " - " + PhuTungUi.dinhDangLuong(luong)
-                        + " = " + PhuTungUi.dinhDangLuong(sau) + " " + phuTung.getDonViTinh();
-                if (sau.signum() < 0) {
+                PhuTung phuTung = dao.docPhuTung(dong.getName());
+                double ton = dao.docTon(dong.getName());
+                double sau = (ton - luong);
+                String moTa = PhuTungUi.dinhDangLuong(ton) + " - " + PhuTungUi.dinhDangLuong(luong) + " = "
+                        + PhuTungUi.dinhDangLuong(sau) + " " + phuTung.getDonViTinh();
+                if ((sau < 0)) {
                     moTa += " · Vượt tồn";
-                } else if (sau.doubleValue() < phuTung.getMucToiThieu()) {
-                    moTa += " · Dưới mức tối thiểu " + PhuTungUi.dinhDangLuong(java.math.BigDecimal.valueOf(phuTung.getMucToiThieu()));
+                } else if (sau < phuTung.getMucToiThieu()) {
+                    moTa += " · Dưới mức tối thiểu " + PhuTungUi.dinhDangLuong(phuTung.getMucToiThieu());
                 }
-                dong.getValue().setText(moTa);
-                dong.getValue().setForeground(sau.signum() < 0 ? PhuTungUi.MAU_NGUY_HIEM : UiTheme.TEXT);
+                dong.setText(moTa);
+                dong.setForeground((sau < 0) ? PhuTungUi.MAU_NGUY_HIEM : UiTheme.TEXT);
             } catch (IllegalArgumentException loi) {
-                dong.getValue().setText("Nhập số lượng hợp lệ để xem dự kiến.");
+                dong.setText("Nhập số lượng hợp lệ để xem dự kiến.");
             }
         }
     }
 
     // Hiển thị danh sách được duyệt và trở lại đúng các ô nhập đang giữ trong phiên.
+    /** Thực hiện hien da duyet cho thành phần hiện tại. */
     private void hienDaDuyet() {
         JPanel pnlTrang = taoTrang("Phụ tùng đã được duyệt",
                 maLenhDangMo + " · Đối chiếu phạm vi trước khi ghi nhận lượng thực dùng.");
-        DefaultTableModel modelDuyet = PhuTungUi.taoModel(
-                "Mã phụ tùng", "Tên phụ tùng", "Được duyệt", "Tồn khả dụng");
-        for (Map.Entry<String, BigDecimal> dong : dao.docPhamViDuyet(taiKhoan, maLenhDangMo).entrySet()) {
-            PhuTung phuTung = dao.docPhuTung(dong.getKey());
-            modelDuyet.addRow(new Object[] {
-                    dong.getKey(), phuTung.getTenPhuTung(),
-                    PhuTungUi.dinhDangLuong(dong.getValue()) + " " + phuTung.getDonViTinh(),
-                    PhuTungUi.dinhDangLuong(dao.docTon(dong.getKey())) + " " + phuTung.getDonViTinh()
-            });
+        DefaultTableModel modelDuyet = PhuTungUi.taoModel("Mã phụ tùng", "Tên phụ tùng", "Được duyệt", "Tồn khả dụng");
+        for (LuongPhuTung dongLuong : dao.docPhamViDuyet(taiKhoan, maLenhDangMo)) {
+            PhuTung phuTung = dao.docPhuTung(dongLuong.getMaPhuTung());
+            modelDuyet.addRow(new Object[] { dongLuong.getMaPhuTung(), phuTung.getTenPhuTung(),
+                    PhuTungUi.dinhDangLuong(dongLuong.getSoLuong()) + " " + phuTung.getDonViTinh(),
+                    PhuTungUi.dinhDangLuong(dao.docTon(dongLuong.getMaPhuTung())) + " " + phuTung.getDonViTinh() });
         }
         JPanel pnlCot = taoCot();
         themThe(pnlCot, PhuTungUi.taoThe("Danh sách phụ tùng được phép sử dụng", bocBang(modelDuyet)));
@@ -536,32 +572,33 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Ghi nhận thực dùng rồi chuyển tới chi tiết lệnh V1 hoặc kiểm tra hoàn tất V2.
+    /** Thực hiện xac nhan thuc dung cho thành phần hiện tại. */
     private void xacNhanThucDung() {
-        Map<String, BigDecimal> luongDung = new LinkedHashMap<String, BigDecimal>();
+        List<LuongPhuTung> luongDung = new ArrayList<LuongPhuTung>();
         loiVuotTon = null;
-        for (Map.Entry<String, JTextField> dong : cacLuong.entrySet()) {
-            BigDecimal soLuong = PhuTungUi.docSoLuong(dong.getValue());
-            if (soLuong.signum() < 0) {
+        for (JTextField dong : cacLuong) {
+            double soLuong = PhuTungUi.docSoLuong(dong);
+            if ((soLuong < 0)) {
                 throw new IllegalArgumentException("Số lượng không được âm.");
             }
-            if (soLuong.signum() > 0) {
-                dao.docPhuTung(dong.getKey()).kiemTraSoLuong(soLuong.doubleValue());
+            if ((soLuong > 0)) {
+                dao.docPhuTung(dong.getName()).kiemTraSoLuong(soLuong);
             }
-            luongDung.put(dong.getKey(), soLuong);
-            if (soLuong.compareTo(dao.docTon(dong.getKey())) > 0 && loiVuotTon == null) {
-                PhuTung phuTung = dao.docPhuTung(dong.getKey());
-                loiVuotTon = dong.getKey() + " còn " + PhuTungUi.dinhDangLuong(dao.docTon(dong.getKey()))
-                        + " " + phuTung.getDonViTinh() + " nhưng nhập " + PhuTungUi.dinhDangLuong(soLuong)
-                        + " " + phuTung.getDonViTinh()
+            PhuTungSuDungDAO.themLuong(luongDung, dong.getName(), soLuong);
+            if ((soLuong > dao.docTon(dong.getName())) && loiVuotTon == null) {
+                PhuTung phuTung = dao.docPhuTung(dong.getName());
+                loiVuotTon = dong.getName() + " còn " + PhuTungUi.dinhDangLuong(dao.docTon(dong.getName())) + " "
+                        + phuTung.getDonViTinh() + " nhưng nhập " + PhuTungUi.dinhDangLuong(soLuong) + " "
+                        + phuTung.getDonViTinh()
                         + ". Không ghi nhận xuất; kiểm tra lại hoặc chuyển lệnh sang chờ phụ tùng.";
             }
         }
         if (loiVuotTon != null) {
             hienVuotTon();
             return;
+
         }
-        lenhDAO.xacNhanThucDung(taiKhoan, maLenhDangMo, nhapDangXacNhan,
-                luongDung, txaGhiChu.getText().trim());
+        lenhDAO.xacNhanThucDung(taiKhoan, maLenhDangMo, nhapDangXacNhan, luongDung, txaGhiChu.getText().trim());
         nhapDangXacNhan = null;
         cacTonDuKien.clear();
         if (lenhDAO.docLenh(taiKhoan, maLenhDangMo).isBaoGiaV2()) {
@@ -572,18 +609,19 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Giữ lượng đang nhập để sửa lại hoặc chuyển chính lệnh này sang chờ phụ tùng.
+    /** Thực hiện hien vuot ton cho thành phần hiện tại. */
     private void hienVuotTon() {
         JPanel pnlTrang = taoTrang("Số lượng dùng vượt tồn kho",
                 maLenhDangMo + " · Kho chỉ trừ khi xác nhận lượng dùng thực tế.");
         JPanel pnlCot = taoCot();
         themThe(pnlCot, taoThongDiep("Số lượng dùng vượt tồn kho", loiVuotTon, new Color(0xFDECEC)));
         JPanel pnlLuong = taoLuoi();
-        for (Map.Entry<String, JTextField> dong : cacLuong.entrySet()) {
-            PhuTung phuTung = dao.docPhuTung(dong.getKey());
-            String noiDung = dong.getValue().getText() + " " + phuTung.getDonViTinh();
-            boolean vuot = PhuTungUi.docSoLuong(dong.getValue()).compareTo(dao.docTon(dong.getKey())) > 0;
+        for (JTextField dong : cacLuong) {
+            PhuTung phuTung = dao.docPhuTung(dong.getName());
+            String noiDung = dong.getText() + " " + phuTung.getDonViTinh();
+            boolean vuot = (PhuTungUi.docSoLuong(dong) > dao.docTon(dong.getName()));
             if (vuot) {
-                noiDung += " · Vượt tồn khả dụng " + PhuTungUi.dinhDangLuong(dao.docTon(dong.getKey()));
+                noiDung += " · Vượt tồn khả dụng " + PhuTungUi.dinhDangLuong(dao.docTon(dong.getName()));
             }
             JTextArea txaLuong = PhuTungUi.taoMoTa(noiDung);
             txaLuong.setForeground(vuot ? PhuTungUi.MAU_NGUY_HIEM : UiTheme.TEXT);
@@ -601,39 +639,32 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Dựng màn chi tiết lệnh đúng các khối thông tin, tiến độ, phát sinh và kết quả đã lưu.
+    /** Thực hiện hien chi tiet lenh cho thành phần hiện tại. */
     private void hienChiTietLenh() {
         LenhPhuTung lenh = lenhDAO.docLenh(taiKhoan, maLenhDangMo);
-        JPanel pnlTrang = taoTrang(lenh.isBaoGiaV2()
-                ? "Sửa chữa — phát sinh đã được duyệt" : "Chi tiết tiến độ sửa chữa",
-                lenh.getMaLenh() + " · " + lenh.getBienSo()
-                        + " · Chỉ thực hiện hạng mục đã được khách duyệt.");
+        JPanel pnlTrang = taoTrang(
+                lenh.isBaoGiaV2() ? "Sửa chữa — phát sinh đã được duyệt" : "Chi tiết tiến độ sửa chữa",
+                lenh.getMaLenh() + " · " + lenh.getBienSo() + " · Chỉ thực hiện hạng mục đã được khách duyệt.");
         JPanel pnlCot = taoCot();
         JPanel pnlThongTin = taoLuoi();
         themONhap(pnlThongTin, "Kỹ thuật viên chính", PhuTungUi.taoNhan(lenh.getKyThuatVien(), false));
         themONhap(pnlThongTin, "Báo giá", PhuTungUi.taoNhan(
-                lenh.getMaLenh().replace("SC-", "BG-") + (lenh.isBaoGiaV2() ? " V2" : " V1")
-                        + " · Đã đồng ý", false));
+                lenh.getMaLenh().replace("SC-", "BG-") + (lenh.isBaoGiaV2() ? " V2" : " V1") + " · Đã đồng ý", false));
         themONhap(pnlThongTin, "Hạn dự kiến",
                 PhuTungUi.taoNhan(lenh.isBaoGiaV2() ? "05/10/2026 · 19:00" : "05/10/2026 · 17:00", false));
         themONhap(pnlThongTin, "Trạng thái", PhuTungUi.taoNhan(lenh.getTrangThai(), false));
         themThe(pnlCot, PhuTungUi.taoThe("Thông tin lệnh", pnlThongTin));
-        DefaultTableModel modelTienDo = PhuTungUi.taoModel(
-                "Công việc", "Người thực hiện", "Kết quả", "Trạng thái");
+        DefaultTableModel modelTienDo = PhuTungUi.taoModel("Công việc", "Người thực hiện", "Kết quả", "Trạng thái");
         boolean daXong = "Hoàn tất".equals(lenh.getTrangThaiCongViec());
-        modelTienDo.addRow(new Object[] {
-                "Bảo dưỡng dầu / lọc", "Chung Minh Hoàng", "Đã thay dầu, kiểm tra rò rỉ", "Hoàn tất"
-        });
-        modelTienDo.addRow(new Object[] {
-                "Vệ sinh phanh trước", "Nguyễn Minh Vũ", lenh.getKetQuaCongViec(),
-                daXong ? "Hoàn tất" : "Chờ phụ tùng".equals(lenh.getTrangThaiCongViec())
-                        ? "Chờ phụ tùng" : "Đang thực hiện"
-        });
+        modelTienDo.addRow(
+                new Object[] { "Bảo dưỡng dầu / lọc", "Chung Minh Hoàng", "Đã thay dầu, kiểm tra rò rỉ", "Hoàn tất" });
+        modelTienDo.addRow(
+                new Object[] { "Vệ sinh phanh trước", "Nguyễn Minh Vũ", lenh.getKetQuaCongViec(), daXong ? "Hoàn tất"
+                        : "Chờ phụ tùng".equals(lenh.getTrangThaiCongViec()) ? "Chờ phụ tùng" : "Đang thực hiện" });
         if (lenh.isBaoGiaV2()) {
-            modelTienDo.addRow(new Object[] {
-                    "Thay rotuyn lái", "Chung Minh Hoàng",
+            modelTienDo.addRow(new Object[] { "Thay rotuyn lái", "Chung Minh Hoàng",
                     daXong ? lenh.getKetQuaCongViec() : "Khách đồng ý; chờ thực hiện",
-                    daXong ? "Hoàn tất" : "Được phép thực hiện"
-            });
+                    daXong ? "Hoàn tất" : "Được phép thực hiện" });
         }
         themThe(pnlCot, PhuTungUi.taoThe("Tiến độ hạng mục", bocBang(modelTienDo)));
         String[] phatSinh = lenh.getPhatSinh();
@@ -643,14 +674,17 @@ public final class PhuTungSuDungPanel extends JPanel
                                 + "Chỉ trừ tồn khi ghi nhận phụ tùng thực dùng."
                         : "Nếu có đề xuất phát sinh chưa được khách đồng ý, chỉ tạm dừng phần việc liên quan."
                 : phatSinh[0] + " · " + phatSinh[2] + "\nĐang chờ tiếp nhận xử lý và khách xác nhận.";
-        themThe(pnlCot, taoThongDiep(lenh.isBaoGiaV2() && phatSinh[0].isEmpty()
-                ? "Phát sinh đã được chấp thuận" : "Phát sinh đang chờ", noiDung,
-                lenh.isBaoGiaV2() && phatSinh[0].isEmpty() ? new Color(0xEDF7EF) : UiTheme.WINDOW));
+        themThe(pnlCot,
+                taoThongDiep(
+                        lenh.isBaoGiaV2() && phatSinh[0].isEmpty() ? "Phát sinh đã được chấp thuận"
+                                : "Phát sinh đang chờ",
+                        noiDung, lenh.isBaoGiaV2() && phatSinh[0].isEmpty() ? new Color(0xEDF7EF) : UiTheme.WINDOW));
         themThe(pnlCot, PhuTungUi.taoThe("Kết quả đã lưu", PhuTungUi.taoMoTa(lenh.getKetQuaCongViec())));
         if ("Hoàn thành".equals(lenh.getTrangThai())) {
-            themThe(pnlCot, taoThongDiep("Đã hoàn thành",
-                    lenh.getKetQuaHoanTat()[0] + "\nLệnh sẵn sàng để thu ngân đối chiếu; chưa thanh toán.",
-                    new Color(0xEDF7EF)));
+            themThe(pnlCot,
+                    taoThongDiep("Đã hoàn thành",
+                            lenh.getKetQuaHoanTat()[0] + "\nLệnh sẵn sàng để thu ngân đối chiếu; chưa thanh toán.",
+                            new Color(0xEDF7EF)));
         }
         pnlTrang.add(bocVungCuon(pnlCot), BorderLayout.CENTER);
         JPanel pnlNut = taoHangNut();
@@ -660,8 +694,8 @@ public final class PhuTungSuDungPanel extends JPanel
             if (lenh.isBaoGiaV2()) {
                 themNut(pnlNut, "Về danh sách phụ tùng", "DANH_SACH", false, false);
             }
-            themNut(pnlNut, lenh.isBaoGiaV2() ? "Ghi nhận phụ tùng thực dùng" : "Ghi nhận phụ tùng",
-                    "GHI_NHAN_TU_LENH", false, false);
+            themNut(pnlNut, lenh.isBaoGiaV2() ? "Ghi nhận phụ tùng thực dùng" : "Ghi nhận phụ tùng", "GHI_NHAN_TU_LENH",
+                    false, false);
             if (!lenh.isBaoGiaV2()) {
                 themNut(pnlNut, "Báo phát sinh", "BAO_PHAT_SINH", false, false);
             }
@@ -673,6 +707,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Mở màn cập nhật tiến độ với giá trị đã lưu của chính lệnh đang xem.
+    /** Thực hiện hien cap nhat cong viec cho thành phần hiện tại. */
     private void hienCapNhatCongViec() {
         LenhPhuTung lenh = lenhDAO.docLenh(taiKhoan, maLenhDangMo);
         cmbTienDo.setSelectedItem(lenh.getTrangThaiCongViec());
@@ -694,6 +729,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Mở biểu mẫu báo phát sinh và không tự chuyển phát sinh thành đã được khách duyệt.
+    /** Thực hiện hien bao phat sinh cho thành phần hiện tại. */
     private void hienBaoPhatSinh() {
         String[] phatSinh = lenhDAO.docLenh(taiKhoan, maLenhDangMo).getPhatSinh();
         for (int viTri = 0; viTri < cacTruongPhatSinh.length; viTri++) {
@@ -703,17 +739,18 @@ public final class PhuTungSuDungPanel extends JPanel
         JPanel pnlTrang = taoTrang("Báo hư hỏng phát sinh",
                 maLenhDangMo + " · Gửi tiếp nhận để lập báo giá và liên hệ khách.");
         JPanel pnlTruong = taoLuoi();
-        String[] nhan = {"Bộ phận / hư hỏng *", "Nguyên nhân phát hiện *",
-                "Dịch vụ / phụ tùng đề xuất *", "Thời gian dự kiến thêm"};
+        String[] nhan = { "Bộ phận / hư hỏng *", "Nguyên nhân phát hiện *", "Dịch vụ / phụ tùng đề xuất *",
+                "Thời gian dự kiến thêm" };
         for (int viTri = 0; viTri < nhan.length; viTri++) {
             themONhap(pnlTruong, nhan[viTri], cacTruongPhatSinh[viTri]);
         }
         themONhap(pnlTruong, "Ghi chú", bocVungNhap(txaGhiChuPhatSinh));
         JPanel pnlCot = taoCot();
         themThe(pnlCot, PhuTungUi.taoThe("Hư hỏng phát hiện", pnlTruong));
-        themThe(pnlCot, taoThongDiep("Chưa được phép thực hiện",
-                "Nhân viên tiếp nhận phải báo chi phí và ghi nhận khách đồng ý trước khi kỹ thuật làm thêm.",
-                UiTheme.WINDOW));
+        themThe(pnlCot,
+                taoThongDiep("Chưa được phép thực hiện",
+                        "Nhân viên tiếp nhận phải báo chi phí và ghi nhận khách đồng ý trước khi kỹ thuật làm thêm.",
+                        UiTheme.WINDOW));
         pnlTrang.add(bocVungCuon(pnlCot), BorderLayout.CENTER);
         JPanel pnlNut = taoHangNut();
         themNut(pnlNut, "Quay lại lệnh", "VE_LENH", false, false);
@@ -723,6 +760,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Lưu đề xuất phát sinh trong dữ liệu mẫu rồi trở lại chi tiết lệnh.
+    /** Kiểm tra và lưu phat sinh. */
     private void luuPhatSinh() {
         String[] noiDung = new String[5];
         for (int viTri = 0; viTri < cacTruongPhatSinh.length; viTri++) {
@@ -734,19 +772,17 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Hiển thị kiểm tra cuối và báo rõ tiến độ chưa đạt trước khi người dùng xác nhận.
+    /** Thực hiện hien kiem tra hoan tat cho thành phần hiện tại. */
     private void hienKiemTraHoanTat(boolean napMoi) {
         LenhPhuTung lenh = lenhDAO.docLenh(taiKhoan, maLenhDangMo);
-        JPanel pnlTrang = taoTrang(lenh.isBaoGiaV2()
-                ? "Kiểm tra hoàn tất — gồm phát sinh được duyệt" : "Kiểm tra và hoàn tất sửa chữa",
+        JPanel pnlTrang = taoTrang(
+                lenh.isBaoGiaV2() ? "Kiểm tra hoàn tất — gồm phát sinh được duyệt" : "Kiểm tra và hoàn tất sửa chữa",
                 maLenhDangMo + " · Đối chiếu công việc và vật tư trước khi chuyển thu ngân.");
         JPanel pnlKiemTra = new JPanel(new GridLayout(0, 1, 0, 0));
         pnlKiemTra.setOpaque(false);
-        String[] nhan = {
-                "Hạng mục đã duyệt được thực hiện và kiểm tra lại.",
-                docMoTaDaGhiNhan(),
+        String[] nhan = { "Hạng mục đã duyệt được thực hiện và kiểm tra lại.", docMoTaDaGhiNhan(),
                 "Phát sinh chưa duyệt không được thực hiện hoặc tính tiền.",
-                "Phụ tùng cũ được giữ để trả theo yêu cầu của khách."
-        };
+                "Phụ tùng cũ được giữ để trả theo yêu cầu của khách." };
         for (int viTri = 0; viTri < cacKiemTra.length; viTri++) {
             if (napMoi || cacKiemTra[viTri] == null) {
                 cacKiemTra[viTri] = new JCheckBox(nhan[viTri], false);
@@ -769,14 +805,17 @@ public final class PhuTungSuDungPanel extends JPanel
         JPanel pnlCot = taoCot();
         themThe(pnlCot, PhuTungUi.taoThe("Kiểm tra cuối", pnlKiemTra));
         themThe(pnlCot, PhuTungUi.taoThe("Kết quả hoàn tất", pnlKetQua));
-        themThe(pnlCot, taoThongDiep("Chuyển sang Hoàn thành",
-                "Sau xác nhận, phiếu được thu ngân chọn để đối chiếu và lập hóa đơn. "
-                        + "Chưa chuyển thành Đã thanh toán.", new Color(0xEDF7EF)));
+        themThe(pnlCot,
+                taoThongDiep("Chuyển sang Hoàn thành",
+                        "Sau xác nhận, phiếu được thu ngân chọn để đối chiếu và lập hóa đơn. "
+                                + "Chưa chuyển thành Đã thanh toán.",
+                        new Color(0xEDF7EF)));
         if (lenh.isBaoGiaV2()) {
-            themThe(pnlCot, taoThongDiep("Đối chiếu phần bổ sung",
-                    "Đối chiếu công việc bổ sung, kết quả hệ thống lái và lượng thực dùng đã ghi sổ. "
-                            + "Chỉ hoàn tất khi mọi hạng mục được duyệt có kết quả đạt yêu cầu.",
-                    new Color(0xEDF7EF)));
+            themThe(pnlCot,
+                    taoThongDiep("Đối chiếu phần bổ sung",
+                            "Đối chiếu công việc bổ sung, kết quả hệ thống lái và lượng thực dùng đã ghi sổ. "
+                                    + "Chỉ hoàn tất khi mọi hạng mục được duyệt có kết quả đạt yêu cầu.",
+                            new Color(0xEDF7EF)));
         }
         boolean tienDoDaXong = "Hoàn tất".equals(lenh.getTrangThaiCongViec());
         boolean conPhatSinh = !lenh.getPhatSinh()[0].isEmpty();
@@ -786,25 +825,25 @@ public final class PhuTungSuDungPanel extends JPanel
                             + ". Chọn Quay lại chỉnh sửa, mở Cập nhật công việc và lưu trạng thái Hoàn tất "
                             + "sau khi các hạng mục đã thực hiện xong."
                     : "Lệnh còn phát sinh đang chờ xử lý. Chưa thể xác nhận hoàn thành.";
-            themThe(pnlCot, taoThongDiep("Chưa đủ điều kiện hoàn thành",
-                    noiDung, new Color(0xFFF4E5)));
+            themThe(pnlCot, taoThongDiep("Chưa đủ điều kiện hoàn thành", noiDung, new Color(0xFFF4E5)));
         }
         pnlTrang.add(bocVungCuon(pnlCot), BorderLayout.CENTER);
         JPanel pnlNut = taoHangNut();
-        themNut(pnlNut, lenh.isBaoGiaV2() ? "Quay lại lệnh" : "Quay lại chỉnh sửa",
-                "VE_LENH", false, false);
-        themNut(pnlNut, lenh.isBaoGiaV2() ? "Hoàn tất và chuyển thu ngân" : "Xác nhận hoàn thành",
-                "HOAN_TAT", true, false);
+        themNut(pnlNut, lenh.isBaoGiaV2() ? "Quay lại lệnh" : "Quay lại chỉnh sửa", "VE_LENH", false, false);
+        themNut(pnlNut, lenh.isBaoGiaV2() ? "Hoàn tất và chuyển thu ngân" : "Xác nhận hoàn thành", "HOAN_TAT", true,
+                false);
         pnlTrang.add(pnlNut, BorderLayout.SOUTH);
         doiTrang(pnlTrang);
     }
 
     // Tổng hợp đúng các bản ghi thực dùng của lệnh để không hiển thị lượng xác nhận giả.
+    /** Đọc mo ta da ghi nhan từ dữ liệu hiện tại. */
     private String docMoTaDaGhiNhan() {
         StringBuilder noiDung = new StringBuilder("Phụ tùng thực tế đã ghi nhận: ");
         boolean coDuLieu = false;
         for (PhuTungSuDung banGhi : dao.docDanhSach(taiKhoan, maLenhDangMo, TrangThaiSuDung.DA_GHI_NHAN)) {
             if (!maLenhDangMo.equals(banGhi.getMaLenhSuaChua())) {
+
                 continue;
             }
             if (coDuLieu) {
@@ -819,24 +858,28 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Kiểm tra các xác nhận cuối rồi lưu hoàn thành mà không đổi vai trò đăng nhập.
+    /** Thực hiện hoan tat lenh cho thành phần hiện tại. */
     private void hoanTatLenh() {
         boolean[] daKiemTra = new boolean[cacKiemTra.length];
         for (int viTri = 0; viTri < cacKiemTra.length; viTri++) {
             daKiemTra[viTri] = cacKiemTra[viTri].isSelected();
         }
         lenhDAO.hoanTatLenh(taiKhoan, maLenhDangMo, daKiemTra,
-                new String[] {txtKetLuan.getText(), txtBaoHanh.getText(), txtKhuyenNghi.getText()});
+                new String[] { txtKetLuan.getText(), txtBaoHanh.getText(), txtKhuyenNghi.getText() });
         hienChiTietLenh();
     }
 
     // Tạo cảnh báo thống nhất về thời điểm trừ tồn kho.
+    /** Tạo canh bao khong xuat hai lan cho giao diện. */
     private JPanel taoCanhBaoKhongXuatHaiLan() {
         return taoThongDiep("Không xuất hai lần",
                 "Xác nhận này tạo chứng từ xuất gắn với lệnh. Không giảm kho khi mới lập báo giá; "
-                        + "không xuất vượt tồn.", UiTheme.WINDOW);
+                        + "không xuất vượt tồn.",
+                UiTheme.WINDOW);
     }
 
     // Tạo thẻ thông báo dùng lại màu và kiểu chữ từ component chung.
+    /** Tạo thong diep cho giao diện. */
     private JPanel taoThongDiep(String tieuDe, String noiDung, Color mauNen) {
         JPanel pnlThe = PhuTungUi.taoThe(tieuDe, PhuTungUi.taoMoTa(noiDung));
         pnlThe.setBackground(mauNen);
@@ -844,6 +887,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Tạo trang nội dung để MainFrame tiếp tục quản lý toàn bộ khung ứng dụng.
+    /** Tạo trang cho giao diện. */
     private JPanel taoTrang(String tieuDe, String moTa) {
         JPanel pnlTrang = new JPanel(new BorderLayout(0, 10));
         pnlTrang.setOpaque(false);
@@ -860,6 +904,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Tạo lưới hai cột cho các trường thông tin.
+    /** Tạo luoi cho giao diện. */
     private JPanel taoLuoi() {
         JPanel pnlLuoi = new JPanel(new GridBagLayout());
         pnlLuoi.setOpaque(false);
@@ -867,6 +912,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Đặt trường vào hai cột bằng chiều cao tự nhiên để tránh cắt chữ.
+    /** Thực hiện them onhap cho thành phần hiện tại. */
     private void themONhap(JPanel pnlLuoi, String nhan, JComponent thanhPhan) {
         int viTri = pnlLuoi.getComponentCount();
         GridBagConstraints rangBuoc = new GridBagConstraints();
@@ -884,6 +930,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Tạo cột nội dung căn trên theo các thẻ trong Figma.
+    /** Tạo cot cho giao diện. */
     private JPanel taoCot() {
         JPanel pnlCot = new JPanel();
         pnlCot.setLayout(new BoxLayout(pnlCot, BoxLayout.Y_AXIS));
@@ -893,6 +940,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Thêm thẻ nội dung và khoảng cách giữa các thẻ.
+    /** Thực hiện them the cho thành phần hiện tại. */
     private void themThe(JPanel pnlCot, JPanel pnlThe) {
         pnlThe.setAlignmentX(LEFT_ALIGNMENT);
         pnlThe.setMaximumSize(new Dimension(Integer.MAX_VALUE, pnlThe.getPreferredSize().height));
@@ -901,6 +949,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Bọc nội dung màn hình bằng vùng cuộn; không áp dụng cho hộp thoại.
+    /** Thực hiện boc vung cuon cho thành phần hiện tại. */
     private JScrollPane bocVungCuon(JPanel pnlCot) {
         JPanel pnlCanDinh = new JPanel(new BorderLayout());
         pnlCanDinh.setBackground(UiTheme.SURFACE);
@@ -914,17 +963,18 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Tạo vùng bảng đủ chiều cao hiển thị các dòng mẫu.
+    /** Thực hiện boc bang cho thành phần hiện tại. */
     private JScrollPane bocBang(DefaultTableModel modelBang) {
         JTable tblBang = PhuTungUi.taoBang(modelBang);
         JScrollPane scrBang = new JScrollPane(tblBang);
         scrBang.setBorder(BorderFactory.createLineBorder(new Color(0xDCE1E7)));
-        scrBang.setPreferredSize(new Dimension(0,
-                tblBang.getTableHeader().getPreferredSize().height
-                        + tblBang.getRowHeight() * Math.max(1, modelBang.getRowCount()) + 4));
+        scrBang.setPreferredSize(new Dimension(0, tblBang.getTableHeader().getPreferredSize().height
+                + tblBang.getRowHeight() * Math.max(1, modelBang.getRowCount()) + 4));
         return scrBang;
     }
 
     // Định dạng vùng nhập ghi chú bằng font có sẵn của leader.
+    /** Thực hiện dinh dang vung nhap cho thành phần hiện tại. */
     private void dinhDangVungNhap(JTextArea txaNoiDung) {
         txaNoiDung.setLineWrap(true);
         txaNoiDung.setWrapStyleWord(true);
@@ -934,6 +984,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Bọc riêng trường ghi chú với chiều cao đủ cho nội dung nhập.
+    /** Thực hiện boc vung nhap cho thành phần hiện tại. */
     private JScrollPane bocVungNhap(JTextArea txaNoiDung) {
         JScrollPane scrNhap = new JScrollPane(txaNoiDung);
         scrNhap.setPreferredSize(new Dimension(0, 72));
@@ -943,6 +994,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Tạo hàng nút thao tác ở cạnh dưới màn hình.
+    /** Tạo hang nut cho giao diện. */
     private JPanel taoHangNut() {
         JPanel pnlNut = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         pnlNut.setOpaque(false);
@@ -950,6 +1002,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Tạo nút bằng component chung và gắn lệnh điều hướng tương ứng.
+    /** Thực hiện them nut cho thành phần hiện tại. */
     private void themNut(JPanel pnlNut, String nhan, String lenh, boolean chinh, boolean nguyHiem) {
         JButton btnNut = PhuTungUi.taoNut(nhan, chinh, nguyHiem);
         btnNut.setActionCommand(lenh);
@@ -958,6 +1011,7 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Định dạng các điều khiển của màn trước khi hiển thị trong MainFrame.
+    /** Thực hiện doi trang cho thành phần hiện tại. */
     private void doiTrang(JPanel pnlTrang) {
         PhuTungUi.dinhDangCay(pnlTrang);
         removeAll();
@@ -967,12 +1021,25 @@ public final class PhuTungSuDungPanel extends JPanel
     }
 
     // Lấy cửa sổ chính làm chủ cho mọi hộp thoại.
+    /** Đọc cua so từ dữ liệu hiện tại. */
     private Window docCuaSo() {
         return SwingUtilities.getWindowAncestor(this);
     }
 
     // Hiển thị thông báo theo component chung và giữ nội dung màn đang nhập.
+    /** Thực hiện thong bao cho thành phần hiện tại. */
     private void thongBao(String tieuDe, String noiDung) {
         PhuTungUi.hienHopThoai(docCuaSo(), tieuDe, noiDung, "Đóng", false, false);
     }
+
+    /** Tìm ô giao diện thuộc mã phụ tùng được chọn. */
+    private JTextField timOLuong(String ma) {
+        for (JTextField o : cacLuong) {
+            if (ma.equals(o.getName())) {
+                return o;
+            }
+        }
+        return null;
+    }
+
 }
