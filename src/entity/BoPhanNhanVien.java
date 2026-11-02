@@ -1,6 +1,6 @@
 package entity;
 
-/** Bộ phận ghi trong hồ sơ; không cấp quyền cho tài khoản đăng nhập. */
+/** Các bộ phận làm việc dùng trong hồ sơ nhân viên. */
 public enum BoPhanNhanVien {
     QUAN_LY("Quản lý"),
     TIEP_NHAN("Tiếp nhận"),
@@ -9,12 +9,12 @@ public enum BoPhanNhanVien {
 
     private final String tenHienThi;
 
-    /** @param tenHienThi tên bộ phận trên form và danh sách */
+    /** Gắn tên hiển thị cho một bộ phận. */
     BoPhanNhanVien(String tenHienThi) {
         this.tenHienThi = tenHienThi;
     }
 
-    /** @return tên bộ phận trên giao diện */
+    /** Trả về tên hiển thị để dùng trong biểu mẫu và bảng. */
     @Override
     public String toString() {
         return tenHienThi;

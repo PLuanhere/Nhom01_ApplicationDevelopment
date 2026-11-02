@@ -1,6 +1,6 @@
 package entity;
 
-/** Tình trạng làm việc của hồ sơ, độc lập với trạng thái tài khoản. */
+/** Các trạng thái làm việc và nhãn hiển thị của nhân viên. */
 public enum TrangThaiNhanVien {
     DANG_LAM("Đang làm việc", "Đang làm"),
     DA_NGHI("Đã nghỉ việc", "Đã nghỉ");
@@ -8,21 +8,18 @@ public enum TrangThaiNhanVien {
     private final String tenHienThi;
     private final String tenNgan;
 
-    /**
-     * @param tenHienThi tên trên form
-     * @param tenNgan nhãn gọn trong bảng
-     */
+    /** Gắn tên đầy đủ và nhãn ngắn cho trạng thái làm việc. */
     TrangThaiNhanVien(String tenHienThi, String tenNgan) {
         this.tenHienThi = tenHienThi;
         this.tenNgan = tenNgan;
     }
 
-    /** @return nhãn trạng thái trong bảng */
+    /** Trả về nhãn trạng thái ngắn dùng trong bảng. */
     public String getTenNgan() {
         return tenNgan;
     }
 
-    /** @return tên trạng thái trên form và bộ lọc */
+    /** Trả về tên hiển thị để dùng trong biểu mẫu và bảng. */
     @Override
     public String toString() {
         return tenHienThi;

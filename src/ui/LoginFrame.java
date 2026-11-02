@@ -8,8 +8,6 @@ import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import java.util.Arrays;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -24,7 +22,6 @@ import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
 
 import dao.TaiKhoanDAO;
 import dao.DuLieuGarageDAO;
@@ -34,20 +31,19 @@ import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
 import ui.component.WindowTitlePanel;
 
-/** Trang đăng nhập Page 3: đổi phần trình bày, giữ xác thực bốn tài khoản có sẵn qua DAO. */
+/** Hiển thị trang đăng nhập và mở khu vực làm việc theo vai trò. */
 public final class LoginFrame extends JFrame {
 
     private static final long serialVersionUID = 1L;
-    /** Log lỗi kỹ thuật, không ghi tên đăng nhập hoặc mật khẩu. */
-    private static final System.Logger LOGGER = System.getLogger(LoginFrame.class.getName());
-    /** Nguồn xác thực hiện tại, chưa kết nối database. */
+
     private final DuLieuGarageDAO duLieuChung;
     private final TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAO();
-    /** Hai ô nhập chỉ vẽ gợi ý khi chưa có dữ liệu; không dùng gợi ý làm giá trị nhập. */
+
+    // Các ô nhập và lựa chọn trên biểu mẫu.
     private final JTextField txtTenDangNhap = new JTextField() {
         private static final long serialVersionUID = 1L;
 
-        /** {@inheritDoc} */
+        /** Vẽ nội dung giao diện và giữ chữ hoặc gợi ý nhập liệu dễ đọc. */
         @Override
         protected void paintComponent(Graphics graphics) {
             super.paintComponent(graphics);
@@ -57,22 +53,25 @@ public final class LoginFrame extends JFrame {
     private final JPasswordField txtMatKhau = new JPasswordField() {
         private static final long serialVersionUID = 1L;
 
-        /** {@inheritDoc} */
+        /** Vẽ nội dung giao diện và giữ chữ hoặc gợi ý nhập liệu dễ đọc. */
         @Override
         protected void paintComponent(Graphics graphics) {
             super.paintComponent(graphics);
             veGoiY(graphics, this, "Nhập mật khẩu");
         }
     };
-    /** Các điều khiển giữ nguyên hành vi đăng nhập/hiện mật khẩu. */
+
     private final JCheckBox chkHienMatKhau = new JCheckBox("Hiện mật khẩu");
+    // Các nút thực hiện thao tác của màn hình.
     private final JButton btnDangNhap = UiTheme.createAppButton("Đăng nhập", true);
+    // Thông báo hướng dẫn hoặc lỗi đăng nhập.
     private final JLabel lblThongBao = new JLabel(
             "Nhập tài khoản nhân viên được quản lý cấp để tiếp tục công việc.");
 
-    /** Tạo cửa sổ co giãn, thẻ nhập ở giữa ảnh và có vùng cuộn khi màn hình thấp. */
+    /** Khởi tạo cửa sổ đăng nhập, bố cục và các sự kiện nhập tài khoản. */
     public LoginFrame() { this(new DuLieuGarageDAO()); }
 
+    /** Khởi tạo cửa sổ đăng nhập, bố cục và các sự kiện nhập tài khoản. */
     public LoginFrame(DuLieuGarageDAO duLieuChung) {
         super("Garage Ô tô Đức Dũng — Đăng nhập");
         this.duLieuChung = java.util.Objects.requireNonNull(duLieuChung);
@@ -106,7 +105,7 @@ public final class LoginFrame extends JFrame {
         SwingUtilities.invokeLater(() -> txtTenDangNhap.requestFocusInWindow());
     }
 
-    /** @return thẻ đăng nhập 488×573 px theo Page 3, không chứa nghiệp vụ xác thực */
+    /** Tạo thẻ đăng nhập với ô tài khoản, mật khẩu và nút xác nhận. */
     private JPanel taoBieuMau() {
         JPanel pnlForm = UiTheme.roundedPanel(null, new Color(255, 255, 255, 249), 12);
         pnlForm.setLayout(new BoxLayout(pnlForm, BoxLayout.Y_AXIS));
@@ -142,7 +141,7 @@ public final class LoginFrame extends JFrame {
         return pnlForm;
     }
 
-    /** @return biểu tượng gốc và nhãn thương hiệu nằm trên tiêu đề */
+    /** Tạo khối logo và tên garage trên trang đăng nhập. */
     private JPanel taoNhanHieu() {
         JPanel pnlNhan = new JPanel(new BorderLayout(8, 0));
         pnlNhan.setOpaque(false);
@@ -157,7 +156,7 @@ public final class LoginFrame extends JFrame {
         return pnlNhan;
     }
 
-    /** @return lựa chọn hiện mật khẩu và hướng dẫn liên hệ Quản lý */
+    /** Tạo lựa chọn hiện mật khẩu và hướng dẫn quên mật khẩu. */
     private JPanel taoTuyChon() {
         JPanel pnlTuyChon = new JPanel(new BorderLayout());
         pnlTuyChon.setOpaque(false);
@@ -179,12 +178,7 @@ public final class LoginFrame extends JFrame {
         return pnlTuyChon;
     }
 
-    /**
-     * Ghép nhãn và ô nhập; nhãn liên kết với control để hỗ trợ truy cập.
-     * @param nhan tên trường
-     * @param txtTruong ô nhập tên hoặc mật khẩu
-     * @return hàng biểu mẫu cao 65 px
-     */
+    /** Tạo một hàng gồm nhãn và ô nhập của trang đăng nhập. */
     private JPanel taoHangNhap(String nhan, JTextField txtTruong) {
         JPanel pnlTruong = new JPanel(new BorderLayout(0, 6));
         pnlTruong.setOpaque(false);
@@ -202,12 +196,7 @@ public final class LoginFrame extends JFrame {
         return pnlTruong;
     }
 
-    /**
-     * Thêm một hàng với chiều cao thiết kế; BoxLayout quyết định vị trí thực tế.
-     * @param pnlCha panel biểu mẫu
-     * @param thanhPhan thành phần cần thêm
-     * @param chieuCao chiều cao hàng tính bằng pixel
-     */
+    /** Thêm một hàng thành phần UI và khoảng cách vào bố cục dọc. */
     private void themDong(JPanel pnlCha, JComponent thanhPhan, int chieuCao) {
         thanhPhan.setAlignmentX(LEFT_ALIGNMENT);
         thanhPhan.setPreferredSize(new Dimension(0, chieuCao));
@@ -216,12 +205,7 @@ public final class LoginFrame extends JFrame {
         pnlCha.add(thanhPhan);
     }
 
-    /**
-     * Vẽ gợi ý trong ô rỗng mà không ghi gợi ý vào dữ liệu tài khoản.
-     * @param graphics ngữ cảnh vẽ của ô nhập
-     * @param txtTruong ô cần vẽ gợi ý
-     * @param goiY nội dung hướng dẫn
-     */
+    /** Vẽ nội dung gợi ý khi ô nhập chưa có dữ liệu. */
     private void veGoiY(Graphics graphics, JTextField txtTruong, String goiY) {
         if (txtTruong.getDocument().getLength() == 0) {
             Graphics g = graphics.create();
@@ -234,12 +218,12 @@ public final class LoginFrame extends JFrame {
         }
     }
 
-    /** Kiểm tra trường bắt buộc trên EDT rồi xác thực ở luồng nền để không treo form. */
+    /** Đọc ô tài khoản, kiểm tra thiếu dữ liệu rồi gửi thông tin sang bước xác thực. */
     private void dangNhap() {
         if (!btnDangNhap.isEnabled()) {
             return;
         }
-        // Đọc dữ liệu trên EDT; xóa mảng mật khẩu khi không còn dùng.
+
         String tenDangNhap = txtTenDangNhap.getText().trim();
         char[] matKhau = txtMatKhau.getPassword();
         if (tenDangNhap.isEmpty() || matKhau.length == 0) {
@@ -251,53 +235,20 @@ public final class LoginFrame extends JFrame {
         xacThucTaiKhoan(tenDangNhap, matKhau);
     }
 
-    /**
-     * Chạy xác thực ở nền; chỉ cập nhật form và mở cửa sổ tại done() trên EDT.
-     * @param tenDangNhap tên đã nhập, bỏ khoảng trắng hai đầu
-     * @param matKhau bản sao mật khẩu, được xóa khi xác thực xong
-     */
+    /** Gọi DAO kiểm tra tài khoản và mở khung làm việc khi đăng nhập hợp lệ. */
     private void xacThucTaiKhoan(String tenDangNhap, char[] matKhau) {
-        new SwingWorker<Optional<TaiKhoan>, Void>() {
-            /** {@inheritDoc} */
-            @Override
-            protected Optional<TaiKhoan> doInBackground() {
-                try {
-                    return taiKhoanDAO.dangNhap(tenDangNhap, matKhau);
-                } finally {
-                    Arrays.fill(matKhau, '\0');
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override
-            protected void done() {
-                setDangXuLy(false);
-                if (!isDisplayable()) {
-                    return;
-                }
-                try {
-                    // get() lấy kết quả đã hoàn tất, không chặn giao diện.
-                    Optional<TaiKhoan> ketQua = get();
-                    if (ketQua.isPresent()) {
-                        moKhungChinh(ketQua.get());
-                    } else {
-                        hienThiLoi("Tên đăng nhập hoặc mật khẩu không đúng.");
-                    }
-                } catch (InterruptedException error) {
-                    Thread.currentThread().interrupt();
-                    hienThiLoi("Đăng nhập bị gián đoạn. Vui lòng thử lại.");
-                } catch (ExecutionException error) {
-                    LOGGER.log(System.Logger.Level.ERROR, "Lỗi xác thực tài khoản.", error.getCause());
-                    hienThiLoi("Không thể đăng nhập lúc này. Vui lòng thử lại.");
-                }
-            }
-        }.execute();
+        try {
+            TaiKhoan ketQua = taiKhoanDAO.dangNhap(tenDangNhap, matKhau);
+            if (ketQua != null && ketQua.isPhienHopLe()) { moKhungChinh(ketQua); }
+            else { hienThiLoi("Tên đăng nhập hoặc mật khẩu không đúng."); }
+        } catch (IllegalArgumentException | SecurityException ex) { hienThiLoi(ex.getMessage()); }
+        finally {
+            for (int i = 0; i < matKhau.length; i++) { matKhau[i] = '\0'; }
+            setDangXuLy(false);
+        }
     }
 
-    /**
-     * Khóa hoặc mở các điều khiển theo trạng thái tác vụ.
-     * @param dangXuLy true khi đang xác thực
-     */
+    /** Đổi trạng thái ô nhập và nút khi kiểm tra thông tin đăng nhập. */
     private void setDangXuLy(boolean dangXuLy) {
         txtTenDangNhap.setEnabled(!dangXuLy);
         txtMatKhau.setEnabled(!dangXuLy);
@@ -310,10 +261,7 @@ public final class LoginFrame extends JFrame {
         }
     }
 
-    /**
-     * Báo lỗi bằng chữ và màu, giữ nguyên dữ liệu để người dùng sửa.
-     * @param thongBao hướng dẫn nhập lại thông tin
-     */
+    /** Hiển thị lỗi đăng nhập và chuyển focus về ô cần kiểm tra. */
     private void hienThiLoi(String thongBao) {
         lblThongBao.setForeground(UiTheme.ERROR);
         lblThongBao.setText(thongBao);
@@ -324,10 +272,7 @@ public final class LoginFrame extends JFrame {
         }
     }
 
-    /**
-     * Mở khung chung với danh tính đã xác thực; đăng xuất tạo form trống mới.
-     * @param taiKhoan tài khoản do DAO trả về sau đăng nhập thành công
-     */
+    /** Xóa dữ liệu mật khẩu trên form và mở khung ứng dụng theo vai trò đăng nhập. */
     private void moKhungChinh(TaiKhoan taiKhoan) {
         txtMatKhau.setText("");
         chkHienMatKhau.setSelected(false);

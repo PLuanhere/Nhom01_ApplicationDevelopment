@@ -37,7 +37,8 @@ public final class BaoGiaPanel extends JPanel {
     private final JPanel pnlThe = nen(boCuc);
     private final List<BaoCaoKiemTra> baoCaoHoanTat = new ArrayList<>();
     private final BaoGiaDAO dao;
-    private final List<PhuTung> danhMuc;
+    /** Đọc lại khi mở chọn mặt hàng để nhận danh mục và trạng thái mới nhất. */
+    private final Supplier<List<PhuTung>> danhMuc;
     /** Bản nhập riêng, không sửa chi tiết của phiên bản đã gửi khách. */
     private final List<ChiTietBaoGia> banNhap = new ArrayList<>();
     private final JTextField txtTim = new JTextField();
@@ -73,9 +74,14 @@ public final class BaoGiaPanel extends JPanel {
     public BaoGiaPanel(BaoGiaDAO dao, Supplier<TaiKhoan> phien) { this(dao, phien, List.of()); }
 
     public BaoGiaPanel(BaoGiaDAO dao, Supplier<TaiKhoan> phien, List<PhuTung> danhMuc) {
+        this(dao, phien, () -> List.copyOf(danhMuc));
+    }
+
+    /** Nhận nguồn danh mục đang dùng chung với Quản lý và Kỹ thuật. */
+    public BaoGiaPanel(BaoGiaDAO dao, Supplier<TaiKhoan> phien, Supplier<List<PhuTung>> danhMuc) {
         super(new BorderLayout());
         this.dao = Objects.requireNonNull(dao);
-        this.danhMuc = List.copyOf(danhMuc);
+        this.danhMuc = Objects.requireNonNull(danhMuc);
         this.phien = Objects.requireNonNull(phien); kiemTraPhien(); setOpaque(false);
         pnlThe.add(taoDanhSach(), "DANH_SACH"); pnlThe.add(taoForm(), "FORM"); pnlThe.add(taoQuyetDinh(), "QUYET_DINH"); add(pnlThe);
         cboBaoCao.addActionListener(e -> { if (!dangNap) { capNhatCanCu(); daThayDoi = true; } });
@@ -201,7 +207,7 @@ public final class BaoGiaPanel extends JPanel {
         new HangMucBaoGiaDialog(SwingUtilities.getWindowAncestor(this), sua ? banNhap.get(index) : null, dong -> {
             kiemTraPhien(); if (index < 0) banNhap.add(dong); else banNhap.set(index, dong);
             daThayDoi = true; capNhatChiTiet(); lblLoi.setText(" ");
-        }, danhMuc).setVisible(true);
+        }, danhMuc.get()).setVisible(true);
     }
 
     private void xoaDong() {

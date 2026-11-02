@@ -501,8 +501,8 @@ public final class PhuTungSuDungPanel extends JPanel
                         + " = " + PhuTungUi.dinhDangLuong(sau) + " " + phuTung.getDonViTinh();
                 if (sau.signum() < 0) {
                     moTa += " · Vượt tồn";
-                } else if (sau.compareTo(phuTung.getMucToiThieu()) < 0) {
-                    moTa += " · Dưới mức tối thiểu " + PhuTungUi.dinhDangLuong(phuTung.getMucToiThieu());
+                } else if (sau.doubleValue() < phuTung.getMucToiThieu()) {
+                    moTa += " · Dưới mức tối thiểu " + PhuTungUi.dinhDangLuong(java.math.BigDecimal.valueOf(phuTung.getMucToiThieu()));
                 }
                 dong.getValue().setText(moTa);
                 dong.getValue().setForeground(sau.signum() < 0 ? PhuTungUi.MAU_NGUY_HIEM : UiTheme.TEXT);
@@ -545,7 +545,7 @@ public final class PhuTungSuDungPanel extends JPanel
                 throw new IllegalArgumentException("Số lượng không được âm.");
             }
             if (soLuong.signum() > 0) {
-                dao.docPhuTung(dong.getKey()).kiemTraSoLuong(soLuong);
+                dao.docPhuTung(dong.getKey()).kiemTraSoLuong(soLuong.doubleValue());
             }
             luongDung.put(dong.getKey(), soLuong);
             if (soLuong.compareTo(dao.docTon(dong.getKey())) > 0 && loiVuotTon == null) {

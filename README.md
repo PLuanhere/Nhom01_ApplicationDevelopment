@@ -2,7 +2,7 @@
 
 Ứng dụng desktop nội bộ giúp Garage Ô tô Đức Dũng quản lý hồ sơ khách hàng và xe, tiếp nhận, kiểm tra, báo giá, sửa chữa, phụ tùng, thanh toán và bàn giao xe. Dự án do **Nhóm 01** thực hiện trong môn **Phát triển ứng dụng**, Khoa Công nghệ thông tin, Trường Đại học Công nghiệp TP.HCM, học kỳ 1 năm học 2026–2027.
 
-**Trạng thái hiện tại:** đã có khung Swing, đăng nhập/đăng xuất bằng bốn tài khoản tạo sẵn, menu Hệ thống và phân hệ Nhân viên theo Page 3. Nhân viên có tìm/lọc, xem chi tiết, thêm và sửa hồ sơ. Dashboard Quản lý đã được gỡ để làm sau cùng; mục Tổng quan điều hành giữ vùng nội dung trống. Dữ liệu được tạo sẵn trong DAO, chưa kết nối database.
+**Trạng thái hiện tại:** đã có khung Swing, đăng nhập/đăng xuất, phân hệ Nhân viên, Tài khoản & phân quyền, Dịch vụ/bảng giá và Phụ tùng theo Page 3 cùng các điều chỉnh đã chốt, cùng các màn thành viên khác đã tích hợp. Dashboard Quản lý đã được gỡ để làm sau cùng; mục Tổng quan điều hành giữ vùng nội dung trống. Dữ liệu được tạo sẵn trong DAO, chưa kết nối database.
 
 ## 1. Thành viên thực hiện
 
@@ -42,22 +42,22 @@ Các nguyên tắc nghiệp vụ cần giữ khi triển khai:
 
 ## 3. Những phần đã triển khai
 
-Phần Luân đã triển khai gồm **layout chung, đăng nhập và phân hệ Nhân viên**, cùng các màn thành viên khác đã tích hợp.
+Phần Luân đã triển khai gồm **layout chung, đăng nhập, Nhân viên, Tài khoản & phân quyền, Dịch vụ/bảng giá và Phụ tùng**.
 
 | Thành phần | Hiện trạng |
 | --- | --- |
 | Khởi chạy | `app.App` áp dụng theme và mở `LoginFrame` trên Event Dispatch Thread (EDT). Đăng nhập thành công mới mở `MainFrame`. |
 | Header | Thanh điều khiển cửa sổ 32 px; header Page 3 cao 66 px nằm bên phải sidebar, nền trắng, menu và danh tính hiện tại. Hệ thống có Đăng xuất/Thoát. Tìm nhanh/thông báo là vùng giữ chỗ, chưa có chức năng. |
-| Sidebar | Rộng 216 px, nền tối, logo/icon gốc từ Figma; vai trò ở trên và danh tính ở dưới. Quản lý có 7 mục theo Page 3. Các panel điều hướng đã tích hợp vẫn giữ listener riêng. |
+| Sidebar | Rộng 216 px, nền tối, logo/icon gốc từ Figma; vai trò ở trên và danh tính ở dưới. Quản lý có 6 mục; Nhập kho và lịch sử nằm trong Phụ tùng theo yêu cầu ngày 01/11/2026. Các panel điều hướng đã tích hợp vẫn giữ listener riêng. |
 | Nội dung | Nền #F4F6F9, lề ngang 26 px. Quản lý có vùng nội dung trống khi đăng nhập; mở Nhân viên từ sidebar. |
 | Tổng quan Quản lý | Chưa triển khai; đã gỡ giao diện, biểu đồ, dialog chi tiết, DAO và entity để làm sau cùng. |
 | Nhân viên | Tìm theo mã/tên/điện thoại, lọc tình trạng làm việc, làm mới, xem hồ sơ, thêm và sửa. Mã tự sinh; kiểm tra lỗi cạnh trường nhập; xác nhận bỏ thay đổi khi rời form. Bảng 6 cột tự giãn, khóa kéo/sửa ô; số lượng theo dữ liệu đã lọc. |
 | Thanh trạng thái | Footer hiển thị tên garage và thông báo từ API setStatus; danh tính hiển thị ở header/sidebar. |
-| Đăng nhập | Cửa sổ ban đầu 1280×800, tối thiểu 960×600; thẻ 488×573 ở giữa ảnh garage Page 3, có cuộn khi cửa sổ thấp. Giữ kiểm tra nhập, hiện/ẩn mật khẩu, Enter và SwingWorker. |
-| Tài khoản và vai trò | Bốn tài khoản có sẵn trong `TaiKhoanDAO`, mỗi tài khoản một vai trò cố định. Danh tính bất biến, không chứa mật khẩu, được truyền cho khung chính sau xác thực. |
+| Đăng nhập | Cửa sổ ban đầu 1280×800, tối thiểu 960×600; thẻ 488×573 ở giữa ảnh garage Page 3, có cuộn khi cửa sổ thấp. Giữ kiểm tra nhập, hiện/ẩn mật khẩu và Enter; xác thực trực tiếp qua DAO. |
+| Tài khoản và vai trò | Tìm/lọc, xem, cấp tài khoản; Quản lý đổi vai trò, khóa/mở và đặt lại mật khẩu. Mỗi tài khoản gắn một nhân viên và một vai trò. Entity không chứa mật khẩu. |
 | Đăng xuất | Xóa danh tính trong khung cũ, đóng khung và mở form đăng nhập mới với các trường trống, mật khẩu được che lại. |
 
-Ứng dụng **không cần SQL Server hoặc thư viện ngoài JDK**. Sidebar Quản lý mở Nhân viên; Tổng quan điều hành để trống, các mục còn lại thông báo chưa triển khai. “Quên mật khẩu?” hiển thị hướng dẫn liên hệ Quản lý theo Page 3. Bốn tài khoản và nguồn xác thực hiện tại được giữ nguyên.
+Ứng dụng **không cần SQL Server hoặc thư viện ngoài JDK**. Sidebar Quản lý mở Nhân viên, Tài khoản & phân quyền, Dịch vụ/bảng giá và Phụ tùng; Tổng quan điều hành để trống. “Quên mật khẩu?” hiển thị hướng dẫn liên hệ Quản lý theo Page 3. Bốn tài khoản ban đầu giữ tên đăng nhập và mật khẩu `123`.
 
 Nhân viên bám hai frame **`01_LUAN_QUAN_LY/manager-staff`** và **`manager-staff-edit`** trên Page 3. `MainFrame` mở `NhanVienPanel` trong layout chung; panel giữ danh sách và mở `NhanVienFormPanel` để xem/thêm/sửa. Form dùng lại cùng bố cục hai cột và bổ sung ô Bộ phận đã thống nhất: Quản lý, Tiếp nhận, Kỹ thuật, Thu ngân. “Xem chi tiết” ban đầu chỉ đọc; bấm “Chỉnh sửa” mới được nhập. Có thể mở hồ sơ bằng nút chữ trong bảng, nhấp đôi dòng hoặc Enter.
 
@@ -100,9 +100,83 @@ Dashboard **Chờ bàn giao** chỉ tính lệnh chưa giao đã đủ căn cứ
 | `kythuat` | `123` | Nhân viên kỹ thuật |
 | `thungan` | `123` | Thu ngân |
 
-Đây là dữ liệu đăng nhập hiện tại của ứng dụng, được tạo sẵn trong code. Cả bốn tài khoản dùng mật khẩu `123` theo yêu cầu đã chốt. DAO đối chiếu bằng PBKDF2 có salt từ JDK theo QUY_DINH; không đưa mật khẩu vào entity hoặc log. Tên đăng nhập bỏ khoảng trắng hai đầu và phân biệt hoa/thường; mật khẩu giữ nguyên khoảng trắng.
+Đây là dữ liệu đăng nhập hiện tại của ứng dụng, được tạo sẵn trong code. Cả bốn tài khoản dùng mật khẩu `123` theo yêu cầu đã chốt. Theo lựa chọn mới nhất cho bản thử nghiệm cục bộ, DAO lưu và so sánh mật khẩu dạng chuỗi; không đưa vào entity, bảng giao diện hoặc log. Tên đăng nhập bỏ khoảng trắng hai đầu và phân biệt hoa/thường; mật khẩu giữ nguyên khoảng trắng.
 
-Vai trò lấy từ tài khoản xác thực, không có lựa chọn tự đổi vai trò. DAO nhân viên kiểm tra quyền Quản lý cho mọi thao tác; các nghiệp vụ khác kiểm tra tại DAO tương ứng.
+Vai trò lấy từ tài khoản xác thực; chỉ Quản lý được phân quyền tại trang quản trị tài khoản. DAO nhân viên kiểm tra quyền Quản lý cho mọi thao tác; các nghiệp vụ khác kiểm tra tại DAO tương ứng.
+
+### Tài khoản & phân quyền — UC027, UC028, UC029
+
+Màn hình dựa trên các frame Page 3 `manager-accounts`, `manager-account-edit`, `manager-account-security` và `dialog-reset-password`, có điều chỉnh giao diện theo yêu cầu đã chốt. Mở **Tài khoản & phân quyền** trong sidebar của Quản lý.
+
+- Danh sách tìm theo mã TK, tên đăng nhập, mã/tên nhân viên; kết hợp lọc trạng thái và một trong bốn vai trò. Làm mới xóa cả từ khóa, trạng thái và vai trò. Bảng chỉ đọc, phủ chiều rộng, không kéo đổi kích thước hoặc thứ tự cột. Xem chi tiết bằng nút chữ, nhấp đôi hoặc Enter.
+- Cấp tài khoản cho nhân viên chưa có tài khoản. Bốn tài khoản cũ gắn lần lượt NV001, NV003, NV005, NV007. Muốn thử cấp thêm, tạo hồ sơ mới tại Nhân viên trước. Tên đăng nhập phải duy nhất và cố định sau khi cấp; mỗi nhân viên chỉ có một tài khoản.
+- Mật khẩu cấp mới/đặt lại tối thiểu 8 ký tự, có chữ hoa, số và ký tự đặc biệt; nhập lại phải khớp. Mật khẩu cũ không được nạp lên form. DAO lưu mật khẩu dạng chuỗi cho bản thử nghiệm; lưu và xác thực gọi trực tiếp, không chạy nền.
+- Xem hồ sơ ban đầu chỉ đọc; bấm Chỉnh sửa để đổi vai trò/trạng thái. Form bảo mật có tác vụ khóa, mở, đổi vai trò và đặt lại mật khẩu. Ô Vai trò mới xuất hiện khi chọn đổi vai trò. Thay đổi phải có lý do, xác nhận và nhật ký gồm người thực hiện, thời điểm, tài khoản đích và nội dung.
+- Khóa, đổi vai trò hoặc đặt lại mật khẩu thu hồi ngay các phiên cũ, đóng khung cùng dialog và mở lại đăng nhập. DAO từ chối thao tác dùng danh tính đã bị thu hồi. Không được tự khóa/tự hạ quyền; luôn giữ ít nhất một Quản lý hoạt động. Đặt lại mật khẩu không tự mở tài khoản đang khóa.
+- Hủy xác nhận không lưu; lỗi giữ dữ liệu để sửa. Rời form, đổi mục, đăng xuất hoặc đóng cửa sổ hỏi khi có thay đổi chưa lưu. Không lưu lặp hoặc rời trang trong khi đang ghi.
+- Hai nút Cấp tài khoản và Bảo mật nằm dưới bộ lọc. Nút Bảo mật chỉ bật khi chọn dòng. Sau lưu có thông báo và chọn lại đúng tài khoản; nếu tài khoản nằm ngoài bộ lọc, thông báo nêu rõ và giữ nguyên điều kiện.
+- Form xem/sửa hiển thị ngày cấp, không hiện ô mật khẩu không sử dụng. Lý do sửa nhập trực tiếp trên form rồi xác nhận một lần. Trang bảo mật chỉ cho chọn thao tác áp dụng được: khóa tài khoản đang mở, mở tài khoản đã khóa; tài khoản của chính mình chỉ được đặt lại mật khẩu. Chỉ hiện ô Vai trò mới hoặc Mật khẩu khi chọn đúng tác vụ. Không còn khối đặt lại mật khẩu lặp phía dưới.
+- Các nút lưu/xác nhận và thông báo nằm cố định dưới form khi cuộn. Dialog đặt lại mật khẩu hiển thị rõ tài khoản đích, lý do và hai ô mật khẩu cạnh nhau.
+
+Luồng code: `TaiKhoanPanel` mở danh sách/form → `TaiKhoanFormPanel` hoặc `BaoMatTaiKhoanPanel` nhận đầu vào → `TaiKhoanDAO` kiểm tra và lưu. `DatLaiMatKhauDialog` xác nhận riêng UC027. `TaiKhoan` giữ hồ sơ không chứa mật khẩu; `NhatKyTaiKhoan` giữ thông tin thay đổi. Không có service/controller. Nhật ký hiện lưu tại DAO, chưa triển khai trang nhật ký riêng.
+
+Tài khoản, mật khẩu, hồ sơ và nhật ký thay đổi được giữ trong **cùng lần chạy ứng dụng**; tắt và chạy lại sẽ về dữ liệu ban đầu. Chưa lưu file hoặc database. Bộ phận/trạng thái làm việc của nhân viên không tự thay đổi quyền truy cập tài khoản.
+
+### Dịch vụ và bảng giá
+
+Mở **Dịch vụ và bảng giá** từ sidebar Quản lý. Danh sách và form theo hai frame `01_LUAN_QUAN_LY/manager-services`, `01_LUAN_QUAN_LY/manager-service-edit` trên Page 3.
+
+- Ba dịch vụ ban đầu: DV001 Bảo dưỡng định kỳ (300.000đ), DV002 Vệ sinh phanh trước (100.000đ), DV003 Kiểm tra điều hòa (200.000đ).
+- Tìm theo mã, tên hoặc nhóm, không phân biệt dấu/hoa thường; kết hợp lọc Đang áp dụng/Tạm dừng. Làm mới xóa điều kiện tìm/lọc và đọc lại DAO.
+- Nhấp **Xem chi tiết**, nhấp đúp dòng hoặc nhấn Enter để mở. Chọn **Chỉnh sửa** để đổi tên, đơn vị, nhóm, mô tả, thời gian dự kiến, giá, điều kiện và trạng thái.
+- **Thêm dịch vụ** sinh mã chỉ đọc. Tên, đơn vị tính và giá bắt buộc; giá không âm, cho phép bằng 0. Nhập tiền nguyên đồng như `300000` hoặc `300.000`. Tiền dùng `long`; không chấp nhận đơn giá có phần lẻ.
+- Tạm dừng cần xác nhận khi lưu; chọn Đang áp dụng để sử dụng lại. Danh mục giữ nguyên hồ sơ và lịch sử báo giá.
+- **Xóa dịch vụ** nằm trong màn chi tiết, có xác nhận. DAO chặn xóa nếu mã đã có trong báo giá, kể cả báo giá chưa được khách duyệt. Ba dịch vụ ban đầu đều đã có báo giá; có thể thử xóa dịch vụ mới tạo chưa sử dụng. Mã đã xóa không được cấp lại.
+- Lưu thành công giữ bộ lọc và chọn lại dòng; thông báo nếu dịch vụ nằm ngoài bộ lọc. Lỗi lưu giữ nguyên dữ liệu nhập. Rời form, đổi tab, đăng xuất hoặc đóng cửa sổ đều kiểm tra dữ liệu chưa lưu.
+- Bảng phủ chiều rộng, chỉ đọc, không kéo thay đổi/thứ tự cột. Form cuộn dọc khi cửa sổ nhỏ, nút thao tác nằm dưới form và luôn nhìn thấy.
+
+Code gồm `DichVu` → `DichVuDAO` → `DichVuPanel` và một `DichVuFormPanel` dùng chung cho thêm/xem/sửa. Không thêm service/controller hoặc enum trạng thái. Mô tả theo REPORT; nhóm, thời gian dự kiến và điều kiện theo Figma, đều là thông tin tùy chọn. DAO kiểm tra quyền Quản lý và phiên ở mỗi thao tác, kiểm tra mã trùng và từ chối lưu/xóa bản ghi đã thay đổi ở cửa sổ khác.
+
+`ChiTietBaoGia.maDichVu` liên kết danh mục bằng mã, không so tên. Các dòng dịch vụ trong nguồn báo giá của `PhieuSuaChuaDAO` đã được liên kết, giữ nguyên tên, đơn vị và giá đã có. Chỉnh danh mục không sửa các bản chụp này. Khi bổ sung chức năng lập báo giá, dòng dịch vụ phải lưu mã liên kết cùng giá tại thời điểm lập. Chưa có module hóa đơn để kiểm thử tích hợp hóa đơn.
+
+Dữ liệu dịch vụ dùng chung trong cùng lần chạy ứng dụng; tắt và chạy lại trở về dữ liệu ban đầu. Chưa lưu file hoặc database.
+
+### Phụ tùng, Nhập kho và lịch sử
+
+Mở **Phụ tùng** từ sidebar Quản lý. Nhập kho là thao tác trong mục này, **không còn tab Phiếu nhập kho riêng**, theo quyết định ngày 01/11/2026. Nghiệp vụ bám UC033 (cập nhật số lượng), UC034 (lịch sử nhập/xuất), UC035 (lọc) trong REPORT; giao diện dùng các frame Page 3 `manager-parts`, `manager-part-edit`, `manager-stock-entry`, `manager-stock-adjust`, `manager-stock-ledger`, điều chỉnh form nhập để có nhiều dòng.
+
+- Tìm theo mã/tên/loại, phối hợp lọc Đủ tồn/Sắp hết/Hết hàng/Ngừng hoạt động; Làm mới bỏ điều kiện. Tồn bằng 0 là Hết hàng; thấp hơn mức tối thiểu là Sắp hết.
+- Xem, thêm và sửa phụ tùng: mã, tên, loại, đơn vị, giá nhập/bán, tồn tối thiểu và trạng thái. Mã do người dùng nhập, duy nhất; mã và đơn vị cố định sau khi tạo. Danh mục mới có tồn 0; nhập hoặc đối soát là thao tác riêng có lịch sử.
+- **Nhập kho**: ghi nguồn hàng/diễn giải bắt buộc; mã hóa đơn/biên nhận tùy chọn. Thêm/sửa/bỏ nhiều dòng trước khi xác nhận; mỗi dòng có phụ tùng, số lượng dương và giá nhập không âm. Tổng tiền theo từng dòng, cho phép cùng mã ở các dòng có giá khác nhau; tồn được cộng theo tổng lượng của mã đó.
+- Lít được dùng tối đa 3 chữ số lẻ; cái/bộ phải nguyên. Nhập số kiểu Việt Nam, ví dụ lượng `1,25` hoặc `1,234`, giá nguyên đồng `150.000`. Lít tối đa 3 chữ số lẻ; thành tiền từng dòng làm tròn đến đồng gần nhất (0,5 đồng lên), tổng cộng các dòng đã làm tròn.
+- Chỉ cộng tồn khi xác nhận thành công. DAO kiểm tra toàn bộ trước khi lưu chứng từ/tồn/nhật ký; lỗi một dòng không làm cộng một phần. Mã tự sinh và kiểm tra trước lưu ngăn ghi lặp. Lần nhập đã ghi nhận chỉ xem lại, không sửa/xóa.
+- **Đối soát tồn kho**: chọn một phụ tùng, nhập số kiểm kê, lý do và diễn giải nếu có; hiển thị chênh lệch/tồn sau. Xác nhận số cũ/mới trước khi lưu; số cũ đã đổi thì phải mở lại. Không ghi biến động khi không có chênh lệch; không âm kho.
+- **Nhật ký nhập – xuất – tồn**: tìm theo mã/tên/chứng từ/lý do, lọc loại và khoảng ngày bao gồm hai đầu; có lịch sử riêng từ chi tiết phụ tùng. Chọn dòng nhập để xem toàn bộ mặt hàng/giá của lần nhập; dòng xuất/điều chỉnh có chi tiết tồn trước/sau, người và lý do.
+- Ngừng hoạt động chặn chọn cho báo giá mới và nhập mới; phụ tùng trên lệnh đã duyệt vẫn được Kỹ thuật ghi nhận thực dùng. Thay tên/giá danh mục không sửa các bản chụp trên chứng từ đã có. Giá nhập một lần không tự sửa giá danh mục.
+- Bản nháp/lỗi giữ dữ liệu nhập; hủy không cộng tồn. Quay lại, đổi tab, đăng xuất và đóng cửa sổ kiểm tra dữ liệu chưa lưu. UI hỗ trợ cuộn ở 960×600, bảng chỉ đọc và khóa cột.
+
+`PhuTungDAO` là nguồn duy nhất cho danh mục, tồn và biến động của cùng `DuLieuGarageDAO`. `PhuTungSuDungDAO` dùng nguồn này để trừ kho và ghi xuất; `PhieuNhapKhoDAO` lưu các lần nhập nhiều dòng. Model gồm `PhuTung`, `PhieuNhapKho`, `ChiTietNhapKho`, `BienDongKho`; các lớp nhập là chứng từ nội bộ của mục Phụ tùng, không phải use case/module mới. Không thêm tầng service/controller hoặc Entity nhà cung cấp.
+
+Tồn đầu kỳ giữ dữ liệu đang có: PT001 48 lít/ngưỡng 12, PT005 6 cái/ngưỡng 12, PT004 5 cái/ngưỡng 2. Giá danh mục trước đây chưa có nên khởi tạo 0 và có thể sửa. Chưa có lần nhập mới khi khởi động; lịch sử ghi từ các thao tác trong lần chạy hiện tại. Dữ liệu dùng chung khi đăng xuất/đăng nhập lại trong cùng ứng dụng; tắt rồi mở lại về dữ liệu ban đầu, chưa lưu database.
+
+### Java cơ bản — cập nhật 02/11/2026
+
+Nhánh sửa hiện tại: `feature/simplify-manager-code`, tạo từ main, giữ các thay đổi chưa commit. Đã sửa lỗi kiểm tra null bị chen giữa câu khai báo trong TaiKhoanDAO khi lần chuyển đổi trước chưa hoàn tất.
+
+- Entity/DAO/UI Quản lý dùng long cho tiền, double cho lượng/tồn (lít tối đa 3 số lẻ; cái/bộ nguyên), điều kiện và phép toán cơ bản. Thành tiền từng dòng làm tròn đến đồng gần nhất; tách phần lượng nguyên/lẻ để không chuyển tiền long sang double. Có kiểm tra vượt giới hạn và lỗi không ghi một phần.
+- Dữ liệu là ArrayList trong DAO; tìm/lọc/sắp xếp bằng vòng lặp. Tài khoản đăng nhập trả TaiKhoan hoặc null. Form kiểm tra thay đổi bằng mảng String và vòng lặp.
+- Không có synchronized/volatile/worker/Optional/Stream/Objects.requireNonNull/Normalizer trong phần Quản lý. Các lời gọi DAO chạy trực tiếp; giao diện vẫn khởi tạo trên EDT theo yêu cầu Swing.
+- Người dùng đã chọn mật khẩu dạng chuỗi trong DAO cho bản thử nghiệm cục bộ. Giữ bốn tài khoản /123, quy tắc mật khẩu mới, quyền, nhật ký và buộc đăng nhập lại khi khóa/đổi vai trò/đặt lại mật khẩu.
+- Điểm nối với Kỹ thuật/Tiếp nhận chỉ chuyển đổi số cần thiết để giữ cùng kho; không đổi toàn bộ dữ liệu của module khác. Database chưa kết nối.
+
+### Giao diện và code Quản lý thống nhất (01/11/2026)
+
+- Nhân viên, Tài khoản, Dịch vụ và Phụ tùng dùng chung thanh tìm/lọc, hàng nút bên dưới và bảng chỉ đọc. Dòng bảng cao 48 px; không kéo đổi kích thước/thứ tự cột. Các form cùng hai cột, rộng tối đa 1.100 px và có nút lưu cố định bên dưới.
+- `QuanLyUi` chỉ tạo/định dạng thành phần Swing; `QuanLyFormPanel` chỉ giữ bố cục form. Nghiệp vụ ở DAO, dữ liệu ở Entity; không thêm service/controller hay thư viện.
+- Tìm/lọc/sắp xếp viết bằng `for`, `if` và `ArrayList`; chọn sắp xếp mã/tên, riêng Dịch vụ có giá và Phụ tùng có tồn. Bộ lọc vai trò ở Tài khoản vẫn là lọc, độc lập với sắp xếp. Làm mới xóa từ khóa, bộ lọc và sắp xếp.
+- Các nút của screen Quản lý xử lý bằng `ActionListener`, gọi DAO trực tiếp. Không synchronized, volatile, SwingWorker, Optional hay chạy nền trong phần này. Mật khẩu dạng chuỗi ở DAO cho bản thử nghiệm; vẫn giữ thu hồi phiên ngay và kiểm tra đủ các dòng kho trước khi cập nhật.
+- DAO trả bản sao danh sách; thay đổi bản sao không đổi nguồn. UI chỉ gọi các phương thức `layDanhSach`, `timTheoMa`, `timKiem`, `them`, `capNhat`, `xoa` hoặc thao tác nghiệp vụ tương ứng. Nhân viên/tài khoản/phụ tùng không được tự thêm xóa trái quy tắc đã chốt.
+- Khi nối JDBC: thay phần đọc/ghi bên trong DAO, ánh xạ Entity theo mã; chuyển lọc/sắp xếp sang `WHERE`/`ORDER BY` với cùng tham số UI hiện có. Cập nhật dịch vụ/phụ tùng đối chiếu giá trị đã đọc thay vì địa chỉ đối tượng. Các thao tác kho phải dùng transaction; xác thực/thu hồi phiên cần thay nguồn phiên trong DAO. SQL chạy nền; chưa có kết nối database trong thay đổi này.
 
 ## 4. Công nghệ và môi trường
 
@@ -129,6 +203,17 @@ src/
 ├── ui/
 │   ├── MainFrame.java
 │   ├── LoginFrame.java
+│   ├── screen/
+│   │   ├── quanly/             # Các màn hình của Quản lý
+│   │   │   ├── DichVuPanel.java
+│   │   │   ├── NhanVienPanel.java
+│   │   │   ├── NhanVienFormPanel.java
+│   │   │   ├── TaiKhoanPanel.java
+│   │   │   ├── TaiKhoanFormPanel.java
+│   │   │   └── BaoMatTaiKhoanPanel.java
+│   │   └── ...                # Các màn hình vai trò khác hiện có
+│   ├── dialog/
+│   │   └── DatLaiMatKhauDialog.java
 │   └── component/
 │       ├── SidebarPanel.java
 │       ├── QuanLyNavigationPanel.java
@@ -152,7 +237,7 @@ test/
 
 `MainFrame` chỉ quản lý bố cục bằng `BorderLayout`. `SidebarPanel` quản lý vùng điều hướng; `UiTheme` tập trung màu, font và khoảng cách. Các thành phần giữ trạng thái riêng bằng thuộc tính private, không dùng dữ liệu giao diện static dùng chung.
 
-`QuanLyNavigationPanel` chứa các mục của Quản lý. `ButtonGroup` giữ duy nhất một mục được chọn; panel báo tên mục cho `MainFrame` để mở Nhân viên. Tổng quan điều hành giữ vùng trống cho giai đoạn sau.
+`QuanLyNavigationPanel` chứa các mục của Quản lý. `ButtonGroup` giữ duy nhất một mục được chọn; panel báo tên mục cho `MainFrame` để mở Nhân viên hoặc Tài khoản & phân quyền. Tổng quan điều hành giữ vùng trống cho giai đoạn sau.
 
 `AppMenuBar` hiển thị các nhóm menu. Menu Hệ thống nhận hai thao tác từ `MainFrame`: Đăng xuất gọi hàm `dangXuat()` để kết thúc phiên; Thoát phát sự kiện đóng cửa sổ như nút ×. Panel menu không tự quản lý phiên hoặc tạo form đăng nhập.
 
@@ -160,9 +245,9 @@ Phần đăng nhập có bốn lớp, mỗi lớp một trách nhiệm:
 
 | Lớp | Trách nhiệm |
 | --- | --- |
-| `TaiKhoan` | Giữ tên đăng nhập và vai trò, không cho thay đổi sau khi tạo. |
+| `TaiKhoan` | Giữ mã tài khoản, nhân viên, tên đăng nhập, vai trò, trạng thái, ngày tạo và hiệu lực danh tính; không chứa mật khẩu. |
 | `VaiTro` | Khai báo bốn vai trò và tên hiển thị tiếng Việt. |
-| `TaiKhoanDAO` | Khai báo danh sách bốn tài khoản; duyệt danh sách và kiểm tra mật khẩu. |
+| `TaiKhoanDAO` | Xác thực, cấp tài khoản, kiểm tra quyền, khóa/mở, đổi vai trò, đặt lại mật khẩu và ghi nhật ký. |
 | `LoginFrame` | Tạo biểu mẫu, nhận thao tác và hiển thị kết quả xác thực. |
 
 Đọc `LoginFrame` theo luồng `dangNhap()` → `xacThucTaiKhoan()` → `moKhungChinh()`. `dangNhap()` kiểm tra trường trống; `xacThucTaiKhoan()` gọi DAO ở nền rồi nhận kết quả trên EDT; `moKhungChinh()` mở layout với tài khoản đúng. Đăng xuất mở lại `new LoginFrame()` với dữ liệu nhập trống. Không có lớp service hoặc interface trung gian.
@@ -235,7 +320,7 @@ Lệnh trên áp dụng cho khung UI hiện tại, chưa có thư viện ngoài.
 - Khung chung có sidebar tối 216 px, header trắng và danh tính ở header/sidebar. Quản lý đăng nhập vào layout với vùng nội dung trống; mở Nhân viên từ sidebar.
 - Mở Hệ thống bằng chuột hoặc Alt+H. Chọn Đăng xuất bằng chuột hoặc phím D khi menu đang mở: phiên cũ kết thúc, form đăng nhập mới trống. Đăng xuất nằm trong menu Hệ thống.
 - Nhấn Esc hoặc bấm ra ngoài để đóng menu. Mở lại rồi chọn Thoát (hoặc phím T khi menu mở): ứng dụng đóng như nút ×, không mở lại form đăng nhập.
-- Đăng nhập `quanly`: sidebar có 7 mục Page 3, mặc định chọn Tổng quan điều hành với vùng nội dung trống. Chọn Nhân viên để mở danh sách; chọn Tổng quan để quay lại vùng trống.
+- Đăng nhập `quanly`: sidebar có 6 mục sau khi gộp Nhập kho vào Phụ tùng, mặc định chọn Tổng quan điều hành với vùng nội dung trống. Chọn Nhân viên để mở danh sách; chọn Tổng quan để quay lại vùng trống.
 - Nhân viên ban đầu có 4 dòng NV001/NV003/NV005/NV007. Tìm tên không dấu hoặc điện thoại, kết hợp lọc trạng thái, kiểm tra số kết quả/tổng. Không có kết quả sẽ hiện thông báo và 0/tổng hồ sơ. Làm mới khôi phục toàn bộ danh sách.
 - Bấm Xem chi tiết hoặc chọn dòng rồi Enter; kiểm tra đủ trường và chế độ chỉ đọc. Chỉnh sửa tên/bộ phận/trạng thái rồi lưu, mở lại để đối chiếu. Bảng không sửa trực tiếp hoặc kéo cột.
 - Thêm hồ sơ: thử thiếu tên, ngày 31/02, chưa đủ 18 tuổi, điện thoại chứa chữ và kinh nghiệm âm/thập phân. Lỗi hiện cạnh trường; sửa đúng thì hết lỗi. Lưu hợp lệ sinh mã mới và chọn lại dòng nếu khớp bộ lọc.
@@ -249,16 +334,69 @@ Lệnh trên áp dụng cho khung UI hiện tại, chưa có thư viện ngoài.
 Sau khi biên dịch ứng dụng, chạy các lệnh sau tại thư mục gốc bằng JDK 17. Kiểm thử không mở giao diện hoặc kết nối database, báo lỗi bằng `AssertionError` nếu kết quả sai.
 
 ```powershell
-$testFiles = @(Get-ChildItem -LiteralPath test -Recurse -Filter '*.java' | ForEach-Object FullName)
+$testNames = @('TaiKhoanDAOTest', 'NhanVienDAOTest', 'TrangChuKyThuatDAOTest',
+    'QuanTriTaiKhoanDAOTest', 'DichVuDAOTest', 'PhuTungDAOTest', 'QuanLyCoBanDAOTest', 'KieuNguyenThuyTest')
+$testFiles = @($testNames | ForEach-Object { "test/dao/$_.java" })
 New-Item -ItemType Directory -Path bin-test -Force | Out-Null
 javac --release 17 -encoding UTF-8 -Xlint:all -cp bin -d bin-test $testFiles
 if ($LASTEXITCODE -ne 0) { throw 'Biên dịch kiểm thử thất bại.' }
 java '-Dfile.encoding=UTF-8' -cp 'bin;bin-test' dao.TaiKhoanDAOTest
 java '-Dfile.encoding=UTF-8' -cp 'bin;bin-test' dao.NhanVienDAOTest
 java '-Dfile.encoding=UTF-8' -cp 'bin;bin-test' dao.TrangChuKyThuatDAOTest
+java '-Dfile.encoding=UTF-8' -cp 'bin;bin-test' dao.QuanTriTaiKhoanDAOTest
+java '-Dfile.encoding=UTF-8' -cp 'bin;bin-test' dao.DichVuDAOTest
+java '-Dfile.encoding=UTF-8' -cp 'bin;bin-test' dao.PhuTungDAOTest
+java '-Dfile.encoding=UTF-8' -cp 'bin;bin-test' dao.QuanLyCoBanDAOTest
+java '-Dfile.encoding=UTF-8' -cp 'bin;bin-test' dao.KieuNguyenThuyTest
 ```
 
 `NhanVienDAOTest` kiểm tra tìm/lọc kết hợp, quyền của mọi thao tác, ranh giới 18 tuổi, điện thoại 10–11 chữ số, kinh nghiệm không âm, mã tự sinh, thêm/sửa, đọc lại qua DAO khác, từ chối mã trùng và sửa mã không tồn tại. Mỗi lần chạy kiểm thử dùng một tiến trình riêng nên không làm đổi dữ liệu của ứng dụng đang mở.
+
+Kiểm tra sửa lỗi và chuyển Java cơ bản ngày 02/11/2026:
+
+- **PASS:** build toàn bộ source Java 17; tám bộ kiểm tra liên quan: TaiKhoanDAOTest, NhanVienDAOTest, TrangChuKyThuatDAOTest, QuanTriTaiKhoanDAOTest (76), DichVuDAOTest (92), PhuTungDAOTest (101), QuanLyCoBanDAOTest (48), KieuNguyenThuyTest (28).
+- **PASS:** các luồng giao diện Nhân viên; Tài khoản (93), Dịch vụ (116), Phụ tùng/nhập kho (127); 108 kiểm tra bố cục chung ở ba kích thước. Đã cập nhật kiểm tra theo gọi DAO trực tiếp và tiền nguyên đồng.
+- **PASS:** skill garage-development hợp lệ; không còn các kiểu/cơ chế đã yêu cầu bỏ trong Entity/DAO/screen Quản lý. Điểm nối module khác giữ chuyển đổi dữ liệu tối thiểu.
+- Build với `-Xlint:all` còn hai cảnh báo serialVersionUID đã có trong renderer của PendingCollectionPanel (Thu ngân). Bộ HoaDonDAOTest cũ của Thu ngân còn dùng kiểu phiếu trước khi main đổi API; không tính bộ đó vào tám bộ PASS và không sửa nghiệp vụ Thu ngân trong đợt này.
+- **NOT_RUN:** thao tác thủ công bằng Eclipse và SQL Server. Dữ liệu vẫn trong bộ nhớ, chưa commit/push. Test mới/skills/output đang bị Git bỏ qua theo cấu hình cũ.
+
+Kiểm tra đồng bộ và đơn giản hóa Quản lý ngày 01/11/2026:
+
+- **PASS:** build toàn bộ source Java 17 với `-Xlint:all`; bảy bộ kiểm tra DAO, gồm 48 kiểm tra mới về sắp xếp, kết hợp bộ lọc, giữ thứ tự nguồn và cập nhật bằng bản dữ liệu đọc lại.
+- **PASS:** 108 kiểm tra bố cục chung của bốn trang tại 1920×1234, 1366×768, 960×600. Kiểm tra bảng phủ chiều rộng, thấy ít nhất một dòng đầy đủ ở cửa sổ nhỏ, làm mới/tìm/lọc/sắp xếp và nút nằm dưới tìm kiếm.
+- **PASS:** kiểm tra lại luồng Nhân viên và các bộ giao diện Tài khoản (93), Dịch vụ (116), Phụ tùng/nhập kho (127) sau refactor.
+- Ảnh/chương trình kiểm tra chung ở `output/manager-basic/`; kiểm thử bổ sung ở `test/dao/QuanLyCoBanDAOTest.java`. File mới trong `test/` và toàn bộ `output/` đang bị Git bỏ qua theo cấu hình cũ; chưa đổi `.gitignore` hoặc tự đưa vào Git.
+- **NOT_RUN:** chạy thủ công bằng Eclipse và kiểm thử SQL Server. Các kết quả lịch sử dưới đây được giữ để đối chiếu, không thay kết quả lần sửa này.
+
+Kiểm tra Phụ tùng / Nhập kho ngày 01/11/2026:
+
+- **PASS:** toàn bộ source và kiểm thử biên dịch Java 17 với `-Xlint:all`; sáu bộ kiểm thử DAO, gồm 101 kiểm tra mới về kho, quyền/phiên, nhiều dòng, ghi lặp, lỗi không lưu một phần, đối soát, số lượng lẻ, bản chụp giá và nguồn tồn chung với Kỹ thuật.
+- **PASS:** 129 kiểm tra component Swing về thêm/sửa, lọc, nhập nhiều dòng, sửa/bỏ dòng, tổng tiền, hủy/xác nhận, lịch sử/đối soát, cảnh báo dữ liệu chưa lưu, bỏ tab Phiếu nhập kho và cuộn tới dòng bảng ở cửa sổ nhỏ.
+- **PASS:** kiểm tra lại 116 trường hợp giao diện Dịch vụ và 99 trường hợp Tài khoản; xem ảnh ở 1920×1234, 1366×768, 960×600. Ảnh/chương trình tạm tại `output/parts-stock-in/`.
+- Sửa ba lời gọi constructor dịch vụ trong dữ liệu báo giá cũ sau merge; chúng đã truyền nhầm sang constructor phụ tùng, gây lỗi khởi tạo nguồn dùng chung.
+- **NOT_RUN:** thao tác thủ công trong Eclipse, lưu SQL Server và đối soát kho vật lý. Bài kiểm thử mới tại `test/dao/PhuTungDAOTest.java`; thư mục `test` đang bị `.gitignore` bỏ qua nên cần chủ dự án quyết định cách đưa kiểm thử mới lên Git.
+
+Kiểm tra Dịch vụ và bảng giá ngày 31/10/2026:
+
+- **PASS:** toàn bộ source Java 17 với `-Xlint:all`; năm bộ kiểm thử DAO, gồm 93 kiểm tra dịch vụ về tìm/lọc, thêm/sửa/xóa, quyền, phiên, mã tự sinh, dữ liệu cũ, tham chiếu báo giá và giữ giá cũ.
+- **PASS:** 116 kiểm tra component Swing: tìm/lọc kết hợp, chi tiết, thêm/sửa, tạm dừng/áp dụng lại, hủy/xóa, lỗi nhập tiền, lưu thất bại, phản hồi khi ngoài bộ lọc và cảnh báo thay đổi chưa lưu trên điều hướng/đăng xuất/đóng cửa sổ.
+- **PASS:** kiểm tra lại 99 trường hợp giao diện Tài khoản & phân quyền; xem ảnh danh sách/form ở 1920×1234, 1366×768, 960×600. Ảnh/chương trình kiểm tra tạm tại `output/service-full/`.
+- **NOT_RUN:** thao tác thủ công trong Eclipse, lưu SQL Server và tích hợp hóa đơn chưa được triển khai.
+
+Rà soát Tài khoản & phân quyền ngày 31/10/2026:
+
+- Lưu xong có phản hồi, giữ bộ lọc và chọn lại tài khoản; thông báo rõ khi kết quả nằm ngoài bộ lọc.
+- Form xem/sửa gọn hơn, không hiện ô mật khẩu không sử dụng; lý do nhập ngay trên form. Chặn sửa quyền/trạng thái của bản thân ngay trên UI.
+- Bảo mật chỉ hiện thao tác áp dụng được và các trường tương ứng. Nút xác nhận cùng thông báo luôn thấy khi cuộn. Dialog mật khẩu đặt hai ô nhập cạnh nhau, nút Hủy/Xác nhận gọn ở bên phải.
+- **PASS:** Java 17 với `-Xlint:all`; bốn bộ kiểm thử DAO, gồm 76 kiểm tra quản trị tài khoản; 99 kiểm tra component Swing và ảnh ở ba kích thước 1920×1234, 1366×768, 960×600.
+
+Kết quả Tài khoản & phân quyền ngày 30/10/2026:
+
+- **PASS:** biên dịch toàn bộ source bằng Java 17 với `-Xlint:all`; bốn bộ kiểm thử DAO.
+- **PASS:** 70 kiểm tra mới về dữ liệu liên kết, quyền, cấp tài khoản, mật khẩu, khóa/mở, đổi vai trò, thu hồi danh tính cũ, nhật ký, từ chối dữ liệu cũ và tự khóa/tự hạ quyền.
+- **PASS:** 85 kiểm tra component Swing về form, hủy xác nhận, lưu, đổi quyền, khóa/mở, đặt lại mật khẩu, cảnh báo dữ liệu chưa lưu, buộc đăng nhập lại và cuộn tới nút lưu. Render ở 1920×1234, 1366×768, 960×600 và dialog mật khẩu; ảnh/chương trình kiểm tra tạm ở `output/account-permissions/`.
+- **PASS:** kiểm tra lại toàn bộ luồng Nhân viên và khung các vai trò/điều hướng Tiếp nhận đã tích hợp. Không thêm lại Dashboard Quản lý.
+- **NOT_RUN:** thao tác thủ công trong Eclipse và lưu SQL Server; dữ liệu hiện chỉ trong bộ nhớ.
 
 Dashboard Quản lý đã được gỡ ngày 30/10/2026, gồm màn hình, biểu đồ, dialog doanh thu, DAO, entity và kiểm thử riêng. Layout, đăng nhập, Nhân viên và các màn của thành viên khác được giữ lại. Các kết quả lịch sử bên dưới có thể nhắc tới dashboard của phiên bản cũ.
 
@@ -367,9 +505,9 @@ Khi hoàn thiện, hệ thống cần đáp ứng các yêu cầu chất lượn
 
 - Giữ cấu trúc package đã thống nhất; không tạo lớp hoặc thư mục nghiệp vụ chỉ để làm đầy cấu trúc.
 - Tên lớp nghiệp vụ dùng tiếng Việt không dấu theo REPORT, ví dụ `KhachHang`, `PhieuSuaChua`, `HoaDonDAO`. Giao diện và tài liệu dùng tiếng Việt có dấu.
-- Tiền dùng `BigDecimal`; ngày và thời điểm dùng `LocalDate`, `LocalDateTime`. Không dùng `float`/`double` để tính tiền.
-- Khởi tạo và cập nhật Swing trên EDT. Truy vấn SQL và tác vụ lâu chạy nền, thường bằng `SwingWorker`, để tránh treo giao diện.
-- Kiểm tra quyền tại DAO, băm mật khẩu có salt và ghi lịch sử thao tác quan trọng khi triển khai xác thực và nghiệp vụ.
+- Phần Quản lý dùng tiền `long` nguyên đồng, lượng `double` với lít tối đa 3 số lẻ, theo yêu cầu mới nhất. Ngày/thời điểm dùng `LocalDate`, `LocalDateTime`; các module khác giữ hợp đồng dữ liệu hiện có.
+- Khởi tạo/cập nhật Swing trên EDT. Bản thử nghiệm Quản lý gọi DAO bộ nhớ trực tiếp; không có xử lý nền. Cách thực thi SQL sẽ chốt khi tích hợp database.
+- Kiểm tra quyền tại DAO và ghi lịch sử thao tác quan trọng. Bản thử nghiệm cục bộ lưu mật khẩu dạng chuỗi theo lựa chọn người dùng; chưa quyết định cách lưu của bản triển khai thật.
 - Kiểm thử cả luồng hợp lệ, dữ liệu sai, thiếu quyền, lỗi lưu và thao tác đồng thời. Ghi rõ kết quả `PASS`, `FAIL`, `NOT_RUN`; giao diện mẫu chưa được xem là chức năng nghiệp vụ hoàn thành.
 - Dùng nhánh riêng cho từng công việc, commit theo mẫu `<type>: <nội dung>` và có ít nhất một thành viên khác review trước khi merge. PR nêu yêu cầu liên quan, cách kiểm tra và giới hạn còn lại.
 - Không commit `bin/`, file `.class`, log, backup database, thông tin đăng nhập hoặc dữ liệu khách hàng thật. Giữ cấu hình Eclipse dùng chung với đường dẫn tương đối.

@@ -1,41 +1,27 @@
 package entity;
 
 import java.time.LocalDate;
-import java.util.Objects;
 
-/** Hồ sơ bất biến; kiểm tra dữ liệu nội tại, không chứa UI hoặc thông tin đăng nhập. */
+/** Lưu hồ sơ, bộ phận và trạng thái làm việc của nhân viên. */
 public final class NhanVien {
 
-    /** Thông tin định danh và liên hệ. */
     private final String maNhanVien;
     private final String hoTen;
     private final LocalDate ngaySinh;
     private final String soDienThoai;
     private final String gioiTinh;
     private final String diaChi;
-    /** Thông tin công việc, không quyết định quyền của tài khoản. */
+
     private final int soNamKinhNghiem;
     private final BoPhanNhanVien boPhan;
     private final TrangThaiNhanVien trangThai;
 
-    /**
-     * Tạo hồ sơ sau khi kiểm tra các ràng buộc của REPORT.
-     * @param maNhanVien mã duy nhất do DAO cấp
-     * @param hoTen tên bắt buộc
-     * @param ngaySinh ngày sinh, nhân viên phải đủ 18 tuổi
-     * @param soDienThoai chuỗi 10–11 chữ số
-     * @param soNamKinhNghiem số năm nguyên không âm
-     * @param gioiTinh Nam hoặc Nữ
-     * @param diaChi địa chỉ, có thể trống
-     * @param boPhan bộ phận làm việc
-     * @param trangThai tình trạng làm việc
-     * @throws IllegalArgumentException nếu dữ liệu không hợp lệ
-     * @throws NullPointerException nếu thiếu mã, bộ phận hoặc trạng thái
-     */
+    /** Tạo hồ sơ nhân viên và kiểm tra các thông tin bắt buộc. */
     public NhanVien(String maNhanVien, String hoTen, LocalDate ngaySinh, String soDienThoai,
-            int soNamKinhNghiem, String gioiTinh, String diaChi,
-            BoPhanNhanVien boPhan, TrangThaiNhanVien trangThai) {
-        this.maNhanVien = Objects.requireNonNull(maNhanVien).trim();
+        int soNamKinhNghiem, String gioiTinh, String diaChi,
+        BoPhanNhanVien boPhan, TrangThaiNhanVien trangThai) {
+        if (maNhanVien == null) { throw new IllegalArgumentException("Thiếu maNhanVien."); }
+        this.maNhanVien = maNhanVien.trim();
         if (this.maNhanVien.isEmpty()) {
             throw new IllegalArgumentException("Mã nhân viên không được rỗng.");
         }
@@ -60,83 +46,79 @@ public final class NhanVien {
         this.soNamKinhNghiem = soNamKinhNghiem;
         this.gioiTinh = gioiTinh;
         this.diaChi = diaChi == null ? "" : diaChi.trim();
-        this.boPhan = Objects.requireNonNull(boPhan, "Cần chọn bộ phận.");
-        this.trangThai = Objects.requireNonNull(trangThai, "Cần chọn trạng thái làm việc.");
+        if (boPhan == null) { throw new IllegalArgumentException("Thiếu boPhan."); }
+        this.boPhan = boPhan;
+        if (trangThai == null) { throw new IllegalArgumentException("Thiếu trangThai."); }
+        this.trangThai = trangThai;
     }
 
-    /**
-     * @param hoTen tên nhập vào
-     * @return true nếu tên không trống
-     */
+    /** Kiểm tra họ tên có nội dung sau khi bỏ khoảng trắng. */
     public static boolean hoTenHopLe(String hoTen) {
         return hoTen != null && !hoTen.isBlank();
     }
 
-    /**
-     * @param ngaySinh ngày sinh
-     * @return true nếu có ngày sinh và đủ 18 tuổi
-     */
+    /** Kiểm tra ngày sinh hợp lệ và nhân viên đã đủ 18 tuổi. */
     public static boolean ngaySinhHopLe(LocalDate ngaySinh) {
         return ngaySinh != null && !ngaySinh.isAfter(LocalDate.now().minusYears(18));
     }
 
-    /**
-     * @param soDienThoai số liên hệ
-     * @return true nếu gồm 10–11 chữ số
-     */
+    /** Kiểm tra số điện thoại có từ 10 đến 11 chữ số. */
     public static boolean dienThoaiHopLe(String soDienThoai) {
-        return soDienThoai != null && soDienThoai.trim().matches("[0-9]{10,11}");
+        if (soDienThoai == null) { return false; }
+        String so = soDienThoai.trim();
+        if (so.length() < 10 || so.length() > 11) { return false; }
+        for (int i = 0; i < so.length(); i++) {
+            if (so.charAt(i) < '0' || so.charAt(i) > '9') { return false; }
+        }
+        return true;
     }
 
-    /**
-     * @param soNam số năm kinh nghiệm
-     * @return true nếu số năm không âm
-     */
+    /** Kiểm tra số năm kinh nghiệm không âm. */
     public static boolean kinhNghiemHopLe(int soNam) {
         return soNam >= 0;
     }
 
-    /** @return mã nhân viên */
+    /** Trả về mã nhân viên. */
     public String getMaNhanVien() {
         return maNhanVien;
     }
 
-    /** @return họ và tên */
+    /** Trả về họ tên nhân viên. */
     public String getHoTen() {
         return hoTen;
     }
 
-    /** @return ngày sinh */
+    /** Trả về ngày sinh. */
     public LocalDate getNgaySinh() {
         return ngaySinh;
     }
 
-    /** @return số điện thoại gồm các chữ số */
+    /** Trả về số điện thoại. */
     public String getSoDienThoai() {
         return soDienThoai;
     }
 
-    /** @return giới tính Nam hoặc Nữ */
+    /** Trả về giới tính. */
     public String getGioiTinh() {
         return gioiTinh;
     }
 
-    /** @return địa chỉ, có thể rỗng */
+    /** Trả về địa chỉ. */
     public String getDiaChi() {
         return diaChi;
     }
 
-    /** @return số năm kinh nghiệm không âm */
+    /** Trả về số năm kinh nghiệm. */
     public int getSoNamKinhNghiem() {
         return soNamKinhNghiem;
     }
 
-    /** @return bộ phận làm việc */
+    /** Trả về bộ phận làm việc. */
     public BoPhanNhanVien getBoPhan() {
         return boPhan;
     }
 
-    /** @return tình trạng làm việc */
+    /** Trả về trạng thái làm việc. */
     public TrangThaiNhanVien getTrangThai() {
         return trangThai;
     }

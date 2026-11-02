@@ -37,6 +37,7 @@ public final class DuLieuGarageDAO {
     public BaoGiaDAO getBaoGiaDAO() { return baoGiaDAO; }
     public PhieuSuaChuaDAO getSuaChuaDAO() { return suaChuaDAO; }
     public PhuTungSuDungDAO getPhuTungDAO() { return phuTungDAO; }
+    public PhuTungDAO getKhoDAO() { return phuTungDAO.getKhoDAO(); }
     public BanGiaoXeDAO getBanGiaoDAO() { return banGiaoDAO; }
     public TrangChuTiepNhanDAO getTrangChuDAO() { return trangChuDAO; }
 }

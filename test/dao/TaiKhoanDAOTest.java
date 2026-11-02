@@ -24,20 +24,20 @@ public final class TaiKhoanDAOTest {
         checkAccount(dao, "thungan", VaiTro.THU_NGAN);
 
         // Thông tin không đúng không được tạo ra danh tính có quyền mặc định.
-        check(dao.dangNhap("khongtontai", "123".toCharArray()).isEmpty(), "Tài khoản lạ bị chấp nhận.");
-        check(dao.dangNhap("quanly", "sai".toCharArray()).isEmpty(), "Mật khẩu sai bị chấp nhận.");
-        check(dao.dangNhap("quanly", new char[0]).isEmpty(), "Mật khẩu rỗng bị chấp nhận.");
-        check(dao.dangNhap("  ", "123".toCharArray()).isEmpty(), "Tên rỗng bị chấp nhận.");
-        check(dao.dangNhap("Quanly", "123".toCharArray()).isEmpty(), "Tên đăng nhập phải phân biệt hoa thường.");
-        check(dao.dangNhap("quanly", " 123 ".toCharArray()).isEmpty(), "Không được trim mật khẩu.");
-        check(dao.dangNhap("  quanly  ", "123".toCharArray()).orElseThrow().getTenDangNhap().equals("quanly"),
+        check((dao.dangNhap("khongtontai", "123".toCharArray()) == null), "Tài khoản lạ bị chấp nhận.");
+        check((dao.dangNhap("quanly", "sai".toCharArray()) == null), "Mật khẩu sai bị chấp nhận.");
+        check((dao.dangNhap("quanly", new char[0]) == null), "Mật khẩu rỗng bị chấp nhận.");
+        check((dao.dangNhap("  ", "123".toCharArray()) == null), "Tên rỗng bị chấp nhận.");
+        check((dao.dangNhap("Quanly", "123".toCharArray()) == null), "Tên đăng nhập phải phân biệt hoa thường.");
+        check((dao.dangNhap("quanly", " 123 ".toCharArray()) == null), "Không được trim mật khẩu.");
+        check(dao.dangNhap("  quanly  ", "123".toCharArray()).getTenDangNhap().equals("quanly"),
                 "Tên đăng nhập phải bỏ khoảng trắng hai đầu.");
 
         // Đầu vào lập trình sai phải báo lỗi rõ, không che thành đăng nhập thất bại.
-        expectError(NullPointerException.class, () -> dao.dangNhap(null, "123".toCharArray()));
-        expectError(NullPointerException.class, () -> dao.dangNhap("quanly", null));
+        expectError(IllegalArgumentException.class, () -> dao.dangNhap(null, "123".toCharArray()));
+        expectError(IllegalArgumentException.class, () -> dao.dangNhap("quanly", null));
         expectError(IllegalArgumentException.class, () -> new TaiKhoan(" ", VaiTro.QUAN_LY));
-        expectError(NullPointerException.class, () -> new TaiKhoan("quanly", null));
+        expectError(IllegalArgumentException.class, () -> new TaiKhoan("quanly", null));
         System.out.println("PASS: 4 tài khoản đúng vai trò; từ chối thông tin sai; kiểm tra hợp đồng đầu vào.");
     }
 
@@ -50,7 +50,7 @@ public final class TaiKhoanDAOTest {
     private static void checkAccount(TaiKhoanDAO dao, String tenDangNhap, VaiTro vaiTro) {
         char[] matKhau = "123".toCharArray();
         try {
-            TaiKhoan taiKhoan = dao.dangNhap(tenDangNhap, matKhau).orElseThrow();
+            TaiKhoan taiKhoan = dao.dangNhap(tenDangNhap, matKhau);
             check(taiKhoan.getTenDangNhap().equals(tenDangNhap), "Trả nhầm tài khoản.");
             check(taiKhoan.getVaiTro() == vaiTro, "Trả nhầm vai trò của " + tenDangNhap);
             check(Arrays.equals(matKhau, "123".toCharArray()), "DAO không được sửa mảng của bên gọi.");

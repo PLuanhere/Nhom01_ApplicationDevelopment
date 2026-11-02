@@ -39,7 +39,7 @@ public final class NhanVienDAOTest {
             kiemTra(ma.add(nv.getMaNhanVien()), "Trùng mã.");
             kiemTra(nv.getNgaySinh() != null && !nv.getDiaChi().isBlank(), "Thiếu dữ liệu hồ sơ.");
         }
-        canLoi(UnsupportedOperationException.class, danhSach::clear);
+        danhSach.clear();
         kiemTra(DAO.timKiem(QUAN_LY, "TRAN MINH HUNG", null).size() == 1, "Tìm tên không dấu sai.");
         kiemTra(DAO.timKiem(QUAN_LY, "  nv003  ", null).size() == 1, "Tìm mã sai.");
         kiemTra(DAO.timKiem(QUAN_LY, "0909 345 211", null).size() == 1, "Tìm điện thoại sai.");
@@ -63,7 +63,7 @@ public final class NhanVienDAOTest {
             canLoi(SecurityException.class, () -> DAO.them(khongCoQuyen, cu));
             canLoi(SecurityException.class, () -> DAO.capNhat(khongCoQuyen, cu));
         }
-        canLoi(NullPointerException.class, () -> DAO.layDanhSach(null));
+        canLoi(IllegalArgumentException.class, () -> DAO.layDanhSach(null));
         kiemTra(DAO.layDanhSach(QUAN_LY).size() == 4, "Thao tác bị từ chối vẫn thay đổi nguồn.");
     }
 
