@@ -1,16 +1,17 @@
 package ui.component;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.Color;
+
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -24,19 +25,16 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
 public final class SuaChuaUi {
-	public static final Color NGUY_HIEM = new Color(0xB3261E);
+    public static final Color NGUY_HIEM = new Color(0xB3261E);
     public static final String QUY_TAC = "Chỉ xóa lệnh chưa bắt đầu và chưa có phụ tùng, kết quả hoặc hóa đơn. "
             + "Lệnh đang làm/hoàn thành cần ghi nhận điều chỉnh, không xóa mất lịch sử.";
 
+    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     private SuaChuaUi() {
     }
 
-    /**
-     * @param chu nội dung
-     * @param dam có in đậm
-     * @return nhãn theo theme chung
-     */
     // Tạo nhãn dùng chung với font và màu chữ của leader.
+    /** Tạo nhan cho giao diện. */
     public static JLabel taoNhan(String chu, boolean dam) {
         JLabel lblChu = new JLabel(chu);
         lblChu.setFont(dam ? UiTheme.BRAND_FONT : UiTheme.SHELL_FONT);
@@ -45,11 +43,8 @@ public final class SuaChuaUi {
         return lblChu;
     }
 
-    /**
-     * @param chu nội dung
-     * @return vùng văn bản chỉ đọc, có xuống dòng
-     */
     // Hiển thị văn bản dài mà không làm mất nội dung khi thu nhỏ cửa sổ.
+    /** Tạo van ban cho giao diện. */
     public static JTextArea taoVanBan(String chu) {
         JTextArea txaChu = new JTextArea(chu);
         txaChu.setFont(UiTheme.SHELL_FONT);
@@ -61,19 +56,12 @@ public final class SuaChuaUi {
         return txaChu;
     }
 
-    /**
-     * @param chu nhãn nút
-     * @param lenh mã thao tác
-     * @param chinh nút chính
-     * @param xuLy đối tượng xử lý sự kiện
-     * @return nút đã định dạng
-     */
     // Tạo nút theo theme và dùng viền đỏ, chữ đỏ cho thao tác xóa hoặc bỏ thay đổi.
+    /** Tạo nut cho giao diện. */
     public static JButton taoNut(String chu, String lenh, boolean chinh, ActionListener xuLy) {
         JButton btnNut = new JButton(chu);
         UiTheme.styleButton(btnNut, chinh);
-        if ("XOA".equals(lenh) || "BO_THAY_DOI".equals(lenh) || "Xóa".equals(chu)
-                || "Bỏ thay đổi".equals(chu)) {
+        if ("XOA".equals(lenh) || "BO_THAY_DOI".equals(lenh) || "Xóa".equals(chu) || "Bỏ thay đổi".equals(chu)) {
             btnNut.setForeground(NGUY_HIEM);
             btnNut.setBackground(UiTheme.SURFACE);
             btnNut.setBorder(BorderFactory.createLineBorder(NGUY_HIEM));
@@ -85,11 +73,8 @@ public final class SuaChuaUi {
         return btnNut;
     }
 
-    /**
-     * @param tieuDe tiêu đề thẻ
-     * @return thẻ nền trắng có viền
-     */
     // Tạo thẻ để nhóm các thông tin hoặc trường nhập liên quan.
+    /** Tạo the cho giao diện. */
     public static JPanel taoThe(String tieuDe) {
         JPanel pnlThe = new JPanel(new BorderLayout(8, 8));
         pnlThe.setBackground(UiTheme.SURFACE);
@@ -99,12 +84,8 @@ public final class SuaChuaUi {
         return pnlThe;
     }
 
-    /**
-     * @param chu nhãn trường
-     * @param truong thành phần nhập hoặc hiển thị
-     * @return panel chứa trường
-     */
     // Ghép nhãn ở trên và trường nhập ở dưới thành một ô của biểu mẫu.
+    /** Tạo truong cho giao diện. */
     public static JPanel taoTruong(String chu, JComponent truong) {
         JPanel pnlTruong = new JPanel(new BorderLayout(0, 4));
         pnlTruong.setOpaque(false);
@@ -131,11 +112,8 @@ public final class SuaChuaUi {
         return pnlTruong;
     }
 
-    /**
-     * @param cot tên các cột
-     * @return model bảng chỉ đọc
-     */
     // Tạo DefaultTableModel chỉ đọc cho các bảng trong nhánh sửa chữa.
+    /** Tạo model cho giao diện. */
     public static DefaultTableModel taoModel(String[] cot) {
         return new DefaultTableModel(cot, 0) {
             private static final long serialVersionUID = 1L;
@@ -149,23 +127,23 @@ public final class SuaChuaUi {
         };
     }
 
-    /**
-     * @param modelBang model chứa dữ liệu
-     * @return bảng đã định dạng
-     */
     // Định dạng bảng theo thiết kế và giữ chế độ chọn một dòng.
+    /** Tạo bang cho giao diện. */
     public static JTable taoBang(DefaultTableModel modelBang) {
         JTable tblBang = new JTable(modelBang);
+        tblBang.getTableHeader().setReorderingAllowed(false);
+        tblBang.getTableHeader().setResizingAllowed(false);
         tblBang.setFont(UiTheme.SHELL_FONT);
         tblBang.setForeground(UiTheme.TEXT);
         tblBang.setBackground(UiTheme.SURFACE);
         tblBang.setRowHeight(30);
         tblBang.setGridColor(UiTheme.BORDER);
         tblBang.setShowGrid(true);
-        tblBang.setSelectionBackground(new java.awt.Color(0xDCEAFE));
+        tblBang.setSelectionBackground(new Color(0xDCEAFE));
         tblBang.setSelectionForeground(UiTheme.TEXT);
         tblBang.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tblBang.getTableHeader().setReorderingAllowed(false);
+        tblBang.getTableHeader().setResizingAllowed(false);
         tblBang.getTableHeader().setPreferredSize(new Dimension(0, 30));
         DefaultTableCellRenderer rendererBang = new DefaultTableCellRenderer() {
             private static final long serialVersionUID = 1L;
@@ -173,13 +151,13 @@ public final class SuaChuaUi {
             /** {@inheritDoc} */
             // Thêm lề ô và dùng kiểu tiêu đề hoặc dữ liệu phù hợp.
             @Override
-            public Component getTableCellRendererComponent(JTable tblBangDuLieu, Object giaTri,
-                    boolean chon, boolean coTieuDiem, int dong, int cot) {
-                JLabel lblO = (JLabel) super.getTableCellRendererComponent(
-                        tblBangDuLieu, giaTri, chon, coTieuDiem, dong, cot);
+            public Component getTableCellRendererComponent(JTable tblBangDuLieu, Object giaTri, boolean chon,
+                    boolean coTieuDiem, int dong, int cot) {
+                JLabel lblO = (JLabel) super.getTableCellRendererComponent(tblBangDuLieu, giaTri, chon, coTieuDiem,
+                        dong, cot);
                 lblO.setFont(dong < 0 ? UiTheme.BRAND_FONT.deriveFont(13.0f) : UiTheme.SHELL_FONT);
-                lblO.setBackground(dong < 0 ? UiTheme.WINDOW
-                        : chon ? tblBangDuLieu.getSelectionBackground() : UiTheme.SURFACE);
+                lblO.setBackground(
+                        dong < 0 ? UiTheme.WINDOW : chon ? tblBangDuLieu.getSelectionBackground() : UiTheme.SURFACE);
                 lblO.setForeground(UiTheme.TEXT);
                 lblO.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
                 return lblO;
@@ -190,11 +168,8 @@ public final class SuaChuaUi {
         return tblBang;
     }
 
-    /**
-     * @param thanhPhan nội dung
-     * @return vùng cuộn có viền theo theme
-     */
     // Bọc nội dung dài hoặc bảng trong JScrollPane để truy cập được khi cửa sổ nhỏ.
+    /** Tạo vung cuon cho giao diện. */
     public static JScrollPane taoVungCuon(Component thanhPhan) {
         JScrollPane scrCuon = new JScrollPane(thanhPhan);
         scrCuon.setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
@@ -203,18 +178,11 @@ public final class SuaChuaUi {
         return scrCuon;
     }
 
-    /**
-     * @param winChu khung cha
-     * @param tieuDe tiêu đề
-     * @param chu thông báo
-     * @param dongY nhãn xác nhận
-     * @param huy nhãn hủy, null nếu chỉ thông báo
-     * @return có chọn nút xác nhận
-     */
     // Hiển thị thông báo hoặc xác nhận bằng JDialog theo theme dùng chung.
+    /** Thực hiện xac nhan cho thành phần hiện tại. */
     public static boolean xacNhan(JFrame winChu, String tieuDe, String chu, String dongY, String huy) {
         final JDialog winHoi = new JDialog(winChu, tieuDe, true);
-        final boolean[] ketQua = {false};
+        final boolean[] ketQua = { false };
         winHoi.setUndecorated(true);
         winHoi.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         winHoi.getRootPane().setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
@@ -249,11 +217,8 @@ public final class SuaChuaUi {
         return ketQua[0];
     }
 
-    /**
-     * @param taiKhoan tài khoản kỹ thuật
-     * @return tên hiển thị của dữ liệu mẫu
-     */
     // Đổi tài khoản kỹ thuật mẫu thành tên người để hiển thị trên giao diện.
+    /** Đọc ten ky thuat từ dữ liệu hiện tại. */
     public static String layTenKyThuat(String taiKhoan) {
         if ("kythuat".equals(taiKhoan)) {
             return "Chung Ngô Minh Hoàng";

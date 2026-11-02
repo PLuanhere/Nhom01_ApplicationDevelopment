@@ -9,8 +9,10 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.ActionListener;
+
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -19,6 +21,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -26,6 +29,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.plaf.basic.BasicButtonUI;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.plaf.basic.BasicTableHeaderUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -43,26 +47,30 @@ public final class GiaoDienKyThuat {
     public static final Color VANG_NHAT = new Color(0xFFF7E5);
     public static final Font CHU_THUONG = new Font("Segoe UI", Font.PLAIN, 13);
     public static final Font CHU_DAM = new Font("Segoe UI", Font.BOLD, 14);
-    public static final Font CHU_NHO = CHU_THUONG.deriveFont(11.0f);
-    public static final Font TIEU_DE = CHU_DAM.deriveFont(24.0f);
+    public static final Font CHU_NHO = GiaoDienKyThuat.CHU_THUONG.deriveFont(11.0f);
+    public static final Font TIEU_DE = GiaoDienKyThuat.CHU_DAM.deriveFont(24.0f);
 
+    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     private GiaoDienKyThuat() {
     }
 
     // Tạo nhãn theo font và màu chữ của giao diện kỹ thuật.
+    /** Tạo nhan cho giao diện. */
     public static JLabel taoNhan(String noiDung, boolean dam) {
         JLabel lblNhan = new JLabel(noiDung);
-        lblNhan.setFont(dam ? CHU_DAM : CHU_THUONG);
-        lblNhan.setForeground(CHU);
+        lblNhan.setFont(dam ? GiaoDienKyThuat.CHU_DAM : GiaoDienKyThuat.CHU_THUONG);
+        lblNhan.setForeground(GiaoDienKyThuat.CHU);
         return lblNhan;
     }
 
     // Tạo nút có nền, viền và màu chữ theo thiết kế.
+    /** Tạo nut cho giao diện. */
     public static JButton taoNut(String noiDung, String lenh, boolean chinh, ActionListener xuLy) {
         JButton btnNut = new JButton(noiDung) {
             private static final long serialVersionUID = 1L;
 
             // Vẽ nền bo góc và viền của nút theo trạng thái hiện tại.
+            /** Vẽ nội dung của thành phần theo trạng thái hiện tại. */
             @Override
             protected void paintComponent(Graphics doHoa) {
                 Graphics2D ve = (Graphics2D) doHoa.create();
@@ -70,7 +78,7 @@ public final class GiaoDienKyThuat {
                 ve.setColor(isEnabled() ? getBackground() : new Color(0xEBF0F5));
                 ve.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
                 if (!chinh && !Boolean.TRUE.equals(getClientProperty("khongVien"))) {
-                    ve.setColor(VIEN);
+                    ve.setColor(GiaoDienKyThuat.VIEN);
                     ve.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
                 }
                 ve.dispose();
@@ -78,9 +86,9 @@ public final class GiaoDienKyThuat {
             }
         };
         btnNut.setUI(new BasicButtonUI());
-        btnNut.setFont(chinh ? CHU_DAM.deriveFont(13.0f) : CHU_THUONG);
-        btnNut.setForeground(chinh ? Color.WHITE : CHU);
-        btnNut.setBackground(chinh ? XANH : Color.WHITE);
+        btnNut.setFont(chinh ? GiaoDienKyThuat.CHU_DAM.deriveFont(13.0f) : GiaoDienKyThuat.CHU_THUONG);
+        btnNut.setForeground(chinh ? Color.WHITE : GiaoDienKyThuat.CHU);
+        btnNut.setBackground(chinh ? GiaoDienKyThuat.XANH : Color.WHITE);
         btnNut.setContentAreaFilled(false);
         btnNut.setOpaque(false);
         btnNut.setFocusPainted(false);
@@ -94,24 +102,27 @@ public final class GiaoDienKyThuat {
     }
 
     // Tạo thẻ trắng bo góc với chiều cao vừa nội dung.
+    /** Tạo mat phang cho giao diện. */
     public static JPanel taoMatPhang() {
         JPanel pnlMat = new JPanel(new BorderLayout(0, 12)) {
             private static final long serialVersionUID = 1L;
 
             // Vẽ nền trắng và đường viền của thẻ.
+            /** Vẽ nội dung của thành phần theo trạng thái hiện tại. */
             @Override
             protected void paintComponent(Graphics doHoa) {
                 Graphics2D ve = (Graphics2D) doHoa.create();
                 ve.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 ve.setColor(getBackground());
                 ve.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
-                ve.setColor(VIEN);
+                ve.setColor(GiaoDienKyThuat.VIEN);
                 ve.setStroke(new BasicStroke(1));
                 ve.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
                 ve.dispose();
             }
 
             // Giữ chiều cao của thẻ theo nội dung khi xếp trong BoxLayout.
+            /** Trả về maximum size. */
             @Override
             public Dimension getMaximumSize() {
                 return new Dimension(Integer.MAX_VALUE, getPreferredSize().height);
@@ -124,15 +135,16 @@ public final class GiaoDienKyThuat {
     }
 
     // Tạo thẻ gồm tiêu đề, mô tả và vùng nội dung.
+    /** Tạo the cho giao diện. */
     public static JPanel taoThe(String tieuDe, String moTa, JComponent noiDung) {
-        JPanel pnlThe = taoMatPhang();
-        JPanel pnlDau = taoCot();
-        pnlDau.add(taoNhan(tieuDe, true));
+        JPanel pnlThe = GiaoDienKyThuat.taoMatPhang();
+        JPanel pnlDau = GiaoDienKyThuat.taoCot();
+        pnlDau.add(GiaoDienKyThuat.taoNhan(tieuDe, true));
         if (moTa != null && !moTa.isBlank()) {
             pnlDau.add(Box.createVerticalStrut(5));
-            JLabel lblMoTa = taoNhan(moTa, false);
-            lblMoTa.setFont(CHU_NHO);
-            lblMoTa.setForeground(CHU_PHU);
+            JLabel lblMoTa = GiaoDienKyThuat.taoNhan(moTa, false);
+            lblMoTa.setFont(GiaoDienKyThuat.CHU_NHO);
+            lblMoTa.setForeground(GiaoDienKyThuat.CHU_PHU);
             pnlDau.add(lblMoTa);
         }
         pnlThe.add(pnlDau, BorderLayout.NORTH);
@@ -141,11 +153,13 @@ public final class GiaoDienKyThuat {
     }
 
     // Tạo cột dọc và căn trái thống nhất các thành phần bên trong.
+    /** Tạo cot cho giao diện. */
     public static JPanel taoCot() {
         JPanel pnlCot = new JPanel() {
             private static final long serialVersionUID = 1L;
 
             // Căn trái thành phần trước khi thêm để tránh lệch cột trong BoxLayout.
+            /** Thực hiện add impl cho thành phần hiện tại. */
             @Override
             protected void addImpl(Component thanhPhan, Object rangBuoc, int viTri) {
                 if (thanhPhan instanceof JComponent) {
@@ -161,6 +175,7 @@ public final class GiaoDienKyThuat {
     }
 
     // Thêm thành phần vào cột với khoảng cách giữa các nhóm nội dung.
+    /** Thực hiện them thanh phan cho thành phần hiện tại. */
     public static void themThanhPhan(JPanel pnlCot, JComponent thanhPhan) {
         thanhPhan.setAlignmentX(Component.LEFT_ALIGNMENT);
         pnlCot.add(thanhPhan);
@@ -168,29 +183,30 @@ public final class GiaoDienKyThuat {
     }
 
     // Tạo ô nhập hoặc ô chỉ đọc cao 42 px.
+    /** Tạo onhap cho giao diện. */
     public static JTextField taoONhap(String noiDung, boolean chiDoc) {
         JTextField txtNhap = new JTextField(noiDung) {
             private static final long serialVersionUID = 1L;
 
             // Hiển thị gợi ý khi ô trống mà không đưa gợi ý vào dữ liệu.
+            /** Vẽ nội dung của thành phần theo trạng thái hiện tại. */
             @Override
             protected void paintComponent(Graphics doHoa) {
                 super.paintComponent(doHoa);
                 Object goiY = getClientProperty("goiY");
                 if (getText().isEmpty() && goiY != null) {
-                    doHoa.setColor(CHU_PHU);
+                    doHoa.setColor(GiaoDienKyThuat.CHU_PHU);
                     doHoa.setFont(getFont());
-                    int y = (getHeight() - doHoa.getFontMetrics().getHeight()) / 2
-                            + doHoa.getFontMetrics().getAscent();
+                    int y = (getHeight() - doHoa.getFontMetrics().getHeight()) / 2 + doHoa.getFontMetrics().getAscent();
                     doHoa.drawString(goiY.toString(), getInsets().left + 2, y);
                 }
             }
         };
         txtNhap.setEditable(!chiDoc);
-        txtNhap.setFont(CHU_THUONG);
-        txtNhap.setForeground(chiDoc ? CHU_PHU : CHU);
-        txtNhap.setBackground(chiDoc ? NHAT : Color.WHITE);
-        txtNhap.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(VIEN),
+        txtNhap.setFont(GiaoDienKyThuat.CHU_THUONG);
+        txtNhap.setForeground(chiDoc ? GiaoDienKyThuat.CHU_PHU : GiaoDienKyThuat.CHU);
+        txtNhap.setBackground(chiDoc ? GiaoDienKyThuat.NHAT : Color.WHITE);
+        txtNhap.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(GiaoDienKyThuat.VIEN),
                 BorderFactory.createEmptyBorder(6, 10, 6, 10)));
         txtNhap.setPreferredSize(new Dimension(0, 42));
         txtNhap.setMinimumSize(new Dimension(0, 42));
@@ -198,19 +214,22 @@ public final class GiaoDienKyThuat {
     }
 
     // Định dạng combo và danh sách lựa chọn theo màu, font của thiết kế.
+    /** Thực hiện dinh dang combo cho thành phần hiện tại. */
     public static void dinhDangCombo(JComboBox<?> cmbChon) {
-        cmbChon.setUI(new javax.swing.plaf.basic.BasicComboBoxUI() {
+        cmbChon.setUI(new BasicComboBoxUI() {
             // Vẽ nền trắng cho giá trị hiện tại của combo.
+            /** Vẽ nội dung của thành phần theo trạng thái hiện tại. */
             @Override
-            public void paintCurrentValueBackground(Graphics doHoa, java.awt.Rectangle vung, boolean tieuDiem) {
+            public void paintCurrentValueBackground(Graphics doHoa, Rectangle vung, boolean tieuDiem) {
                 doHoa.setColor(Color.WHITE);
                 doHoa.fillRect(vung.x, vung.y, vung.width, vung.height);
             }
 
             // Tạo nút mũi tên cùng nền với ô chọn.
+            /** Tạo arrow button cho giao diện. */
             @Override
             protected JButton createArrowButton() {
-                JButton btnMo = taoNut("▾", "", false, null);
+                JButton btnMo = GiaoDienKyThuat.taoNut("▾", "", false, null);
                 btnMo.setFont(new Font(Font.DIALOG, Font.PLAIN, 11));
                 btnMo.putClientProperty("khongVien", true);
                 btnMo.setBorder(BorderFactory.createEmptyBorder());
@@ -218,20 +237,21 @@ public final class GiaoDienKyThuat {
                 return btnMo;
             }
         });
-        cmbChon.setFont(CHU_THUONG);
-        cmbChon.setBorder(BorderFactory.createLineBorder(VIEN));
+        cmbChon.setFont(GiaoDienKyThuat.CHU_THUONG);
+        cmbChon.setBorder(BorderFactory.createLineBorder(GiaoDienKyThuat.VIEN));
         cmbChon.setPreferredSize(new Dimension(0, 42));
         cmbChon.setMinimumSize(new Dimension(0, 42));
         cmbChon.setRenderer(new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
 
             // Vẽ từng lựa chọn với font và màu nền thống nhất.
+            /** Trả về list cell renderer component. */
             @Override
-            public Component getListCellRendererComponent(javax.swing.JList<?> danhSach, Object giaTri,
-                    int viTri, boolean duocChon, boolean tieuDiem) {
+            public Component getListCellRendererComponent(JList<?> danhSach, Object giaTri, int viTri, boolean duocChon,
+                    boolean tieuDiem) {
                 super.getListCellRendererComponent(danhSach, giaTri, viTri, duocChon, tieuDiem);
-                setFont(CHU_THUONG);
-                setForeground(CHU);
+                setFont(GiaoDienKyThuat.CHU_THUONG);
+                setForeground(GiaoDienKyThuat.CHU);
                 setBackground(duocChon && viTri >= 0 ? new Color(0xEEF4FA) : Color.WHITE);
                 setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
                 return this;
@@ -240,12 +260,13 @@ public final class GiaoDienKyThuat {
     }
 
     // Đặt nhãn mô tả phía trên giá trị hoặc ô nhập.
+    /** Tạo truong cho giao diện. */
     public static JPanel taoTruong(String ten, JComponent giaTri) {
         JPanel pnlTruong = new JPanel(new BorderLayout(0, 6));
         pnlTruong.setOpaque(false);
-        JLabel lblTen = taoNhan(ten, false);
-        lblTen.setFont(CHU_THUONG.deriveFont(12.0f));
-        lblTen.setForeground(CHU_PHU);
+        JLabel lblTen = GiaoDienKyThuat.taoNhan(ten, false);
+        lblTen.setFont(GiaoDienKyThuat.CHU_THUONG.deriveFont(12.0f));
+        lblTen.setForeground(GiaoDienKyThuat.CHU_PHU);
         lblTen.setLabelFor(giaTri);
         pnlTruong.add(lblTen, BorderLayout.NORTH);
         pnlTruong.add(giaTri, BorderLayout.CENTER);
@@ -253,25 +274,29 @@ public final class GiaoDienKyThuat {
     }
 
     // Tạo thông báo tự xuống dòng với nền thông tin hoặc cảnh báo.
+    /** Tạo thong bao cho giao diện. */
     public static JPanel taoThongBao(String noiDung, boolean canhBao) {
         JPanel pnlTin = new JPanel(new BorderLayout());
-        pnlTin.setBackground(canhBao ? VANG_NHAT : NHAT);
+        pnlTin.setBackground(canhBao ? GiaoDienKyThuat.VANG_NHAT : GiaoDienKyThuat.NHAT);
         pnlTin.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         JTextArea txaTin = PhuTungUi.taoMoTa(noiDung);
-        txaTin.setFont(CHU_NHO);
-        txaTin.setForeground(CHU_PHU);
+        txaTin.setFont(GiaoDienKyThuat.CHU_NHO);
+        txaTin.setForeground(GiaoDienKyThuat.CHU_PHU);
         pnlTin.add(txaTin, BorderLayout.CENTER);
         return pnlTin;
     }
 
     // Tạo bảng với tiêu đề, chiều cao dòng và đường phân cách theo thiết kế.
+    /** Tạo bang cho giao diện. */
     public static JTable taoBang(DefaultTableModel model) {
         JTable tblBang = new JTable(model);
-        tblBang.setFont(CHU_THUONG);
-        tblBang.setForeground(CHU);
+        tblBang.getTableHeader().setReorderingAllowed(false);
+        tblBang.getTableHeader().setResizingAllowed(false);
+        tblBang.setFont(GiaoDienKyThuat.CHU_THUONG);
+        tblBang.setForeground(GiaoDienKyThuat.CHU);
         tblBang.setBackground(Color.WHITE);
         tblBang.setSelectionBackground(new Color(0xEEF4FA));
-        tblBang.setSelectionForeground(CHU);
+        tblBang.setSelectionForeground(GiaoDienKyThuat.CHU);
         tblBang.setRowHeight(52);
         tblBang.setShowVerticalLines(false);
         tblBang.setShowHorizontalLines(true);
@@ -280,29 +305,32 @@ public final class GiaoDienKyThuat {
         tblBang.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tblBang.getTableHeader().setUI(new BasicTableHeaderUI());
         tblBang.getTableHeader().setReorderingAllowed(false);
+        tblBang.getTableHeader().setResizingAllowed(false);
         tblBang.getTableHeader().setPreferredSize(new Dimension(0, 39));
         DefaultTableCellRenderer boVe = new DefaultTableCellRenderer() {
             private static final long serialVersionUID = 1L;
 
             // Vẽ nội dung ô, liên kết thao tác và nhãn trạng thái của bảng.
+            /** Trả về table cell renderer component. */
             @Override
-            public Component getTableCellRendererComponent(JTable bang, Object giaTri,
-                    boolean chon, boolean tieuDiem, int dong, int cot) {
+            public Component getTableCellRendererComponent(JTable bang, Object giaTri, boolean chon, boolean tieuDiem,
+                    int dong, int cot) {
                 super.getTableCellRendererComponent(bang, giaTri, chon, false, dong, cot);
-                setFont(dong < 0 ? CHU_DAM.deriveFont(12.0f) : CHU_THUONG);
-                setBackground(dong < 0 ? NHAT : chon ? new Color(0xEEF4FA) : Color.WHITE);
-                setForeground("Xem chi tiết".equals(String.valueOf(giaTri)) ? XANH : CHU);
+                setFont(dong < 0 ? GiaoDienKyThuat.CHU_DAM.deriveFont(12.0f) : GiaoDienKyThuat.CHU_THUONG);
+                setBackground(dong < 0 ? GiaoDienKyThuat.NHAT : chon ? new Color(0xEEF4FA) : Color.WHITE);
+                setForeground(
+                        "Xem chi tiết".equals(String.valueOf(giaTri)) ? GiaoDienKyThuat.XANH : GiaoDienKyThuat.CHU);
                 setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
                 setToolTipText(giaTri == null ? null : giaTri.toString());
                 if (dong >= 0) {
                     String noiDung = String.valueOf(giaTri);
-                    if (noiDung.equals("Đang sửa") || noiDung.equals("Chờ sửa chữa")
-                            || noiDung.equals("Chờ phụ tùng") || noiDung.equals("Hoàn thành")
-                            || noiDung.equals("Đã hoàn tất") || noiDung.equals("Chưa xác nhận")) {
-                        return trangThai(noiDung, chon);
+                    if (noiDung.equals("Đang sửa") || noiDung.equals("Chờ sửa chữa") || noiDung.equals("Chờ phụ tùng")
+                            || noiDung.equals("Hoàn thành") || noiDung.equals("Đã hoàn tất")
+                            || noiDung.equals("Chưa xác nhận")) {
+                        return GiaoDienKyThuat.trangThai(noiDung, chon);
                     }
                     if (cot == 0) {
-                        setFont(CHU_DAM.deriveFont(12.0f));
+                        setFont(GiaoDienKyThuat.CHU_DAM.deriveFont(12.0f));
                     }
                 }
                 return this;
@@ -314,15 +342,17 @@ public final class GiaoDienKyThuat {
     }
 
     // Tạo nhãn màu thể hiện trạng thái công việc trong bảng.
+    /** Thực hiện trang thai cho thành phần hiện tại. */
     private static JPanel trangThai(String noiDung, boolean duocChon) {
         Color nen = noiDung.contains("Hoàn") || noiDung.contains("hoàn") ? new Color(0xE8F7EF)
                 : noiDung.equals("Chờ phụ tùng") ? new Color(0xFFF3DD) : new Color(0xEAF3FF);
         Color chu = noiDung.contains("Hoàn") || noiDung.contains("hoàn") ? new Color(0x09734A)
-                : noiDung.equals("Chờ phụ tùng") ? new Color(0x9B6307) : XANH;
+                : noiDung.equals("Chờ phụ tùng") ? new Color(0x9B6307) : GiaoDienKyThuat.XANH;
         JLabel lblTrangThai = new JLabel(noiDung) {
             private static final long serialVersionUID = 1L;
 
             // Vẽ nền bo góc của nhãn trạng thái.
+            /** Vẽ nội dung của thành phần theo trạng thái hiện tại. */
             @Override
             protected void paintComponent(Graphics doHoa) {
                 Graphics2D ve = (Graphics2D) doHoa.create();
@@ -333,7 +363,7 @@ public final class GiaoDienKyThuat {
                 super.paintComponent(doHoa);
             }
         };
-        lblTrangThai.setFont(CHU_DAM.deriveFont(11.0f));
+        lblTrangThai.setFont(GiaoDienKyThuat.CHU_DAM.deriveFont(11.0f));
         lblTrangThai.setForeground(chu);
         lblTrangThai.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         JPanel pnlTrangThai = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 13));
@@ -343,6 +373,7 @@ public final class GiaoDienKyThuat {
     }
 
     // Bọc bảng trong vùng cuộn với chiều cao phù hợp số dòng dữ liệu.
+    /** Thực hiện boc bang cho thành phần hiện tại. */
     public static JScrollPane bocBang(JTable tblBang) {
         JScrollPane scrBang = new JScrollPane(tblBang);
         scrBang.setColumnHeaderView(tblBang.getTableHeader());
@@ -354,11 +385,13 @@ public final class GiaoDienKyThuat {
     }
 
     // Tạo model chỉ đọc cho các danh sách dữ liệu.
+    /** Tạo model cho giao diện. */
     public static DefaultTableModel taoModel(String... cot) {
         return new DefaultTableModel(cot, 0) {
             private static final long serialVersionUID = 1L;
 
             // Chặn chỉnh sửa trực tiếp các ô của danh sách.
+            /** Cho biết cell editable. */
             @Override
             public boolean isCellEditable(int dong, int cotChon) {
                 return false;
@@ -367,6 +400,7 @@ public final class GiaoDienKyThuat {
     }
 
     // Tạo hàng chứa nút hành động chính căn phải ở cuối thẻ.
+    /** Tạo hang nut cho giao diện. */
     public static JPanel taoHangNut(JButton btnNut) {
         JPanel pnlNut = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         pnlNut.setOpaque(false);

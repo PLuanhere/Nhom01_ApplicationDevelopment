@@ -40,18 +40,14 @@ public final class LoginBackgroundPanel extends JPanel implements Scrollable {
         int rong = (int) Math.ceil(anhGarage.getWidth() * tyLe);
         int cao = (int) Math.ceil(anhGarage.getHeight() * tyLe);
         g.drawImage(anhGarage, (getWidth() - rong) / 2, (getHeight() - cao) / 2, rong, cao, null);
-        g.setPaint(new LinearGradientPaint(0, 0, Math.max(1, getWidth()), 0,
-                new float[] {0, 0.38f, 1}, new Color[] {
-                    new Color(7, 20, 34, 163), new Color(7, 20, 34, 92), new Color(7, 20, 34, 128)}));
+        g.setPaint(new LinearGradientPaint(0, 0, Math.max(1, getWidth()), 0, new float[] { 0, 0.38f, 1 },
+                new Color[] { new Color(7, 20, 34, 163), new Color(7, 20, 34, 92), new Color(7, 20, 34, 128) }));
         g.fillRect(0, 0, getWidth(), getHeight());
         veChuTrangTri(g);
         g.dispose();
     }
 
-    /**
-     * Vẽ chữ trang trí trên ảnh, tách khỏi các điều khiển nhập liệu.
-     * @param g ngữ cảnh vẽ đã bật làm mịn
-     */
+    /** Vẽ chữ trang trí trên ảnh, tách khỏi các điều khiển nhập liệu. */
     private void veChuTrangTri(Graphics2D g) {
         g.setColor(Color.WHITE);
         g.setFont(UiTheme.APP_BOLD_FONT.deriveFont(16.0f));

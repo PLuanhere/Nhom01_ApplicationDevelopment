@@ -1,37 +1,46 @@
 package ui.component;
 
+import entity.nhansu.TaiKhoan;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.util.Objects;
 
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
-import entity.TaiKhoan;
-
 /** Danh tính dùng ở header và cuối sidebar; không thay đổi quyền của phiên đăng nhập. */
 public final class UserInfoPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * Ghép avatar vai trò, tên đăng nhập và vai trò của phiên hiện tại.
-     * @param taiKhoan tài khoản đã xác thực, không dùng tên nhân viên minh họa trong Figma
-     * @param dark true khi đặt trên sidebar tối
-     */
+    /** Ghép avatar vai trò, tên đăng nhập và vai trò của phiên hiện tại. */
     public UserInfoPanel(TaiKhoan taiKhoan, boolean dark) {
         super(new BorderLayout(8, 0));
-        Objects.requireNonNull(taiKhoan, "Cần tài khoản đã đăng nhập.");
+        if (taiKhoan == null) {
+            throw new NullPointerException("Cần tài khoản đã đăng nhập.");
+        }
+
         setOpaque(false);
-        String kyHieu = switch (taiKhoan.getVaiTro()) {
-            case QUAN_LY -> "QL";
-            case NHAN_VIEN_TIEP_NHAN -> "TN";
-            case NHAN_VIEN_KY_THUAT -> "KT";
-            case THU_NGAN -> "TG";
-        };
+        String kyHieu;
+        switch (taiKhoan.getVaiTro()) {
+        case QUAN_LY:
+            kyHieu = "QL";
+            break;
+        case NHAN_VIEN_TIEP_NHAN:
+            kyHieu = "TN";
+            break;
+        case NHAN_VIEN_KY_THUAT:
+            kyHieu = "KT";
+            break;
+        case THU_NGAN:
+            kyHieu = "TG";
+            break;
+        default:
+            throw new IllegalArgumentException("Lựa chọn không hợp lệ.");
+        }
         // Avatar chỉ trình bày vai trò; quyền vẫn lấy từ tài khoản.
         JPanel pnlAvatar = UiTheme.roundedPanel(new BorderLayout(), new Color(0xB8CAD9), 16);
         pnlAvatar.setPreferredSize(new Dimension(32, 32));

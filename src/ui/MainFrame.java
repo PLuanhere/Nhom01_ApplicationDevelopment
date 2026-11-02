@@ -1,40 +1,42 @@
 package ui;
 
+import dao.bangiao.BanGiaoXeDAO;
+import dao.baocao.TrangChuKyThuatDAO;
+import dao.baogia.BaoGiaDAO;
+import dao.chung.DuLieuGarageDAO;
+import dao.hoadon.HoaDonDAO;
+import dao.hoadon.DoiChieuChiPhiDAO;
+import dao.khachhang.KhachHangDAO;
+import dao.khachhang.XeDAO;
+import dao.kiemtra.BaoCaoKiemTraDAO;
+import dao.nhansu.TaiKhoanDAO;
+import dao.phutung.PhuTungDAO;
+import dao.phutung.PhuTungSuDungDAO;
+import dao.suachua.KyThuatDAO;
+import dao.suachua.PhieuSuaChuaDAO;
+import dao.tiepnhan.PhieuTiepNhanDAO;
+import entity.hoadon.PhieuChoThu;
+import entity.hoadon.HinhThucThanhToan;
+import entity.nhansu.TaiKhoan;
+import entity.nhansu.VaiTro;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
-import java.util.Objects;
 import java.util.List;
-import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
 import javax.swing.SwingConstants;
 
-import dao.KhachHangDAO;
-import dao.BaoGiaDAO;
-import dao.BanGiaoXeDAO;
-import dao.DuLieuGarageDAO;
-import dao.KyThuatDAO;
-import dao.BaoCaoKiemTraDAO;
-import dao.PhieuTiepNhanDAO;
-import dao.PhieuSuaChuaDAO;
-import dao.PhuTungSuDungDAO;
-import dao.PhuTungDAO;
-import dao.TrangChuKyThuatDAO;
-import dao.XeDAO;
-import dao.ThuNganDAO;
-import dao.TaiKhoanDAO;
-import entity.TaiKhoan;
-import entity.VaiTro;
 import ui.component.AppHeaderPanel;
 import ui.component.KyThuatUi;
 import ui.component.QuanLyNavigationPanel;
@@ -44,31 +46,24 @@ import ui.component.TiepNhanNavigationPanel;
 import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
 import ui.component.WindowTitlePanel;
-import ui.screen.BaoCaoKiemTraPanel;
-import ui.screen.KhachHangPanel;
-import ui.screen.BaoGiaPanel;
-import ui.screen.BanGiaoXePanel;
-import ui.screen.LenhSuaChuaTiepNhanPanel;
-import ui.screen.KhongGianKyThuatPanel;
-import ui.screen.quanly.NhanVienPanel;
-import ui.screen.quanly.TaiKhoanPanel;
-import ui.screen.quanly.DichVuPanel;
-import ui.screen.PhieuTiepNhanPanel;
-import ui.screen.PhieuSuaChuaPanel;
-import dao.DoiChieuChiPhiDAO;
-import ui.screen.CashPaymentConfirmPanel;
-import ui.screen.DoiChieuChiPhiPanel;
-import ui.screen.PaymentCenterPanel;
-import ui.screen.PendingCollectionPanel;
 import ui.screen.kythuat.BaoCaoKiemTraPanel;
 import ui.screen.kythuat.KhongGianKyThuatPanel;
 import ui.screen.kythuat.PhieuSuaChuaPanel;
 import ui.screen.kythuat.PhuTungSuDungPanel;
 import ui.screen.kythuat.TrangChuKyThuatPanel;
+import ui.screen.quanly.BaoCaoPanel;
+import ui.screen.quanly.TrangChuQuanLyPanel;
 import ui.screen.quanly.DichVuPanel;
 import ui.screen.quanly.NhanVienPanel;
 import ui.screen.quanly.PhuTungPanel;
 import ui.screen.quanly.TaiKhoanPanel;
+import ui.screen.thungan.CashPaymentConfirmPanel;
+import ui.screen.thungan.BankTransferPaymentPanel;
+import ui.screen.thungan.DoiChieuChiPhiPanel;
+import ui.screen.thungan.PaidInvoicesPanel;
+import ui.screen.thungan.PaidInvoiceDetailPanel;
+import ui.screen.thungan.PaymentCenterPanel;
+import ui.screen.thungan.PendingCollectionPanel;
 import ui.screen.tiepnhan.BanGiaoXePanel;
 import ui.screen.tiepnhan.BaoGiaPanel;
 import ui.screen.tiepnhan.KhachHangPanel;
@@ -87,12 +82,14 @@ public final class MainFrame extends JFrame implements ActionListener {
     private final JPanel pnlNoiDung = new JPanel(new BorderLayout());
     // Các nhãn hiển thị tiêu đề, số kết quả và phản hồi.
     private final JLabel lblTrangThai = new JLabel("Sẵn sàng");
-    private final Runnable khiDangXuat;
+    private final ActionListener khiDangXuat;
 
     private TaiKhoan taiKhoanDangNhap;
     private final DuLieuGarageDAO duLieuChung;
 
     private NhanVienPanel pnlNhanVien;
+    private TrangChuQuanLyPanel pnlTrangChuQuanLy;
+    private BaoCaoPanel pnlBaoCaoQuanLy;
     private QuanLyNavigationPanel pnlDieuHuongQuanLy;
     private TaiKhoanPanel pnlTaiKhoan;
     private DichVuPanel pnlDichVu;
@@ -100,14 +97,16 @@ public final class MainFrame extends JFrame implements ActionListener {
     private PhuTungDAO khoQuanLy;
     private String mucQuanLyDangMo = "Tổng quan điều hành";
     private final TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAO();
-    private final ActionListener theoDoiTaiKhoan = new ActionListener() {
-        /** Thực hiện thao tác tương ứng với nút, bộ lọc hoặc phím vừa chọn. */
-        @Override public void actionPerformed(ActionEvent event) { kiemTraPhienDangNhap(); }
+    private final TaiKhoanDAO.TheoDoiTaiKhoan theoDoiTaiKhoan = new TaiKhoanDAO.TheoDoiTaiKhoan() {
+        /** Kiểm tra và đóng phiên khi tài khoản bị thay đổi. */
+        @Override
+        public void taiKhoanThayDoi() {
+            kiemTraPhienDangNhap();
+        }
     };
 
-    private ThuNganDAO thuNganDAO;
+    private HoaDonDAO thuNganDAO;
     private ThuNganNavigationPanel pnlDieuHuongThuNgan;
-    private String mucThuNganDangMo = "Trung tâm thanh toán";
 
     private KhachHangDAO khachHangDAO;
     private XeDAO xeDAO;
@@ -126,25 +125,30 @@ public final class MainFrame extends JFrame implements ActionListener {
     private String mucTiepNhanDangMo = "Tổng quan tiếp nhận";
 
     private TrangChuKyThuatPanel pnlTrangChuKyThuat;
+    private KhongGianKyThuatPanel pnlKhongGianKyThuat;
     private BaoCaoKiemTraPanel pnlKiemTra;
     private PhieuSuaChuaPanel pnlSuaChua;
     private PhuTungSuDungPanel pnlPhuTung;
 
     /** Khởi tạo khung ứng dụng, nguồn dữ liệu và màn hình theo vai trò đăng nhập. */
-    public MainFrame(TaiKhoan taiKhoan, Runnable khiDangXuat) {
+    public MainFrame(TaiKhoan taiKhoan, ActionListener khiDangXuat) {
         this(taiKhoan, khiDangXuat, null);
     }
 
     /** Khởi tạo khung ứng dụng, nguồn dữ liệu và màn hình theo vai trò đăng nhập. */
-    public MainFrame(TaiKhoan taiKhoan, Runnable khiDangXuat, DuLieuGarageDAO duLieuChung) {
+    public MainFrame(TaiKhoan taiKhoan, ActionListener khiDangXuat, DuLieuGarageDAO duLieu) {
         super("Garage Ô tô Đức Dũng");
 
-        this.duLieuChung = duLieuChung;
-        taiKhoanDangNhap = Objects.requireNonNull(
-                taiKhoan, "Cần tài khoản đã đăng nhập.");
+        this.duLieuChung = duLieu == null ? new DuLieuGarageDAO() : duLieu;
+        if (taiKhoan == null) {
+            throw new NullPointerException("Cần tài khoản đã đăng nhập.");
+        }
+        taiKhoanDangNhap = taiKhoan;
         taiKhoanDangNhap.kiemTraPhien();
-        this.khiDangXuat = Objects.requireNonNull(
-                khiDangXuat, "Cần thao tác quay lại trang đăng nhập.");
+        if (khiDangXuat == null) {
+            throw new NullPointerException("Cần thao tác quay lại trang đăng nhập.");
+        }
+        this.khiDangXuat = khiDangXuat;
         taiKhoanDAO.themTheoDoi(theoDoiTaiKhoan);
 
         setTitle(getTitle() + " — " + taiKhoan.getVaiTro().getTenHienThi());
@@ -158,15 +162,22 @@ public final class MainFrame extends JFrame implements ActionListener {
         setLayout(new BorderLayout());
 
         getContentPane().setBackground(UiTheme.APP_BACKGROUND);
-        getRootPane().setBorder(
-                BorderFactory.createLineBorder(UiTheme.APP_BORDER));
+        getRootPane().setBorder(BorderFactory.createLineBorder(UiTheme.APP_BORDER));
 
         if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
             add(new WindowTitlePanel(this), BorderLayout.NORTH);
-            KyThuatDAO nguonKyThuat = duLieuChung == null ? new KyThuatDAO(taiKhoan)
-                    : new KyThuatDAO(this::getTaiKhoanDangNhap, duLieuChung.getSuaChuaDAO(), duLieuChung.getKiemTraDAO(), duLieuChung.getPhuTungDAO());
-            add(new KhongGianKyThuatPanel(this, taiKhoan, this::dangXuat, nguonKyThuat), BorderLayout.CENTER);
+            KyThuatDAO nguonKyThuat = new KyThuatDAO(MainFrame.this.getTaiKhoanDangNhap(), duLieuChung.getSuaChuaDAO(),
+                    duLieuChung.getKiemTraDAO(), duLieuChung.getPhuTungDAO());
+            pnlKhongGianKyThuat = new KhongGianKyThuatPanel(this, taiKhoan, new ActionListener() {
+                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    MainFrame.this.dangXuat();
+                }
+            }, nguonKyThuat);
+            add(pnlKhongGianKyThuat, BorderLayout.CENTER);
             return;
+
         }
 
         add(new WindowTitlePanel(this), BorderLayout.NORTH);
@@ -176,8 +187,7 @@ public final class MainFrame extends JFrame implements ActionListener {
         addMouseMotionListener(mouseHandler);
 
         pnlNoiDung.setBackground(UiTheme.APP_BACKGROUND);
-        pnlNoiDung.setBorder(
-                BorderFactory.createEmptyBorder(23, 26, 16, 26));
+        pnlNoiDung.setBorder(BorderFactory.createEmptyBorder(23, 26, 16, 26));
 
         add(pnlSidebar, BorderLayout.WEST);
         pnlSidebar.setRoleText(taiKhoan.getVaiTro().getTenHienThi());
@@ -190,14 +200,15 @@ public final class MainFrame extends JFrame implements ActionListener {
         add(pnlLamViec, BorderLayout.CENTER);
 
         if (taiKhoan.getVaiTro() == VaiTro.QUAN_LY) {
-            pnlDieuHuongQuanLy =
-                    new QuanLyNavigationPanel(new ActionListener() {
-                        /** Thực hiện thao tác tương ứng với nút, bộ lọc hoặc phím vừa chọn. */
-                        @Override public void actionPerformed(ActionEvent event) {
-                            dieuHuongQuanLy(event.getActionCommand());
-                        }
-                    });
+            pnlDieuHuongQuanLy = new QuanLyNavigationPanel(new ActionListener() {
+                /** Thực hiện thao tác tương ứng với nút, bộ lọc hoặc phím vừa chọn. */
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    dieuHuongQuanLy(event.getActionCommand());
+                }
+            });
             setSidebarContent(pnlDieuHuongQuanLy);
+            dieuHuongQuanLy("Tổng quan điều hành");
         } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
             khoiTaoTrangChuKyThuat();
         } else if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_TIEP_NHAN) {
@@ -222,11 +233,9 @@ public final class MainFrame extends JFrame implements ActionListener {
             }
 
             setScreen(pnlKiemTra);
-            pnlKiemTra.actionPerformed(new ActionEvent(
-                    pnlKiemTra, ActionEvent.ACTION_PERFORMED, "DANH_SACH"));
+            pnlKiemTra.actionPerformed(new ActionEvent(pnlKiemTra, ActionEvent.ACTION_PERFORMED, "DANH_SACH"));
             setStatus("Báo cáo kiểm tra · Dữ liệu mẫu trong bộ nhớ");
-        } else if ("Lệnh sửa chữa".equals(tenManHinh)
-                || "Công việc được giao".equals(tenManHinh)
+        } else if ("Lệnh sửa chữa".equals(tenManHinh) || "Công việc được giao".equals(tenManHinh)
                 || "Tiến độ sửa chữa".equals(tenManHinh)) {
             moDanhSachSuaChua();
         } else if ("Phụ tùng sử dụng".equals(tenManHinh)) {
@@ -247,7 +256,9 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Thay màn hình đang hiển thị trong vùng nội dung chung. */
     public void setScreen(JPanel pnlManHinh) {
-        Objects.requireNonNull(pnlManHinh, "Màn hình không được null.");
+        if (pnlManHinh == null) {
+            throw new NullPointerException("Màn hình không được null.");
+        }
 
         pnlNoiDung.removeAll();
         pnlNoiDung.add(pnlManHinh, BorderLayout.CENTER);
@@ -262,25 +273,40 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Hiển thị nội dung mới trên thanh trạng thái. */
     public void setStatus(String thongBao) {
-        lblTrangThai.setText(Objects.requireNonNull(
-                thongBao, "Thông báo không được null."));
+        if (thongBao == null) {
+            throw new NullPointerException("Thông báo không được null.");
+        }
+        lblTrangThai.setText(thongBao);
     }
 
     /** Tạo header chung với menu, tìm kiếm và thông tin tài khoản. */
     private JPanel createHeader() {
-        return new AppHeaderPanel(
-                taiKhoanDangNhap,
-                this::dangXuat,
-                () -> dispatchEvent(
-                        new WindowEvent(this, WindowEvent.WINDOW_CLOSING)));
+        return new AppHeaderPanel(taiKhoanDangNhap, new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                MainFrame.this.dangXuat();
+            }
+        }, new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                dispatchEvent(new WindowEvent(MainFrame.this, WindowEvent.WINDOW_CLOSING));
+            }
+        }, taiKhoanDangNhap.getVaiTro() == VaiTro.QUAN_LY ? new ActionListener() {
+            /** Mở báo cáo từ menu, vẫn kiểm tra form chưa lưu khi chuyển mục. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                dieuHuongQuanLy("Báo cáo và thống kê");
+            }
+        } : null);
     }
 
     /** Tạo thanh trạng thái ở cuối khung ứng dụng. */
     private JPanel createStatusBar() {
         JPanel pnlTrangThai = new JPanel(new BorderLayout());
         pnlTrangThai.setBackground(UiTheme.APP_BACKGROUND);
-        pnlTrangThai.setBorder(
-                BorderFactory.createEmptyBorder(10, 26, 16, 26));
+        pnlTrangThai.setBorder(BorderFactory.createEmptyBorder(10, 26, 16, 26));
 
         JLabel lblGarage = new JLabel("Garage Đức Dũng · Nội bộ nhân viên");
         lblGarage.setFont(UiTheme.APP_FONT.deriveFont(11.0f));
@@ -297,15 +323,12 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Kiểm tra thay đổi chưa lưu, đóng phiên làm việc và mở lại đăng nhập. */
     private void dangXuat() {
-        if (taiKhoanDangNhap != null
-                && choPhepRoiNhanVien()
-                && choPhepRoiTaiKhoan()
-                && choPhepRoiDichVu()
-                && choPhepRoiKho()
-                && choPhepRoiTiepNhan()) {
+        if (taiKhoanDangNhap != null && choPhepRoiNhanVien() && choPhepRoiTaiKhoan() && choPhepRoiDichVu()
+                && choPhepRoiKho() && choPhepRoiTiepNhan()) {
+            taiKhoanDAO.dangXuat(taiKhoanDangNhap);
             taiKhoanDangNhap = null;
             dispose();
-            khiDangXuat.run();
+            khiDangXuat.actionPerformed(new ActionEvent(khiDangXuat, ActionEvent.ACTION_PERFORMED, "thaoTac"));
         }
     }
 
@@ -313,37 +336,65 @@ public final class MainFrame extends JFrame implements ActionListener {
     private void dieuHuongQuanLy(String tenMuc) {
         boolean daCo = "Tổng quan điều hành".equals(tenMuc) || "Nhân viên".equals(tenMuc)
                 || "Tài khoản & phân quyền".equals(tenMuc) || "Dịch vụ và bảng giá".equals(tenMuc)
-                || "Phụ tùng".equals(tenMuc);
+                || "Phụ tùng".equals(tenMuc) || "Báo cáo và thống kê".equals(tenMuc);
         if (!daCo) {
             pnlDieuHuongQuanLy.chonMuc(mucQuanLyDangMo);
             setStatus(tenMuc + ": chức năng chưa triển khai.");
+
             return;
         }
-        if (!tenMuc.equals(mucQuanLyDangMo) && (!choPhepRoiNhanVien() || !choPhepRoiTaiKhoan() || !choPhepRoiDichVu() || !choPhepRoiKho())) {
+        if (!tenMuc.equals(mucQuanLyDangMo)
+                && (!choPhepRoiNhanVien() || !choPhepRoiTaiKhoan() || !choPhepRoiDichVu() || !choPhepRoiKho())) {
             pnlDieuHuongQuanLy.chonMuc(mucQuanLyDangMo);
             return;
+
         }
         if ("Tổng quan điều hành".equals(tenMuc)) {
-            JPanel pnlTrong = new JPanel();
-            pnlTrong.setOpaque(false);
-            setScreen(pnlTrong);
-            setStatus("Tổng quan điều hành: chưa triển khai.");
+            if (pnlTrangChuQuanLy == null) {
+                pnlTrangChuQuanLy = new TrangChuQuanLyPanel(getTaiKhoanDangNhap(), duLieuChung.getBaoCaoDAO(),
+                        new ActionListener() {
+                            /** Mở chức năng Quản lý từ đường tắt trên Trang chủ. */
+                            @Override
+                            public void actionPerformed(ActionEvent event) {
+                                dieuHuongQuanLy(event.getActionCommand());
+                            }
+                        });
+            } else {
+                pnlTrangChuQuanLy.taiDuLieu();
+            }
+            setScreen(pnlTrangChuQuanLy);
+            setStatus("Tổng quan điều hành");
         } else if ("Nhân viên".equals(tenMuc)) {
             moDanhSachNhanVien();
         } else if ("Tài khoản & phân quyền".equals(tenMuc)) {
-            if (pnlTaiKhoan == null) { pnlTaiKhoan = new TaiKhoanPanel(getTaiKhoanDangNhap()); }
+            if (pnlTaiKhoan == null) {
+                pnlTaiKhoan = new TaiKhoanPanel(getTaiKhoanDangNhap());
+            }
             setScreen(pnlTaiKhoan);
             setStatus("Tài khoản & phân quyền");
         } else if ("Dịch vụ và bảng giá".equals(tenMuc)) {
-            if (pnlDichVu == null) { pnlDichVu = new DichVuPanel(getTaiKhoanDangNhap()); }
+            if (pnlDichVu == null) {
+                pnlDichVu = new DichVuPanel(getTaiKhoanDangNhap(), duLieuChung.getDichVuDAO());
+            }
             setScreen(pnlDichVu);
             setStatus("Danh sách dịch vụ và bảng giá");
         } else if ("Phụ tùng".equals(tenMuc)) {
-            if (pnlPhuTungQuanLy == null) { pnlPhuTungQuanLy = new PhuTungPanel(getTaiKhoanDangNhap(), layKhoQuanLy()); }
+            if (pnlPhuTungQuanLy == null) {
+                pnlPhuTungQuanLy = new PhuTungPanel(getTaiKhoanDangNhap(), layKhoQuanLy());
+            }
             pnlPhuTungQuanLy.capNhatDanhSach();
             setScreen(pnlPhuTungQuanLy);
             setStatus("Danh mục phụ tùng và tồn kho");
+        } else if ("Báo cáo và thống kê".equals(tenMuc)) {
+            if (pnlBaoCaoQuanLy == null) {
+                pnlBaoCaoQuanLy = new BaoCaoPanel(getTaiKhoanDangNhap(), duLieuChung.getBaoCaoDAO());
+            } else {
+                pnlBaoCaoQuanLy.taiDuLieu();
+            }
+            setScreen(pnlBaoCaoQuanLy);
+            setStatus("Báo cáo và thống kê");
         }
+        pnlDieuHuongQuanLy.chonMuc(tenMuc);
         mucQuanLyDangMo = tenMuc;
     }
 
@@ -359,9 +410,7 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Kiểm tra form Nhân viên trước khi rời phân hệ hoặc đóng ứng dụng. */
     private boolean choPhepRoiNhanVien() {
-        return pnlNhanVien == null
-                || !pnlNoiDung.isAncestorOf(pnlNhanVien)
-                || pnlNhanVien.choPhepRoiTrang();
+        return pnlNhanVien == null || !pnlNoiDung.isAncestorOf(pnlNhanVien) || pnlNhanVien.choPhepRoiTrang();
     }
 
     /** Kiểm tra form Tài khoản trước khi rời phân hệ hoặc đóng ứng dụng. */
@@ -376,8 +425,12 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Lấy DAO kho dùng chung với các vai trò, hoặc khởi tạo nguồn cho cửa sổ độc lập. */
     private PhuTungDAO layKhoQuanLy() {
-        if (duLieuChung != null) { return duLieuChung.getKhoDAO(); }
-        if (khoQuanLy == null) { khoQuanLy = new PhuTungDAO(); }
+        if (duLieuChung != null) {
+            return duLieuChung.getKhoDAO();
+        }
+        if (khoQuanLy == null) {
+            khoQuanLy = new PhuTungDAO();
+        }
         return khoQuanLy;
     }
 
@@ -392,7 +445,7 @@ public final class MainFrame extends JFrame implements ActionListener {
         if (taiKhoanDangNhap != null && !taiKhoanDangNhap.isPhienHopLe()) {
             taiKhoanDangNhap = null;
             dispose();
-            khiDangXuat.run();
+            khiDangXuat.actionPerformed(new ActionEvent(khiDangXuat, ActionEvent.ACTION_PERFORMED, "thaoTac"));
         }
     }
 
@@ -406,8 +459,10 @@ public final class MainFrame extends JFrame implements ActionListener {
     /** Kiểm tra trạng thái và dữ liệu chưa lưu trước khi đóng cửa sổ. */
     @Override
     protected void processWindowEvent(WindowEvent event) {
-        if (event.getID() == WindowEvent.WINDOW_CLOSING
-                && (!choPhepRoiNhanVien() || !choPhepRoiTaiKhoan() || !choPhepRoiDichVu() || !choPhepRoiKho() || !choPhepRoiTiepNhan())) {
+        if (event.getID() == WindowEvent.WINDOW_CLOSING && (!choPhepRoiNhanVien() || !choPhepRoiTaiKhoan()
+                || !choPhepRoiDichVu() || !choPhepRoiKho() || !choPhepRoiTiepNhan()
+                || (pnlKhongGianKyThuat != null && !pnlKhongGianKyThuat.choPhepRoiTrang()))) {
+
             return;
         }
 
@@ -416,27 +471,36 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Chuẩn bị nguồn dữ liệu và màn hình ban đầu cho vai trò Tiếp nhận. */
     private void khoiTaoTrangChuTiepNhan() {
-        if (duLieuChung != null) {
-            khachHangDAO = duLieuChung.getKhachHangDAO(); xeDAO = duLieuChung.getXeDAO();
-            phieuTiepNhanDAO = duLieuChung.getTiepNhanDAO(); baoGiaDAO = duLieuChung.getBaoGiaDAO();
-            phieuSuaChuaDAO = duLieuChung.getSuaChuaDAO();
-        } else {
-            khachHangDAO = KhachHangDAO.taoDuLieuMau();
-            xeDAO = XeDAO.taoDuLieuMau(khachHangDAO, getTaiKhoanDangNhap());
-            phieuTiepNhanDAO = new PhieuTiepNhanDAO(khachHangDAO, xeDAO);
-            BaoCaoKiemTraDAO nguonKiemTra = new BaoCaoKiemTraDAO();
-            baoGiaDAO = new BaoGiaDAO(phieuTiepNhanDAO,
-                    () -> nguonKiemTra.layBaoCaoHoanTatChoBaoGia(getTaiKhoanDangNhap()));
-
-            phieuSuaChuaDAO = new PhieuSuaChuaDAO(baoGiaDAO, List::of);
-        }
-
-        banGiaoDAO = duLieuChung == null ? new BanGiaoXeDAO(phieuSuaChuaDAO, ma -> null) : duLieuChung.getBanGiaoDAO();
-        pnlDieuHuongTiepNhan =
-                new TiepNhanNavigationPanel(this::dieuHuongTiepNhan);
-        pnlTrangChuTiepNhan =
-                new TrangChuTiepNhanPanel(this::dieuHuongTiepNhan,
-                        duLieuChung == null ? null : duLieuChung.getTrangChuDAO(), this::getTaiKhoanDangNhap, this::moBanGiaoTuTongQuan);
+        khachHangDAO = duLieuChung.getKhachHangDAO();
+        xeDAO = duLieuChung.getXeDAO();
+        phieuTiepNhanDAO = duLieuChung.getTiepNhanDAO();
+        baoGiaDAO = duLieuChung.getBaoGiaDAO();
+        phieuSuaChuaDAO = duLieuChung.getSuaChuaDAO();
+        banGiaoDAO = duLieuChung.getBanGiaoDAO();
+        pnlDieuHuongTiepNhan = new TiepNhanNavigationPanel(new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                String giaTri1 = (String) event.getSource();
+                MainFrame.this.dieuHuongTiepNhan(giaTri1);
+            }
+        });
+        pnlTrangChuTiepNhan = new TrangChuTiepNhanPanel(new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                String giaTri1 = (String) event.getSource();
+                MainFrame.this.dieuHuongTiepNhan(giaTri1);
+            }
+        }, duLieuChung == null ? null : duLieuChung.getTrangChuDAO(), MainFrame.this.getTaiKhoanDangNhap(),
+                new ActionListener() {
+                    /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+                    @Override
+                    public void actionPerformed(ActionEvent event) {
+                        String giaTri1 = (String) event.getSource();
+                        MainFrame.this.moBanGiaoTuTongQuan(giaTri1);
+                    }
+                });
 
         setSidebarContent(pnlDieuHuongTiepNhan);
         dieuHuongTiepNhan("Tổng quan tiếp nhận");
@@ -444,50 +508,44 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Mở màn của Tiếp nhận theo mục sidebar được chọn. */
     private void dieuHuongTiepNhan(String muc) {
-        if (getTaiKhoanDangNhap().getVaiTro()
-                != VaiTro.NHAN_VIEN_TIEP_NHAN) {
-            throw new IllegalStateException(
-                    "Chỉ dành cho nhân viên tiếp nhận.");
+        if (getTaiKhoanDangNhap().getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN) {
+            throw new IllegalStateException("Chỉ dành cho nhân viên tiếp nhận.");
         }
 
-        boolean daTrienKhai =
-                "Tổng quan tiếp nhận".equals(muc)
-                || "Khách hàng".equals(muc)
-                || "Phương tiện".equals(muc)
-                || "Phiếu tiếp nhận".equals(muc)
-                || "Báo giá".equals(muc)
-                || "Lệnh sửa chữa".equals(muc) || "Bàn giao xe".equals(muc);
+        boolean daTrienKhai = "Tổng quan tiếp nhận".equals(muc) || "Khách hàng".equals(muc) || "Phương tiện".equals(muc)
+                || "Phiếu tiếp nhận".equals(muc) || "Báo giá".equals(muc) || "Lệnh sửa chữa".equals(muc)
+                || "Bàn giao xe".equals(muc);
 
         if (daTrienKhai && !muc.equals(mucTiepNhanDangMo)) {
             if (!choPhepRoiTiepNhan()) {
                 pnlDieuHuongTiepNhan.chonMuc(mucTiepNhanDangMo);
                 return;
+
             }
 
-            if ("Khách hàng".equals(mucTiepNhanDangMo)
-                    && pnlKhachHang != null) {
+            if ("Khách hàng".equals(mucTiepNhanDangMo) && pnlKhachHang != null) {
                 pnlKhachHang.moDanhSach();
             }
-            if ("Phương tiện".equals(mucTiepNhanDangMo)
-                    && pnlXe != null) {
+            if ("Phương tiện".equals(mucTiepNhanDangMo) && pnlXe != null) {
                 pnlXe.moDanhSach();
             }
-            if ("Phiếu tiếp nhận".equals(mucTiepNhanDangMo)
-                    && pnlTiepNhan != null) {
+            if ("Phiếu tiếp nhận".equals(mucTiepNhanDangMo) && pnlTiepNhan != null) {
                 pnlTiepNhan.moDanhSach();
             }
-            if ("Bàn giao xe".equals(mucTiepNhanDangMo) && pnlBanGiao != null) pnlBanGiao.moDanhSach();
-            if ("Báo giá".equals(mucTiepNhanDangMo) && pnlBaoGia != null) pnlBaoGia.moDanhSach();
-            if ("Lệnh sửa chữa".equals(mucTiepNhanDangMo) && pnlLenhTiepNhan != null) pnlLenhTiepNhan.moDanhSach();
+            if ("Bàn giao xe".equals(mucTiepNhanDangMo) && pnlBanGiao != null) {
+                pnlBanGiao.moDanhSach();
+            }
+            if ("Báo giá".equals(mucTiepNhanDangMo) && pnlBaoGia != null) {
+                pnlBaoGia.moDanhSach();
+            }
+            if ("Lệnh sửa chữa".equals(mucTiepNhanDangMo) && pnlLenhTiepNhan != null) {
+                pnlLenhTiepNhan.moDanhSach();
+            }
         }
 
         if ("Khách hàng".equals(muc)) {
             if (pnlKhachHang == null) {
-                pnlKhachHang = new KhachHangPanel(
-                        khachHangDAO,
-                        this::getTaiKhoanDangNhap,
-                        maKH -> xeDAO.demTheoKhach(
-                                getTaiKhoanDangNhap(), maKH));
+                pnlKhachHang = new KhachHangPanel(khachHangDAO, MainFrame.this.getTaiKhoanDangNhap(), xeDAO);
             }
 
             if (!"Khách hàng".equals(mucTiepNhanDangMo)) {
@@ -501,11 +559,12 @@ public final class MainFrame extends JFrame implements ActionListener {
 
         } else if ("Phiếu tiếp nhận".equals(muc)) {
             if (pnlTiepNhan == null) {
-                pnlTiepNhan = new PhieuTiepNhanPanel(
-                        khachHangDAO, xeDAO, phieuTiepNhanDAO, this::getTaiKhoanDangNhap,
+                pnlTiepNhan = new PhieuTiepNhanPanel(khachHangDAO, xeDAO, phieuTiepNhanDAO,
+                        MainFrame.this.getTaiKhoanDangNhap(),
                         duLieuChung == null ? null : duLieuChung.getTrangChuDAO());
+            } else if (!"Phiếu tiếp nhận".equals(mucTiepNhanDangMo)) {
+                pnlTiepNhan.moDanhSach();
             }
-            else if (!"Phiếu tiếp nhận".equals(mucTiepNhanDangMo)) pnlTiepNhan.moDanhSach();
 
             setScreen(pnlTiepNhan);
             mucTiepNhanDangMo = muc;
@@ -513,8 +572,10 @@ public final class MainFrame extends JFrame implements ActionListener {
             setStatus("Tiếp nhận · Phiếu lưu trong bộ nhớ của phiên");
 
         } else if ("Báo giá".equals(muc)) {
-            if (pnlBaoGia == null) pnlBaoGia = new BaoGiaPanel(baoGiaDAO, this::getTaiKhoanDangNhap,
-                    () -> duLieuChung == null ? List.of() : duLieuChung.getPhuTungDAO().docDanhMucDangHoatDong());
+            if (pnlBaoGia == null) {
+                pnlBaoGia = new BaoGiaPanel(baoGiaDAO, MainFrame.this.getTaiKhoanDangNhap(),
+                        duLieuChung.getPhuTungDAO());
+            }
             setScreen(pnlBaoGia);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
@@ -522,8 +583,7 @@ public final class MainFrame extends JFrame implements ActionListener {
 
         } else if ("Phương tiện".equals(muc)) {
             if (pnlXe == null) {
-                pnlXe = new XePanel(
-                        xeDAO, khachHangDAO, this::getTaiKhoanDangNhap, phieuTiepNhanDAO,
+                pnlXe = new XePanel(xeDAO, khachHangDAO, MainFrame.this.getTaiKhoanDangNhap(), phieuTiepNhanDAO,
                         duLieuChung == null ? null : duLieuChung.getTrangChuDAO());
             }
 
@@ -544,13 +604,20 @@ public final class MainFrame extends JFrame implements ActionListener {
             setStatus("Tổng quan tiếp nhận · Dữ liệu trong bộ nhớ của lần chạy ứng dụng");
 
         } else if ("Bàn giao xe".equals(muc)) {
-            if (pnlBanGiao == null) pnlBanGiao = new BanGiaoXePanel(banGiaoDAO, this::getTaiKhoanDangNhap);
-            else if (!"Bàn giao xe".equals(mucTiepNhanDangMo)) pnlBanGiao.moDanhSach();
-            setScreen(pnlBanGiao); mucTiepNhanDangMo = muc; pnlDieuHuongTiepNhan.chonMuc(muc);
+            if (pnlBanGiao == null) {
+                pnlBanGiao = new BanGiaoXePanel(banGiaoDAO, MainFrame.this.getTaiKhoanDangNhap());
+            } else if (!"Bàn giao xe".equals(mucTiepNhanDangMo)) {
+                pnlBanGiao.moDanhSach();
+            }
+            setScreen(pnlBanGiao);
+            mucTiepNhanDangMo = muc;
+            pnlDieuHuongTiepNhan.chonMuc(muc);
             setStatus("Bàn giao xe · Đối chiếu căn cứ thanh toán/phê duyệt từ nguồn phụ trách");
 
         } else if ("Lệnh sửa chữa".equals(muc)) {
-            if (pnlLenhTiepNhan == null) pnlLenhTiepNhan = new LenhSuaChuaTiepNhanPanel(phieuSuaChuaDAO, this::getTaiKhoanDangNhap);
+            if (pnlLenhTiepNhan == null) {
+                pnlLenhTiepNhan = new LenhSuaChuaTiepNhanPanel(phieuSuaChuaDAO, MainFrame.this.getTaiKhoanDangNhap());
+            }
             setScreen(pnlLenhTiepNhan);
             setStatus("Lệnh sửa chữa · Lưu trong bộ nhớ của phiên");
             mucTiepNhanDangMo = muc;
@@ -565,26 +632,34 @@ public final class MainFrame extends JFrame implements ActionListener {
     /** Mở màn bàn giao cho hồ sơ được chọn từ tổng quan Tiếp nhận. */
     private void moBanGiaoTuTongQuan(String maLenh) {
         dieuHuongTiepNhan("Bàn giao xe");
-        if (!"Bàn giao xe".equals(mucTiepNhanDangMo)) return;
-        if (maLenh == null) pnlBanGiao.moDanhSachChoGiao();
-        else pnlBanGiao.moTheoLenh(maLenh);
+        if (!"Bàn giao xe".equals(mucTiepNhanDangMo)) {
+            return;
+        }
+        if (maLenh == null) {
+            pnlBanGiao.moDanhSachChoGiao();
+        } else {
+            pnlBanGiao.moTheoLenh(maLenh);
+        }
     }
 
     /** Kiểm tra dữ liệu chưa lưu trong các màn Tiếp nhận trước khi điều hướng. */
     private boolean choPhepRoiTiepNhan() {
-        if ("Bàn giao xe".equals(mucTiepNhanDangMo) && pnlBanGiao != null) return pnlBanGiao.choPhepRoiManHinh();
-        if ("Lệnh sửa chữa".equals(mucTiepNhanDangMo) && pnlLenhTiepNhan != null) return pnlLenhTiepNhan.choPhepRoiManHinh();
-        if ("Báo giá".equals(mucTiepNhanDangMo) && pnlBaoGia != null) return pnlBaoGia.choPhepRoiManHinh();
-        if ("Khách hàng".equals(mucTiepNhanDangMo)
-                && pnlKhachHang != null) {
+        if ("Bàn giao xe".equals(mucTiepNhanDangMo) && pnlBanGiao != null) {
+            return pnlBanGiao.choPhepRoiManHinh();
+        }
+        if ("Lệnh sửa chữa".equals(mucTiepNhanDangMo) && pnlLenhTiepNhan != null) {
+            return pnlLenhTiepNhan.choPhepRoiManHinh();
+        }
+        if ("Báo giá".equals(mucTiepNhanDangMo) && pnlBaoGia != null) {
+            return pnlBaoGia.choPhepRoiManHinh();
+        }
+        if ("Khách hàng".equals(mucTiepNhanDangMo) && pnlKhachHang != null) {
             return pnlKhachHang.choPhepRoiManHinh();
         }
-        if ("Phương tiện".equals(mucTiepNhanDangMo)
-                && pnlXe != null) {
+        if ("Phương tiện".equals(mucTiepNhanDangMo) && pnlXe != null) {
             return pnlXe.choPhepRoiManHinh();
         }
-        if ("Phiếu tiếp nhận".equals(mucTiepNhanDangMo)
-                && pnlTiepNhan != null) {
+        if ("Phiếu tiếp nhận".equals(mucTiepNhanDangMo) && pnlTiepNhan != null) {
             return pnlTiepNhan.choPhepRoiManHinh();
         }
         return true;
@@ -595,6 +670,7 @@ public final class MainFrame extends JFrame implements ActionListener {
         if (getTaiKhoanDangNhap().getVaiTro() == VaiTro.NHAN_VIEN_TIEP_NHAN) {
             dieuHuongTiepNhan("Lệnh sửa chữa");
             return;
+
         }
         if (pnlSuaChua == null) {
             pnlSuaChua = new PhieuSuaChuaPanel(this, getTaiKhoanDangNhap(),
@@ -602,16 +678,15 @@ public final class MainFrame extends JFrame implements ActionListener {
         }
 
         setScreen(pnlSuaChua);
-        pnlSuaChua.actionPerformed(new ActionEvent(
-                pnlSuaChua, ActionEvent.ACTION_PERFORMED, "DANH_SACH"));
+        pnlSuaChua.actionPerformed(new ActionEvent(pnlSuaChua, ActionEvent.ACTION_PERFORMED, "DANH_SACH"));
         setStatus("Sửa chữa · Dữ liệu mẫu trong bộ nhớ");
     }
 
     /** Mở phần ghi nhận phụ tùng thực dùng của Kỹ thuật. */
     private void moDanhSachPhuTung() {
         if (pnlPhuTung == null) {
-            pnlPhuTung = new PhuTungSuDungPanel(
-                    getTaiKhoanDangNhap(), duLieuChung == null ? new PhuTungSuDungDAO() : duLieuChung.getPhuTungDAO());
+            pnlPhuTung = new PhuTungSuDungPanel(getTaiKhoanDangNhap(),
+                    duLieuChung == null ? new PhuTungSuDungDAO() : duLieuChung.getPhuTungDAO());
         }
 
         pnlPhuTung.moDanhSach();
@@ -622,18 +697,14 @@ public final class MainFrame extends JFrame implements ActionListener {
     /** Chuẩn bị nguồn dữ liệu và màn hình ban đầu cho vai trò Kỹ thuật. */
     private void khoiTaoTrangChuKyThuat() {
         TrangChuKyThuatDAO trangChuDAO = new TrangChuKyThuatDAO();
-        pnlTrangChuKyThuat = new TrangChuKyThuatPanel(
-                trangChuDAO.docDuLieuMau(getTaiKhoanDangNhap()), this, this);
+        pnlTrangChuKyThuat = new TrangChuKyThuatPanel(trangChuDAO.docDuLieuMau(getTaiKhoanDangNhap()), this, this);
 
         JPanel pnlDanhSach = new JPanel();
         pnlDanhSach.setOpaque(false);
-        pnlDanhSach.setLayout(
-                new BoxLayout(pnlDanhSach, BoxLayout.Y_AXIS));
+        pnlDanhSach.setLayout(new BoxLayout(pnlDanhSach, BoxLayout.Y_AXIS));
 
-        String[] mucDieuHuong = {
-                "Trang chủ", "Công việc được giao", "Báo cáo kiểm tra",
-                "Tiến độ sửa chữa", "Phụ tùng sử dụng", "Đổi vai trò"
-        };
+        String[] mucDieuHuong = { "Trang chủ", "Công việc được giao", "Báo cáo kiểm tra", "Tiến độ sửa chữa",
+                "Phụ tùng sử dụng", "Đổi vai trò" };
 
         for (String muc : mucDieuHuong) {
             JButton btnMuc = KyThuatUi.taoNut(muc, 156);
@@ -641,10 +712,8 @@ public final class MainFrame extends JFrame implements ActionListener {
             btnMuc.setHorizontalAlignment(SwingConstants.LEFT);
 
             if (!"Đổi vai trò".equals(muc)) {
-                btnMuc.setBorder(
-                        BorderFactory.createEmptyBorder(0, 8, 0, 8));
-                btnMuc.setBackground("Trang chủ".equals(muc)
-                        ? new Color(0xDCEAFE) : UiTheme.NAVIGATION);
+                btnMuc.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+                btnMuc.setBackground("Trang chủ".equals(muc) ? new Color(0xDCEAFE) : UiTheme.NAVIGATION);
             }
 
             if ("Trang chủ".equals(muc)) {
@@ -653,7 +722,7 @@ public final class MainFrame extends JFrame implements ActionListener {
 
             btnMuc.addActionListener(this);
             pnlDanhSach.add(btnMuc);
-            pnlDanhSach.add(javax.swing.Box.createVerticalStrut(4));
+            pnlDanhSach.add(Box.createVerticalStrut(4));
         }
 
         JPanel pnlDieuHuong = new JPanel(new BorderLayout());
@@ -668,172 +737,219 @@ public final class MainFrame extends JFrame implements ActionListener {
     /** Mở màn hình Kỹ thuật tương ứng với mục điều hướng. */
     private void dieuHuongKyThuat(String tenManHinh) {
         if ("Đổi vai trò".equals(tenManHinh)) {
-            setStatus(
-                    "Tài khoản chỉ có một vai trò. Đăng xuất để đăng nhập bằng tài khoản khác.");
+            setStatus("Tài khoản chỉ có một vai trò. Đăng xuất để đăng nhập bằng tài khoản khác.");
         } else {
-            setStatus(
-                    tenManHinh + " thuộc nhánh tiếp theo, chưa được tích hợp vào dashboard.");
+            setStatus(tenManHinh + " thuộc nhánh tiếp theo, chưa được tích hợp vào dashboard.");
         }
     }
 
     /** Chuẩn bị nguồn dữ liệu và các màn hình cho vai trò Thu ngân. */
     private void khoiTaoThuNgan() {
-        thuNganDAO = new ThuNganDAO();
-        pnlDieuHuongThuNgan = new ThuNganNavigationPanel(this::dieuHuongThuNgan);
+        thuNganDAO = duLieuChung.getHoaDonDAO();
+        pnlDieuHuongThuNgan = new ThuNganNavigationPanel(new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                String giaTri1 = (String) event.getSource();
+                MainFrame.this.dieuHuongThuNgan(giaTri1);
+            }
+        });
         setSidebarContent(pnlDieuHuongThuNgan);
         dieuHuongThuNgan("Trung tâm thanh toán");
     }
 
     /** Mở màn Thu ngân theo mục sidebar được chọn. */
     private void dieuHuongThuNgan(String muc) {
-        mucThuNganDangMo = muc;
         pnlDieuHuongThuNgan.chonMuc(muc);
         switch (muc) {
-            case "Trung tâm thanh toán" -> {
-                PaymentCenterPanel.Navigation nav = new PaymentCenterPanel.Navigation();
-                nav.costReconciliation = () -> moDoiChieuChiPhi(null);
-                nav.pendingInvoices    = () -> dieuHuongThuNgan("Phiếu chờ thu");
-                nav.paidDocuments      = () -> dieuHuongThuNgan("Hoá đơn đã thanh toán");
-                nav.documentSearch     = () -> setStatus("Tra cứu hóa đơn · Chưa tích hợp");
-                nav.cashPayment        = this::moThanhToanTienMat;
-                nav.bankTransfer       = () -> setStatus("Chuyển khoản / QR · Chưa tích hợp");
-                setScreen(new PaymentCenterPanel(thuNganDAO, nav));
-                setStatus("Trung tâm thanh toán");
-            }
-            case "Phiếu chờ thu" -> {
-                setScreen(new PendingCollectionPanel(
-                        thuNganDAO,
-                        this::moDoiChieuChiPhi,
-                        () -> setStatus("Xem chi tiết phiếu · Chưa tích hợp")));
-                setStatus("Phiếu chờ thu");
-            }
-            case "Hoá đơn đã thanh toán" -> {
-                setScreen(new ui.screen.PaidInvoicesPanel(
-                        thuNganDAO,
-                        this::moChiTietHoaDon));
-                setStatus("Hoá đơn đã thanh toán");
-            }
-            default -> setStatus(muc + ": chức năng chưa triển khai.");
-        }
-    }
-
-
-    /**
-     * Mở màn hình đối chiếu chi phí cho mã phiếu chỉ định.
-     * Được gọi từ nút "Lập hóa đơn" trong PendingCollectionPanel (truyền mã phiếu).
-     *
-     * @param maPhieu mã phiếu sửa chữa cần đối chiếu
-     */
-    private void moDoiChieuChiPhi(String maPhieu) {
-        DoiChieuChiPhiDAO dao = new DoiChieuChiPhiDAO();
-        String ma = (maPhieu != null && !maPhieu.isBlank()) ? maPhieu
-                : (dao.layDanhSachMaPhieu().isEmpty() ? "SC-2026-0108" : dao.layDanhSachMaPhieu().get(0));
-        // Giữ highlight "Phiếu chờ thu" trên sidebar vì đối chiếu là bước con của luồng này
-        pnlDieuHuongThuNgan.chonMuc("Phiếu chờ thu");
-        mucThuNganDangMo = "Phiếu chờ thu";
-        setScreen(new DoiChieuChiPhiPanel(
-                dao, ma,
-                ht -> {
-                    // Điều hướng dựa trên hình thức thanh toán được chọn
-                    if (ht == entity.HinhThucThanhToan.TIEN_MAT) {
-                        moThanhToanTienMatTuPhieu(ma);
-                    } else if (ht == entity.HinhThucThanhToan.CHUYEN_KHOAN) {
-                        moThanhToanChuyenKhoanTuPhieu(ma);
+        case "Trung tâm thanh toán": {
+            PaymentCenterPanel.Navigation nav = new PaymentCenterPanel.Navigation();
+            nav.costReconciliation = new ActionListener() {
+                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    if (thuNganDAO.timPhieuTheoMa(getTaiKhoanDangNhap(), event.getActionCommand()) != null) {
+                        moDoiChieuChiPhi(event.getActionCommand());
+                    } else {
+                        dieuHuongThuNgan("Đối chiếu chi phí");
                     }
-                },
-                () -> dieuHuongThuNgan("Phiếu chờ thu")));
-        setStatus("Đối chiếu chi phí · " + ma);
+                }
+            };
+            nav.pendingInvoices = new ActionListener() {
+                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    dieuHuongThuNgan("Phiếu chờ thu");
+                }
+            };
+            nav.paidDocuments = new ActionListener() {
+                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    dieuHuongThuNgan("Hoá đơn đã thanh toán");
+                }
+            };
+            nav.documentSearch = new ActionListener() {
+                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    dieuHuongThuNgan("Hoá đơn đã thanh toán");
+                }
+            };
+            nav.cashPayment = new ActionListener() {
+                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    MainFrame.this.moThanhToanTienMat();
+                }
+            };
+            nav.bankTransfer = new ActionListener() {
+                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    dieuHuongThuNgan("Phiếu chờ thu");
+                    setStatus("Chọn phiếu để đối chiếu và thanh toán chuyển khoản.");
+                }
+            };
+            nav.viewInvoice = new ActionListener() {
+                /** Mở đúng hóa đơn được bấm trên Trang chủ Thu ngân. */
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    moChiTietHoaDon(e.getActionCommand());
+                }
+            };
+            setScreen(new PaymentCenterPanel(thuNganDAO, getTaiKhoanDangNhap(), nav));
+            setStatus("Trung tâm thanh toán");
+        }
+            break;
+        case "Phiếu chờ thu": {
+            setScreen(new PendingCollectionPanel(thuNganDAO, getTaiKhoanDangNhap(), this));
+            setStatus("Phiếu chờ thu");
+        }
+            break;
+        case "Đối chiếu chi phí": {
+            pnlDieuHuongThuNgan.chonMuc("Phiếu chờ thu");
+            setScreen(new PendingCollectionPanel(thuNganDAO, getTaiKhoanDangNhap(), this));
+            setStatus("Đối chiếu chi phí · Chọn phiếu để kiểm tra và lập hóa đơn");
+        }
+            break;
+        case "Hoá đơn đã thanh toán": {
+            setScreen(new PaidInvoicesPanel(thuNganDAO, getTaiKhoanDangNhap(), new ActionListener() {
+                /** Xem/in đúng hóa đơn người dùng chọn trong bảng. */
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    moChiTietHoaDon(e.getActionCommand());
+                }
+            }));
+            setStatus("Hóa đơn đã thanh toán");
+        }
+            break;
+        default:
+            setStatus(muc + ": chức năng chưa triển khai.");
+            break;
+        }
+
     }
 
-    /**
-     * Mở màn hình thanh toán tiền mặt cho phiếu chỉ định (từ đối chiếu chi phí).
-     */
-    private void moThanhToanTienMatTuPhieu(String maPhieu) {
-        java.util.List<dao.ThuNganDAO.PhieuChoThu> danhSach = thuNganDAO.layPhieuChoThu();
-        dao.ThuNganDAO.PhieuChoThu phieu = danhSach.stream()
-                .filter(p -> p.getMaPhieu().equals(maPhieu))
-                .findFirst()
-                .orElse(danhSach.isEmpty() ? null : danhSach.get(0));
-        if (phieu == null) {
-            setStatus("Không tìm thấy phiếu " + maPhieu);
+    /** Đối chiếu đúng mã được chọn; không tự thay bằng phiếu đầu danh sách. */
+    public void moDoiChieuChiPhi(String maPhieu) {
+        if (maPhieu == null || thuNganDAO.timPhieuTheoMa(getTaiKhoanDangNhap(), maPhieu) == null) {
+            setStatus("Phiếu không còn chờ thu. Hãy làm mới danh sách.");
             return;
         }
-        setScreen(new CashPaymentConfirmPanel(
-                thuNganDAO,
-                phieu,
-                taiKhoanDangNhap,
-                () -> dieuHuongThuNgan("Trung tâm thanh toán"),
-                maHoaDon -> moChiTietHoaDon(maHoaDon)));
-        setStatus("Thanh toán tiền mặt · " + phieu.getMaPhieu());
+        pnlDieuHuongThuNgan.chonMuc("Phiếu chờ thu");
+        setScreen(new DoiChieuChiPhiPanel(new DoiChieuChiPhiDAO(thuNganDAO, getTaiKhoanDangNhap()), maPhieu,
+                new ActionListener() {
+                    /** Mở đúng bước xác nhận theo hình thức đã chọn. */
+                    @Override
+                    public void actionPerformed(ActionEvent event) {
+                        if (event.getSource() == HinhThucThanhToan.TIEN_MAT) {
+                            moThanhToanTienMat(maPhieu);
+                        } else {
+                            moThanhToanChuyenKhoan(maPhieu);
+                        }
+                    }
+                }, new ActionListener() {
+                    /** Trở lại danh sách phiếu chờ thu. */
+                    @Override
+                    public void actionPerformed(ActionEvent event) {
+                        dieuHuongThuNgan("Phiếu chờ thu");
+                    }
+                }));
+        setStatus("Đối chiếu chi phí · " + maPhieu);
     }
 
-    /**
-     * Mở màn hình thanh toán chuyển khoản / QR cho phiếu chỉ định (từ đối chiếu chi phí).
-     */
-    private void moThanhToanChuyenKhoanTuPhieu(String maPhieu) {
-        java.util.List<dao.ThuNganDAO.PhieuChoThu> danhSach = thuNganDAO.layPhieuChoThu();
-        dao.ThuNganDAO.PhieuChoThu phieu = danhSach.stream()
-                .filter(p -> p.getMaPhieu().equals(maPhieu))
-                .findFirst()
-                .orElse(danhSach.isEmpty() ? null : danhSach.get(0));
+    /** Mở chuyển khoản cho phiếu đã đối chiếu và chưa được thu. */
+    private void moThanhToanChuyenKhoan(String maPhieu) {
+        PhieuChoThu phieu = thuNganDAO.timPhieuTheoMa(getTaiKhoanDangNhap(), maPhieu);
         if (phieu == null) {
-            setStatus("Không tìm thấy phiếu " + maPhieu);
+            setStatus("Phiếu không còn chờ thu.");
             return;
         }
-        setScreen(new ui.screen.BankTransferPaymentPanel(
-                thuNganDAO,
-                phieu,
-                taiKhoanDangNhap,
-                () -> dieuHuongThuNgan("Trung tâm thanh toán"),
-                maHoaDon -> moChiTietHoaDon(maHoaDon)));
-        setStatus("Thanh toán chuyển khoản / QR · " + phieu.getMaPhieu());
-    }
-
-    /** Tạo panel trống giữ chỗ cho màn hình chưa tích hợp. */
-    private JPanel taoManHinhTrong() {
-        JPanel pnl = new JPanel();
-        pnl.setOpaque(false);
-        return pnl;
+        setScreen(new BankTransferPaymentPanel(thuNganDAO, phieu, getTaiKhoanDangNhap(), new ActionListener() {
+            /** Quay lại bước đối chiếu. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                moDoiChieuChiPhi(maPhieu);
+            }
+        }, new ActionListener() {
+            /** Chuyển tới đúng hóa đơn vừa thu, có thể xem và in lại. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                moChiTietHoaDon(event.getActionCommand());
+            }
+        }));
+        setStatus("Thanh toán chuyển khoản / QR · " + maPhieu);
     }
 
     /** Mở màn xác nhận thu tiền mặt cho phiếu được chọn. */
     private void moThanhToanTienMat() {
-        java.util.List<dao.ThuNganDAO.PhieuChoThu> danhSach =
-                thuNganDAO.layPhieuChoThu();
-        System.out.println("[DEBUG] moThanhToanTienMat: " + danhSach.size() + " phiếu chờ");
+        List<PhieuChoThu> danhSach = thuNganDAO.layPhieuChoThu(getTaiKhoanDangNhap());
         if (danhSach.isEmpty()) {
             setStatus("Không có phiếu chờ thu tiền mặt.");
+
             return;
         }
-        dao.ThuNganDAO.PhieuChoThu phieu = danhSach.get(0);
-        setScreen(new CashPaymentConfirmPanel(
-                thuNganDAO,
-                phieu,
-                taiKhoanDangNhap,
-                () -> {
-                    System.out.println("[DEBUG] Callback quay về");
-                    dieuHuongThuNgan("Trung tâm thanh toán");
-                },
-                maHoaDon -> {
-                    System.out.println("[DEBUG] Callback sau xác nhận thanh toán: " + maHoaDon);
-                    moChiTietHoaDon(maHoaDon);
-                }));
+        dieuHuongThuNgan("Phiếu chờ thu");
+    }
+
+    /** Đọc lại phiếu được chọn trước khi mở xác nhận thanh toán. */
+    public void moThanhToanTienMat(String maPhieu) {
+        PhieuChoThu phieu = thuNganDAO.timPhieuTheoMa(getTaiKhoanDangNhap(), maPhieu);
+        if (phieu == null) {
+            setStatus("Phiếu không còn chờ thu. Hãy làm mới danh sách.");
+            return;
+        }
+        setScreen(new CashPaymentConfirmPanel(thuNganDAO, phieu, taiKhoanDangNhap, new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                dieuHuongThuNgan("Trung tâm thanh toán");
+            }
+        }, new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                moChiTietHoaDon(event.getActionCommand());
+            }
+        }));
         setStatus("Thanh toán tiền mặt · " + phieu.getMaPhieu());
     }
-    
-    /**
-     * Mở màn hình chi tiết hóa đơn và in lại.
-     */
-    private void moChiTietHoaDon(String maHoaDon) {
+
+    /** Mở chi tiết hóa đơn hợp lệ trong nguồn chung, không tự lấy chứng từ khác. */
+    private void moChiTietHoaDon(String ma) {
+        if (thuNganDAO.timHoaDonTheoMa(getTaiKhoanDangNhap(), ma) == null) {
+            setStatus("Không tìm thấy hóa đơn " + ma);
+            return;
+        }
         pnlDieuHuongThuNgan.chonMuc("Hoá đơn đã thanh toán");
-        mucThuNganDangMo = "Hoá đơn đã thanh toán";
-        
-        dao.DoiChieuChiPhiDAO doiChieuDAO = new dao.DoiChieuChiPhiDAO();
-        setScreen(new ui.screen.PaidInvoiceDetailPanel(
-                thuNganDAO,
-                doiChieuDAO,
-                maHoaDon,
-                () -> dieuHuongThuNgan("Hoá đơn đã thanh toán")));
-        setStatus("Chi tiết hóa đơn · " + maHoaDon);
+        setScreen(new PaidInvoiceDetailPanel(thuNganDAO, getTaiKhoanDangNhap(), ma, new ActionListener() {
+            /** Quay về danh sách đã thanh toán và đọc lại dữ liệu. */
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dieuHuongThuNgan("Hoá đơn đã thanh toán");
+            }
+        }));
+        setStatus("Chi tiết hóa đơn · " + ma);
     }
 }

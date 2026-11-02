@@ -1,5 +1,14 @@
 package ui.screen.kythuat;
 
+import dao.kiemtra.BaoCaoKiemTraDAO;
+import dao.phutung.PhuTungSuDungDAO;
+import dao.suachua.KyThuatDAO;
+import dao.suachua.PhieuSuaChuaDAO;
+import entity.kiemtra.BaoCaoKiemTra;
+import entity.kiemtra.TrangThaiKiemTra;
+import entity.nhansu.TaiKhoan;
+import entity.tiepnhan.PhieuTiepNhan;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -23,15 +32,20 @@ import javax.swing.JPopupMenu;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
-import dao.BaoCaoKiemTraDAO;
-import dao.KyThuatDAO;
-import dao.PhieuSuaChuaDAO;
-import dao.PhuTungSuDungDAO;
-import entity.BaoCaoKiemTra;
-import entity.PhieuTiepNhan;
-import entity.TaiKhoan;
-import entity.TrangThaiKiemTra;
-import static ui.component.GiaoDienKyThuat.*;
+import static ui.component.GiaoDienKyThuat.CHU_THUONG;
+import static ui.component.GiaoDienKyThuat.bocBang;
+import static ui.component.GiaoDienKyThuat.dinhDangCombo;
+import static ui.component.GiaoDienKyThuat.taoBang;
+import static ui.component.GiaoDienKyThuat.taoCot;
+import static ui.component.GiaoDienKyThuat.taoHangNut;
+import static ui.component.GiaoDienKyThuat.taoMatPhang;
+import static ui.component.GiaoDienKyThuat.taoModel;
+import static ui.component.GiaoDienKyThuat.taoNhan;
+import static ui.component.GiaoDienKyThuat.taoNut;
+import static ui.component.GiaoDienKyThuat.taoThe;
+import static ui.component.GiaoDienKyThuat.taoThongBao;
+import static ui.component.GiaoDienKyThuat.taoTruong;
+import static ui.component.GiaoDienKyThuat.themThanhPhan;
 
 // Hiển thị danh sách, lập báo cáo và đối chiếu kết quả kiểm tra.
 public final class BaoCaoKiemTraPanel extends TrangKyThuatPanel {
@@ -41,14 +55,19 @@ public final class BaoCaoKiemTraPanel extends TrangKyThuatPanel {
         super(khongGian);
     }
 
+    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     public BaoCaoKiemTraPanel(JFrame winChu, TaiKhoan taiKhoan) {
         this(winChu, taiKhoan, new BaoCaoKiemTraDAO());
     }
 
+    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     public BaoCaoKiemTraPanel(JFrame winChu, TaiKhoan taiKhoan, BaoCaoKiemTraDAO nguonChung) {
-        this(new KhongGianKyThuatPanel(winChu, taiKhoan, () -> {},
-                new KyThuatDAO(() -> taiKhoan, new PhieuSuaChuaDAO(),
-                        nguonChung, new PhuTungSuDungDAO())));
+        this(new KhongGianKyThuatPanel(winChu, taiKhoan, new ActionListener() {
+            // Constructor xem riêng báo cáo không điều hướng đăng xuất.
+            @Override
+            public void actionPerformed(ActionEvent event) {
+            }
+        }, new KyThuatDAO(taiKhoan, new PhieuSuaChuaDAO(), nguonChung, new PhuTungSuDungDAO())));
         actionPerformed(new ActionEvent(this, 0, "DANH_SACH"));
     }
 
@@ -146,6 +165,7 @@ public final class BaoCaoKiemTraPanel extends TrangKyThuatPanel {
             khongGian.baoLoi("Không có phiếu phù hợp",
                     "Không còn phiếu hợp lệ đang chờ kiểm tra trong phạm vi phân công.");
             return;
+
         }
         JPopupMenu mnuPhieu = new JPopupMenu();
         for (PhieuTiepNhan dong : cacPhieu) {

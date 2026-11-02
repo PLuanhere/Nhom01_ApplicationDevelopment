@@ -5,6 +5,8 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Frame;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 
 import javax.swing.BorderFactory;
@@ -20,19 +22,12 @@ public final class WindowTitlePanel extends JPanel {
     /** Phiên bản tuần tự hóa của thành phần Swing. */
     private static final long serialVersionUID = 1L;
 
-    /**
-     * Tạo tiêu đề và nút thu nhỏ, phóng to, đóng cho cửa sổ chủ.
-     * @param winChu cửa sổ nhận thao tác; phải được khởi tạo trên EDT
-     */
+    /** Tạo tiêu đề và nút thu nhỏ, phóng to, đóng cho cửa sổ chủ. */
     public WindowTitlePanel(JFrame winChu) {
         this(winChu, false);
     }
 
-    /**
-     * Tạo thanh tiêu đề đầy đủ hoặc bản gọn cho màn hình đăng nhập.
-     * @param winChu cửa sổ nhận thao tác trên EDT
-     * @param thuGon true để chỉ hiện tên cửa sổ và nút đóng, false để hiện đủ điều khiển
-     */
+    /** Tạo thanh tiêu đề đầy đủ hoặc bản gọn cho màn hình đăng nhập. */
     public WindowTitlePanel(JFrame winChu, boolean thuGon) {
         super(new BorderLayout(UiTheme.SPACE_MEDIUM, 0));
         setBackground(UiTheme.SURFACE);
@@ -40,8 +35,8 @@ public final class WindowTitlePanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
 
         // Icon và kiểu chữ giữ đúng tỷ lệ 14 px / 13 pt trong thanh tiêu đề Figma.
-        JLabel lblTieuDe = new JLabel(winChu.getTitle(),
-                thuGon ? null : new ImageIcon(winChu.getIconImage()), JLabel.LEFT);
+        JLabel lblTieuDe = new JLabel(winChu.getTitle(), thuGon ? null : new ImageIcon(winChu.getIconImage()),
+                JLabel.LEFT);
         lblTieuDe.setFont(UiTheme.SHELL_FONT);
         lblTieuDe.setForeground(UiTheme.TEXT);
         lblTieuDe.setIconTextGap(UiTheme.SPACE_MEDIUM);
@@ -59,22 +54,37 @@ public final class WindowTitlePanel extends JPanel {
             // Bản đăng nhập cố định kích thước nên không có nút thu nhỏ/phóng to.
             JButton btnThuNho = createWindowButton("—", "Thu nhỏ cửa sổ");
             JButton btnPhongTo = createWindowButton("□", "Phóng to / khôi phục cửa sổ");
-            btnThuNho.addActionListener(event -> winChu.setExtendedState(winChu.getExtendedState() | Frame.ICONIFIED));
-            btnPhongTo.addActionListener(event -> toggleMaximized(winChu));
+            btnThuNho.addActionListener(new ActionListener() {
+                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    winChu.setExtendedState(winChu.getExtendedState() | Frame.ICONIFIED);
+                }
+            });
+            btnPhongTo.addActionListener(new ActionListener() {
+                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    toggleMaximized(winChu);
+                }
+            });
             pnlNutCuaSo.add(btnThuNho);
             pnlNutCuaSo.add(btnPhongTo);
         }
         // Nút đóng dùng chung cho cả hai kiểu tiêu đề.
         JButton btnDong = createWindowButton("×", "Đóng cửa sổ");
-        btnDong.addActionListener(event -> winChu.dispatchEvent(new WindowEvent(winChu, WindowEvent.WINDOW_CLOSING)));
+        btnDong.addActionListener(new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                winChu.dispatchEvent(new WindowEvent(winChu, WindowEvent.WINDOW_CLOSING));
+            }
+        });
         pnlNutCuaSo.add(btnDong);
         add(pnlNutCuaSo, BorderLayout.EAST);
     }
 
-    /**
-     * Đổi giữa phóng to và kích thước trước đó; dùng cho nút và nhấp đôi tiêu đề.
-     * @param winChu cửa sổ cần đổi trạng thái
-     */
+    /** Đổi giữa phóng to và kích thước trước đó; dùng cho nút và nhấp đôi tiêu đề. */
     static void toggleMaximized(JFrame winChu) {
         if ((winChu.getExtendedState() & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH) {
             winChu.setExtendedState(Frame.NORMAL);
@@ -83,12 +93,7 @@ public final class WindowTitlePanel extends JPanel {
         }
     }
 
-    /**
-     * Tạo nút nhỏ, phẳng, không có viền hoặc hiệu ứng nổi của Metal Look and Feel.
-     * @param kyHieu ký hiệu điều khiển cửa sổ
-     * @param moTa mô tả tooltip và nhãn hỗ trợ truy cập
-     * @return nút chưa gắn hành động
-     */
+    /** Tạo nút nhỏ, phẳng, không có viền hoặc hiệu ứng nổi của Metal Look and Feel. */
     private JButton createWindowButton(String kyHieu, String moTa) {
         // Mỗi nút nằm trong hàng cao 20 px, dành tổng cộng 90 px như Figma.
         JButton btnCuaSo = new JButton(kyHieu);
