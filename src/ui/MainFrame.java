@@ -44,24 +44,24 @@ import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
 import ui.component.WindowTitlePanel;
 import ui.screen.BaoCaoKiemTraPanel;
-import ui.screen.KhachHangPanel;
-import ui.screen.BaoGiaPanel;
-import ui.screen.BanGiaoXePanel;
-import ui.screen.LenhSuaChuaTiepNhanPanel;
+import ui.screen.tiepnhan.KhachHangPanel;
+import ui.screen.tiepnhan.BaoGiaPanel;
+import ui.screen.tiepnhan.BanGiaoXePanel;
+import ui.screen.tiepnhan.LenhSuaChuaTiepNhanPanel;
 import ui.screen.KhongGianKyThuatPanel;
 import ui.screen.quanly.NhanVienPanel;
 import ui.screen.quanly.TaiKhoanPanel;
 import ui.screen.quanly.DichVuPanel;
 import ui.screen.quanly.PhuTungPanel;
-import ui.screen.PhieuTiepNhanPanel;
+import ui.screen.tiepnhan.PhieuTiepNhanPanel;
 import ui.screen.PhieuSuaChuaPanel;
 import ui.screen.CashPaymentConfirmPanel;
 import ui.screen.PaymentCenterPanel;
 import ui.screen.PendingCollectionPanel;
 import ui.screen.PhuTungSuDungPanel;
 import ui.screen.TrangChuKyThuatPanel;
-import ui.screen.TrangChuTiepNhanPanel;
-import ui.screen.XePanel;
+import ui.screen.tiepnhan.TrangChuTiepNhanPanel;
+import ui.screen.tiepnhan.XePanel;
 
 /** Khung chung chứa header, sidebar và màn hình làm việc của các vai trò. */
 public final class MainFrame extends JFrame implements ActionListener {

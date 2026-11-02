@@ -1,4 +1,4 @@
-package ui.screen;
+package ui.screen.tiepnhan;
 
 import java.awt.*;
 import java.math.BigDecimal;
