@@ -1,4 +1,4 @@
-package ui.screen;
+package ui.screen.kythuat;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -1145,7 +1145,7 @@ public final class KhongGianKyThuatPanel extends JPanel implements ActionListene
             throw new IllegalArgumentException("Chưa có phụ tùng hợp lệ để ghi nhận.");
         }
         BigDecimal soLuong = PhuTungUi.docSoLuong(txtLuong);
-        phuTung.kiemTraSoLuong(soLuong);
+        phuTung.kiemTraSoLuong(soLuong.doubleValue());
         if (!xacNhan("Ghi nhận phụ tùng đã sử dụng",
                 "Gắn phụ tùng vào lệnh và hạng mục được khách đồng ý.",
                 new String[][] {{"Lệnh sửa chữa", maLenh},

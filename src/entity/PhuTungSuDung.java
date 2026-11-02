@@ -24,7 +24,7 @@ public final class PhuTungSuDung {
         this.maGhiNhan = Objects.requireNonNull(maGhiNhan).trim();
         this.maLenhSuaChua = Objects.requireNonNull(maLenhSuaChua).trim();
         this.phuTung = Objects.requireNonNull(phuTung);
-        phuTung.kiemTraSoLuong(soLuong);
+        phuTung.kiemTraSoLuong(soLuong.doubleValue());
         this.soLuong = soLuong;
         this.nguoiThucHien = Objects.requireNonNull(nguoiThucHien);
         this.ghiChu = Objects.requireNonNull(ghiChu);

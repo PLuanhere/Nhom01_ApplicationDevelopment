@@ -128,7 +128,7 @@ public final class LenhPhuTungDAO {
                     continue;
                 }
                 PhuTung phuTung = phuTungDAO.docPhuTung(dong.getKey());
-                phuTung.kiemTraSoLuong(soLuong);
+                phuTung.kiemTraSoLuong(soLuong.doubleValue());
                 if (soLuong.compareTo(phuTungDAO.docTon(dong.getKey())) > 0) {
                     throw new IllegalArgumentException("Số lượng " + dong.getKey() + " vượt tồn kho.");
                 }

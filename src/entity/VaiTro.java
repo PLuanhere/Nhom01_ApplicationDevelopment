@@ -1,6 +1,6 @@
 package entity;
 
-/* Bốn vai trò nhân viên */
+/** Các vai trò truy cập ứng dụng và tên hiển thị tương ứng. */
 public enum VaiTro {
 
     QUAN_LY("Quản lý"),
@@ -10,15 +10,17 @@ public enum VaiTro {
 
     private final String tenHienThi;
 
+    /** Gắn tên hiển thị cho một vai trò. */
     VaiTro(String tenHienThi) {
         this.tenHienThi = tenHienThi;
     }
 
+    /** Trả về tên hiển thị của vai trò. */
     public String getTenHienThi() {
         return tenHienThi;
     }
 
-    /** @return tên vai trò khi hiển thị trong ô lựa chọn */
+    /** Trả về tên hiển thị để dùng trong biểu mẫu và bảng. */
     @Override
     public String toString() { return tenHienThi; }
 }
