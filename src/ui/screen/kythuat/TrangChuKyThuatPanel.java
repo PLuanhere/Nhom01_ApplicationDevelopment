@@ -1,298 +1,162 @@
 package ui.screen.kythuat;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-
-import entity.ThongKeNgayKyThuat;
+import javax.swing.SwingConstants;
+import entity.BaoCaoKiemTra;
+import entity.PhieuSuaChua;
+import entity.PhieuTiepNhan;
 import entity.TongQuanKyThuat;
-import ui.component.KyThuatUi;
-import ui.component.UiTheme;
-import ui.dialog.ChiTietCongViecHoanTatDialog;
+import entity.TrangThaiKiemTra;
+import entity.TrangThaiSuaChua;
+import ui.MainFrame;
+import ui.component.PhuTungUi;
+import static ui.component.GiaoDienKyThuat.*;
 
-// Hiển thị dashboard kỹ thuật bên trong MainFrame, không tạo lại khung ứng dụng chung.
-public final class TrangChuKyThuatPanel extends JPanel implements ActionListener {
+// Hiển thị tổng quan công việc và các đường tắt của kỹ thuật viên.
+public final class TrangChuKyThuatPanel extends TrangKyThuatPanel {
     private static final long serialVersionUID = 1L;
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    private final TongQuanKyThuat tongQuan;
-    private final ActionListener boXuLyDieuHuong;
-    private final JFrame winChu;
-    private final List<ThongKeNgayKyThuat> thongKeNgay;
-    private final JButton[] btnCotNgay;
 
-    /**
-     * @param tongQuan dữ liệu tổng quan của kỹ thuật viên
-     * @param winChu khung chung chứa dashboard
-     * @param boXuLyDieuHuong đối tượng xử lý chuyển chức năng
-     */
+    TrangChuKyThuatPanel(KhongGianKyThuatPanel khongGian) {
+        super(khongGian);
+    }
+
     public TrangChuKyThuatPanel(TongQuanKyThuat tongQuan, JFrame winChu, ActionListener boXuLyDieuHuong) {
-        super(new BorderLayout(8, 8));
-        this.tongQuan = Objects.requireNonNull(tongQuan, "Cần dữ liệu dashboard.");
-        this.winChu = Objects.requireNonNull(winChu, "Cần khung chung.");
-        this.boXuLyDieuHuong = Objects.requireNonNull(boXuLyDieuHuong, "Cần đối tượng xử lý điều hướng.");
-        thongKeNgay = tongQuan.getThongKeNgay();
-        btnCotNgay = new JButton[thongKeNgay.size()];
-        setBackground(UiTheme.WINDOW);
-        add(taoPhanDau(), BorderLayout.NORTH);
-        JScrollPane scrNoiDung = new JScrollPane(taoNoiDung());
-        scrNoiDung.setBorder(BorderFactory.createEmptyBorder());
-        scrNoiDung.getViewport().setBackground(UiTheme.WINDOW);
-        scrNoiDung.getVerticalScrollBar().setUnitIncrement(16);
-        add(scrNoiDung, BorderLayout.CENTER);
-        JPanel pnlCuoi = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        pnlCuoi.setOpaque(false);
-        JButton btnDoiVaiTro = KyThuatUi.taoNut("Đổi vai trò", 132);
-        btnDoiVaiTro.setToolTipText("Tài khoản hiện tại chỉ được cấp một vai trò kỹ thuật.");
-        btnDoiVaiTro.addActionListener(boXuLyDieuHuong);
-        pnlCuoi.add(btnDoiVaiTro);
-        add(pnlCuoi, BorderLayout.SOUTH);
+        this(taoKhongGian(winChu));
+        Objects.requireNonNull(tongQuan, "Cần dữ liệu tổng quan.");
+        Objects.requireNonNull(boXuLyDieuHuong, "Cần thao tác điều hướng.");
+        khongGian.chuyen("TONG_QUAN");
+        add(khongGian.pnlNoiDung, BorderLayout.CENTER);
     }
 
-    /** {@inheritDoc} */
-    // Xác định cột được bấm từ nguồn sự kiện rồi mở thống kê của đúng ngày.
-    @Override
-    public void actionPerformed(ActionEvent event) {
-        Object nguon = event.getSource();
-        for (int i = 0; i < btnCotNgay.length; i++) {
-            if (nguon == btnCotNgay[i]) {
-                moChiTiet(thongKeNgay.get(i));
-                return;
+    // Lấy phiên đăng nhập để giữ constructor mà MainFrame đang sử dụng.
+    private static KhongGianKyThuatPanel taoKhongGian(JFrame winChu) {
+        if (!(winChu instanceof MainFrame)) {
+            throw new IllegalArgumentException("Cần khung chính có phiên đăng nhập.");
+        }
+        MainFrame khungChinh = (MainFrame) winChu;
+        return new KhongGianKyThuatPanel(winChu, khungChinh.getTaiKhoanDangNhap(), () -> {});
+    }
+
+    // Đọc dữ liệu trong phiên và hiển thị tổng quan kỹ thuật.
+    void hienTongQuan() {
+        JPanel pnlTrang = taoTrang("Công việc kỹ thuật",
+                "Ưu tiên lệnh được giao, kiểm tra xe và cập nhật phụ tùng đã dùng.",
+                "Tác vụ thường dùng", "PHAN_CONG");
+        int dangSua = 0;
+        int choPhuTung = 0;
+        int hoanTat = 0;
+        List<PhieuSuaChua> cacLenh = khongGian.dao.docLenh("", "Tất cả");
+        for (PhieuSuaChua lenh : cacLenh) {
+            if ("Chờ phụ tùng".equals(khongGian.dao.docTrangThai(lenh))) {
+                choPhuTung++;
+            } else if (lenh.getTrangThai() != TrangThaiSuaChua.HOAN_THANH) {
+                dangSua++;
+            }
+            if (lenh.getThoiDiemHoanTat() != null
+                    && lenh.getThoiDiemHoanTat().toLocalDate().equals(LocalDate.now())) {
+                hoanTat++;
             }
         }
-    }
-
-    /** @return panel chứa tiêu đề và mô tả dashboard */
-    // Tạo tiêu đề cùng thông tin kỹ thuật viên và ngày báo cáo.
-    private JPanel taoPhanDau() {
-        JPanel pnlPhanDau = new JPanel(new BorderLayout(0, 8));
-        pnlPhanDau.setOpaque(false);
-        pnlPhanDau.add(KyThuatUi.taoNhan("Trang chủ • Kỹ thuật",
-                UiTheme.BRAND_FONT.deriveFont(22.0f)), BorderLayout.NORTH);
-        pnlPhanDau.add(KyThuatUi.taoNhan("Dashboard công việc cá nhân • " + tongQuan.getTenKyThuatVien()
-                + " • " + tongQuan.getNgayBaoCao().format(DATE_FORMAT),
-                UiTheme.SHELL_FONT.deriveFont(12.0f)), BorderLayout.CENTER);
-        return pnlPhanDau;
-    }
-
-    /** @return panel chứa các thẻ dashboard */
-    // Xếp các chỉ số, biểu đồ, lưu ý và lối vào theo thứ tự thiết kế.
-    private JPanel taoNoiDung() {
-        JPanel pnlNoiDung = new JPanel();
-        pnlNoiDung.setLayout(new BoxLayout(pnlNoiDung, BoxLayout.Y_AXIS));
-        pnlNoiDung.setBackground(UiTheme.WINDOW);
-        JPanel pnlChiSo = new JPanel(new GridLayout(1, 4, 8, 0));
-        pnlChiSo.setOpaque(false);
-        pnlChiSo.add(taoChiSo("Đang sửa", tongQuan.getDangSua(), "Lệnh của tôi"));
-        pnlChiSo.add(taoChiSo("Chờ phụ tùng", tongQuan.getChoPhuTung(), "Cần bổ sung vật tư"));
-        pnlChiSo.add(taoChiSo("Chờ khách duyệt", tongQuan.getChoKhachDuyet(), "Phát sinh chưa thực hiện"));
-        pnlChiSo.add(taoChiSo("Hoàn tất", tongQuan.tinhHoanTatTrongNgay(), "Công việc trong ngày"));
-        themThe(pnlNoiDung, pnlChiSo, 124);
-        themThe(pnlNoiDung, taoBieuDo(), 246);
-        themThe(pnlNoiDung, taoTomTat(), 82);
-        themThe(pnlNoiDung, taoLoiVao(), 94);
-        pnlNoiDung.add(Box.createVerticalGlue());
-        return pnlNoiDung;
-    }
-
-    /**
-     * @param pnlCha panel chứa các thẻ
-     * @param pnlThe thẻ cần thêm
-     * @param chieuCao chiều cao thiết kế, tính bằng pixel
-     */
-    // Giữ chiều cao thiết kế hoặc tăng theo nội dung khi font cần thêm không gian.
-    private void themThe(JPanel pnlCha, JPanel pnlThe, int chieuCao) {
-        chieuCao = Math.max(chieuCao, pnlThe.getPreferredSize().height);
-        pnlThe.setAlignmentX(Component.LEFT_ALIGNMENT);
-        pnlThe.setPreferredSize(new Dimension(0, chieuCao));
-        pnlThe.setMinimumSize(new Dimension(0, chieuCao));
-        pnlThe.setMaximumSize(new Dimension(Integer.MAX_VALUE, chieuCao));
-        if (pnlCha.getComponentCount() > 0) {
-            pnlCha.add(Box.createVerticalStrut(8));
+        List<PhieuTiepNhan> cacPhieuCho = new ArrayList<PhieuTiepNhan>();
+        for (PhieuTiepNhan phieuCho : khongGian.dao.docPhieu()) {
+            BaoCaoKiemTra daCo = phieuCho.isDaXacNhan() ? khongGian.dao.docBaoCao(phieuCho) : null;
+            if (phieuCho.isDaXacNhan() && (daCo == null || daCo.getTrangThai() == TrangThaiKiemTra.NHAP)) {
+                cacPhieuCho.add(phieuCho);
+            }
         }
-        pnlCha.add(pnlThe);
+        themThanhPhan(pnlTrang, taoHang(taoTheSo("Đang sửa", dangSua, "Lệnh thuộc phạm vi phân công"),
+                taoTheSo("Xe chờ kiểm tra", cacPhieuCho.size(), "Ưu tiên theo thời điểm tiếp nhận"),
+                taoTheSo("Chờ phụ tùng", choPhuTung, "Không xuất vượt tồn kho"),
+                taoTheSo("Hoàn tất hôm nay", hoanTat, "Đã ghi nhận kết quả")));
+        JPanel pnlTrai = taoCot();
+        JPanel pnlLenh = taoCot();
+        for (PhieuSuaChua lenh : cacLenh) {
+            JButton btnLenh = taoNut("<html><b>" + lenh.getMaPhieu() + " · " + lenh.getBienSo()
+                    + "</b><br>" + khongGian.dao.docTrangThai(lenh) + " · Hạn "
+                    + lenh.getHanHoanThanh().format(DateTimeFormatter.ofPattern("dd/MM HH:mm")) + "</html>",
+                    "LENH:" + lenh.getMaPhieu(), false, new ActionListener() {
+                        // Mở tiến độ của lệnh được chọn.
+                        @Override
+                        public void actionPerformed(ActionEvent suKien) {
+                            khongGian.maLenh = lenh.getMaPhieu();
+                            khongGian.viTriHangMuc = 0;
+                            khongGian.chuyen("TIEN_DO");
+                        }
+                    });
+            btnLenh.setHorizontalAlignment(SwingConstants.LEFT);
+            btnLenh.setPreferredSize(new Dimension(0, 64));
+            btnLenh.setMaximumSize(new Dimension(Integer.MAX_VALUE, 64));
+            pnlLenh.add(btnLenh);
+        }
+        themThanhPhan(pnlTrai, taoThe("Lệnh được phân công", "Xem nhanh tình trạng và hạn xử lý", pnlLenh));
+        JPanel pnlCho = taoCot();
+        for (PhieuTiepNhan phieuCho : cacPhieuCho) {
+            JButton btnPhieu = taoNut("<html>" + phieuCho.getMaPhieu() + " · "
+                    + phieuCho.getBienSo() + "<br>" + phieuCho.getYeuCau() + "</html>",
+                    "MO_PHIEU", false, new ActionListener() {
+                        // Mở báo cáo kiểm tra của phiếu tiếp nhận được chọn.
+                        @Override
+                        public void actionPerformed(ActionEvent suKien) {
+                            khongGian.pnlKiemTraXe.moPhieu(phieuCho);
+                        }
+                    });
+            btnPhieu.setHorizontalAlignment(SwingConstants.LEFT);
+            btnPhieu.setPreferredSize(new Dimension(0, 64));
+            btnPhieu.setMaximumSize(new Dimension(Integer.MAX_VALUE, 64));
+            pnlCho.add(btnPhieu);
+        }
+        themThanhPhan(pnlTrai, taoThe("Xe chờ kiểm tra", "", pnlCho));
+        JPanel pnlPhai = taoCot();
+        JPanel pnlTacVu = new JPanel(new GridLayout(2, 2, 10, 10));
+        pnlTacVu.setOpaque(false);
+        pnlTacVu.add(taoNut("Lập báo cáo kiểm tra", "TAO_BAO_CAO", true, khongGian));
+        pnlTacVu.add(taoNut("Cập nhật tiến độ", "TIEN_DO", false, khongGian));
+        pnlTacVu.add(taoNut("Phụ tùng đã dùng", "PHU_TUNG", false, khongGian));
+        pnlTacVu.add(taoNut("Báo phát sinh", "PHAT_SINH", false, khongGian));
+        JPanel pnlTacVuCot = taoCot();
+        themThanhPhan(pnlTacVuCot, pnlTacVu);
+        pnlTacVuCot.add(taoThongBao(
+                "Hạng mục phát sinh phải có báo giá được khách chấp thuận trước khi sửa.", false));
+        themThanhPhan(pnlPhai, taoThe("Công việc tiếp theo",
+                "Cập nhật từ một lệnh đang thực hiện", pnlTacVuCot));
+        JPanel pnlDuongTat = new JPanel(new GridLayout(2, 2, 10, 10));
+        pnlDuongTat.setOpaque(false);
+        for (int viTri : new int[] {1, 2, 3, 4}) {
+            pnlDuongTat.add(taoNut(KhongGianKyThuatPanel.CAC_NHAN[viTri],
+                    KhongGianKyThuatPanel.CAC_TRANG[viTri], false, khongGian));
+        }
+        themThanhPhan(pnlPhai, taoThe("Đường tắt", "", pnlDuongTat));
+        themThanhPhan(pnlTrang, taoHaiCot(pnlTrai, pnlPhai));
+        hienTrang(pnlTrang);
     }
 
-    /**
-     * @param nhan tên chỉ số
-     * @param soLuong giá trị thống kê
-     * @param nguCanh phạm vi thống kê
-     * @return thẻ chỉ số
-     */
-    // Xếp nhãn, số và mô tả theo chiều cao riêng để số lớn không bị cắt.
-    private JPanel taoChiSo(String nhan, int soLuong, String nguCanh) {
-        JPanel pnlThe = KyThuatUi.taoThe();
-        JPanel pnlChu = new JPanel();
-        pnlChu.setLayout(new BoxLayout(pnlChu, BoxLayout.Y_AXIS));
-        pnlChu.setOpaque(false);
-        pnlChu.add(KyThuatUi.taoNhan(nhan, UiTheme.CAPTION_FONT));
-        pnlChu.add(Box.createVerticalStrut(8));
-        pnlChu.add(KyThuatUi.taoNhan(String.valueOf(soLuong), UiTheme.BRAND_FONT.deriveFont(26.0f)));
-        pnlChu.add(Box.createVerticalStrut(8));
-        pnlChu.add(KyThuatUi.taoNhan(nguCanh, UiTheme.CAPTION_FONT));
-        pnlThe.add(pnlChu, BorderLayout.NORTH);
+    // Tạo thẻ thống kê gồm nhãn, số lượng và chú thích.
+    private JPanel taoTheSo(String nhan, int so, String ghiChu) {
+        JPanel pnlThe = taoMatPhang();
+        JLabel lblNhan = taoNhan(nhan, false);
+        lblNhan.setFont(CHU_NHO);
+        lblNhan.setForeground(CHU_PHU);
+        JLabel lblSo = taoNhan(String.format("%02d", so), true);
+        lblSo.setFont(CHU_DAM.deriveFont(24.0f));
+        javax.swing.JTextArea txaChuThich = PhuTungUi.taoMoTa(ghiChu);
+        txaChuThich.setFont(CHU_NHO);
+        txaChuThich.setForeground(CHU_PHU);
+        pnlThe.add(lblNhan, BorderLayout.NORTH);
+        pnlThe.add(lblSo, BorderLayout.CENTER);
+        pnlThe.add(txaChuThich, BorderLayout.SOUTH);
         return pnlThe;
-    }
-
-    /** @return panel biểu đồ số công việc hoàn tất theo ngày */
-    // Tạo biểu đồ và đăng ký sự kiện mở chi tiết cho từng cột.
-    private JPanel taoBieuDo() {
-        JPanel pnlBieuDo = KyThuatUi.taoThe();
-        JPanel pnlTieuDe = new JPanel(new GridLayout(2, 1, 0, 8));
-        pnlTieuDe.setOpaque(false);
-        pnlTieuDe.add(KyThuatUi.taoNhan("Công việc đã hoàn tất theo ngày", UiTheme.BRAND_FONT));
-        JLabel lblHuongDan = KyThuatUi.taoNhan("Bấm vào cột hoặc ngày để xem chi tiết.", UiTheme.CAPTION_FONT);
-        lblHuongDan.setForeground(UiTheme.PRIMARY);
-        pnlTieuDe.add(lblHuongDan);
-        pnlBieuDo.add(pnlTieuDe, BorderLayout.NORTH);
-        JPanel pnlCot = new JPanel(new GridLayout(1, Math.max(1, thongKeNgay.size()), 8, 0));
-        pnlCot.setOpaque(false);
-        for (int i = 0; i < thongKeNgay.size(); i++) {
-            btnCotNgay[i] = taoCot(thongKeNgay.get(i));
-            btnCotNgay[i].addActionListener(this);
-            pnlCot.add(btnCotNgay[i]);
-        }
-        if (thongKeNgay.isEmpty()) {
-            pnlCot.add(KyThuatUi.taoNhan("Chưa có công việc hoàn tất trong kỳ.", UiTheme.SHELL_FONT));
-        }
-        pnlBieuDo.add(pnlCot, BorderLayout.CENTER);
-        pnlBieuDo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        pnlBieuDo.addMouseListener(new MouseAdapter() {
-            /** {@inheritDoc} */
-            // Mở ngày cuối khi người dùng bấm vào nền biểu đồ.
-            @Override
-            public void mouseClicked(MouseEvent event) {
-                if (!thongKeNgay.isEmpty()) {
-                    moChiTiet(thongKeNgay.get(thongKeNgay.size() - 1));
-                }
-            }
-        });
-        return pnlBieuDo;
-    }
-
-    /**
-     * @param thongKe thống kê của ngày cần biểu diễn
-     * @return nút chứa giá trị, thanh cột và nhãn ngày
-     */
-    // Tạo cột biểu đồ bằng các panel và nhãn đặt bên trong một nút trong suốt.
-    private JButton taoCot(ThongKeNgayKyThuat thongKe) {
-        JButton btnCot = new JButton();
-        btnCot.setLayout(new BorderLayout());
-        btnCot.setContentAreaFilled(false);
-        btnCot.setBorder(BorderFactory.createEmptyBorder());
-        btnCot.setFocusPainted(true);
-        String ngay = thongKe.getNgay().format(DateTimeFormatter.ofPattern("dd/MM"));
-        btnCot.setToolTipText("Xem " + thongKe.tinhTongCongViec() + " công việc ngày " + ngay);
-        btnCot.getAccessibleContext().setAccessibleName(btnCot.getToolTipText());
-        JPanel pnlChieuCao = new JPanel();
-        pnlChieuCao.setOpaque(false);
-        pnlChieuCao.setLayout(new BoxLayout(pnlChieuCao, BoxLayout.Y_AXIS));
-        pnlChieuCao.add(Box.createVerticalGlue());
-        JLabel lblGiaTri = KyThuatUi.taoNhan(String.valueOf(thongKe.tinhTongCongViec()), UiTheme.BRAND_FONT);
-        lblGiaTri.setMaximumSize(new Dimension(Integer.MAX_VALUE, lblGiaTri.getPreferredSize().height));
-        lblGiaTri.setAlignmentX(Component.LEFT_ALIGNMENT);
-        pnlChieuCao.add(lblGiaTri);
-        pnlChieuCao.add(Box.createVerticalStrut(8));
-        JPanel pnlThanh = new JPanel();
-        pnlThanh.setBackground(UiTheme.PRIMARY);
-        int chieuCao = thongKe.tinhTongCongViec() * 23;
-        pnlThanh.setPreferredSize(new Dimension(80, chieuCao));
-        pnlThanh.setMaximumSize(new Dimension(80, chieuCao));
-        pnlThanh.setMinimumSize(new Dimension(80, chieuCao));
-        pnlThanh.setAlignmentX(Component.LEFT_ALIGNMENT);
-        pnlChieuCao.add(pnlThanh);
-        pnlChieuCao.add(Box.createVerticalStrut(8));
-        JLabel lblNgay = KyThuatUi.taoNhan(ngay, UiTheme.CAPTION_FONT);
-        lblNgay.setAlignmentX(Component.LEFT_ALIGNMENT);
-        lblNgay.setMaximumSize(new Dimension(Integer.MAX_VALUE, lblNgay.getPreferredSize().height));
-        pnlChieuCao.add(lblNgay);
-        btnCot.add(pnlChieuCao, BorderLayout.CENTER);
-        return btnCot;
-    }
-
-    /** @return thẻ lưu ý về các đề xuất chờ duyệt */
-    // Hiển thị nội dung cần chú ý và cho phép văn bản xuống dòng khi cửa sổ hẹp.
-    private JPanel taoTomTat() {
-        JPanel pnlThe = KyThuatUi.taoThe();
-        pnlThe.add(KyThuatUi.taoNhan("Tóm tắt cần chú ý", UiTheme.BRAND_FONT), BorderLayout.NORTH);
-        JTextArea txaLuuY = new JTextArea(tongQuan.getChoKhachDuyet()
-                + " đề xuất phát sinh đang chờ khách duyệt. Chỉ tạm dừng hạng mục liên quan"
-                + " và tiếp tục các phần đã được duyệt.");
-        txaLuuY.setFont(UiTheme.SHELL_FONT);
-        txaLuuY.setForeground(UiTheme.TEXT);
-        txaLuuY.setBackground(UiTheme.SURFACE);
-        txaLuuY.setEditable(false);
-        txaLuuY.setLineWrap(true);
-        txaLuuY.setWrapStyleWord(true);
-        pnlThe.add(txaLuuY, BorderLayout.CENTER);
-        pnlThe.addComponentListener(new ComponentAdapter() {
-            /** {@inheritDoc} */
-            // Tăng chiều cao thẻ khi cửa sổ hẹp để phần lưu ý không bị che.
-            @Override
-            public void componentResized(ComponentEvent event) {
-                int chieuCao = pnlThe.getWidth() < 950 ? 102 : 82;
-                if (pnlThe.getPreferredSize().height != chieuCao) {
-                    pnlThe.setPreferredSize(new Dimension(0, chieuCao));
-                    pnlThe.setMinimumSize(new Dimension(0, chieuCao));
-                    pnlThe.setMaximumSize(new Dimension(Integer.MAX_VALUE, chieuCao));
-                    pnlThe.revalidate();
-                }
-            }
-        });
-        return pnlThe;
-    }
-
-    /** @return thẻ chứa các nút đi đến chức năng liên quan */
-    // Tạo các nút lối vào và đăng ký đối tượng xử lý điều hướng của MainFrame.
-    private JPanel taoLoiVao() {
-        JPanel pnlThe = KyThuatUi.taoThe();
-        pnlThe.add(KyThuatUi.taoNhan("Lối vào công việc", UiTheme.BRAND_FONT), BorderLayout.NORTH);
-        JPanel pnlNut = new JPanel();
-        pnlNut.setLayout(new BoxLayout(pnlNut, BoxLayout.X_AXIS));
-        pnlNut.setOpaque(false);
-        String[] nhanNut = {"Công việc được giao", "Xe chờ kiểm tra", "Báo cáo kiểm tra", "Tiến độ sửa chữa"};
-        int[] chieuRong = {176, 150, 152, 152};
-        for (int i = 0; i < nhanNut.length; i++) {
-            String nhan = nhanNut[i];
-            JButton btnLoiVao = KyThuatUi.taoNut(nhan, chieuRong[i]);
-            btnLoiVao.addActionListener(boXuLyDieuHuong);
-            if (i > 0) {
-                pnlNut.add(Box.createHorizontalStrut(8));
-            }
-            btnLoiVao.setMinimumSize(new Dimension(chieuRong[i], 32));
-            btnLoiVao.setMaximumSize(new Dimension(chieuRong[i], 32));
-            pnlNut.add(btnLoiVao);
-        }
-        pnlThe.add(pnlNut, BorderLayout.CENTER);
-        return pnlThe;
-    }
-
-    /** @param thongKe thống kê của ngày được chọn */
-    // Mở hộp thoại modal hiển thị đúng ngày và số liệu người dùng đã chọn.
-    private void moChiTiet(ThongKeNgayKyThuat thongKe) {
-        ChiTietCongViecHoanTatDialog winChiTiet = new ChiTietCongViecHoanTatDialog(
-                winChu, tongQuan.getTenKyThuatVien(), thongKe);
-        winChiTiet.setVisible(true);
     }
 }
