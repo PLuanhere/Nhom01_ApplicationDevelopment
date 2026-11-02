@@ -5,6 +5,7 @@ import dao.baocao.TrangChuKyThuatDAO;
 import dao.baogia.BaoGiaDAO;
 import dao.chung.DuLieuGarageDAO;
 import dao.hoadon.HoaDonDAO;
+import dao.hoadon.DoiChieuChiPhiDAO;
 import dao.khachhang.KhachHangDAO;
 import dao.khachhang.XeDAO;
 import dao.kiemtra.BaoCaoKiemTraDAO;
@@ -15,6 +16,7 @@ import dao.suachua.KyThuatDAO;
 import dao.suachua.PhieuSuaChuaDAO;
 import dao.tiepnhan.PhieuTiepNhanDAO;
 import entity.hoadon.PhieuChoThu;
+import entity.hoadon.HinhThucThanhToan;
 import entity.nhansu.TaiKhoan;
 import entity.nhansu.VaiTro;
 
@@ -56,6 +58,9 @@ import ui.screen.quanly.NhanVienPanel;
 import ui.screen.quanly.PhuTungPanel;
 import ui.screen.quanly.TaiKhoanPanel;
 import ui.screen.thungan.CashPaymentConfirmPanel;
+import ui.screen.thungan.BankTransferPaymentPanel;
+import ui.screen.thungan.DoiChieuChiPhiPanel;
+import ui.screen.thungan.PaidInvoicesPanel;
 import ui.screen.thungan.CashReceiptPanel;
 import ui.screen.thungan.PaymentCenterPanel;
 import ui.screen.thungan.PendingCollectionPanel;
@@ -800,7 +805,8 @@ public final class MainFrame extends JFrame implements ActionListener {
                 /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
                 @Override
                 public void actionPerformed(ActionEvent event) {
-                    setStatus("Chuyển khoản / QR · Chưa tích hợp");
+                    dieuHuongThuNgan("Phiếu chờ thu");
+                    setStatus("Chọn phiếu để đối chiếu và thanh toán chuyển khoản.");
                 }
             };
             setScreen(new PaymentCenterPanel(thuNganDAO, getTaiKhoanDangNhap(), nav));
@@ -813,12 +819,14 @@ public final class MainFrame extends JFrame implements ActionListener {
         }
             break;
         case "Đối chiếu chi phí": {
+            mucThuNganDangMo = "Phiếu chờ thu";
+            pnlDieuHuongThuNgan.chonMuc("Phiếu chờ thu");
             setScreen(new PendingCollectionPanel(thuNganDAO, getTaiKhoanDangNhap(), this));
             setStatus("Đối chiếu chi phí · Chọn phiếu để kiểm tra và lập hóa đơn");
         }
             break;
         case "Hoá đơn đã thanh toán": {
-            setScreen(new CashReceiptPanel(thuNganDAO, getTaiKhoanDangNhap()));
+            setScreen(new PaidInvoicesPanel(thuNganDAO, getTaiKhoanDangNhap()));
             setStatus("Hóa đơn đã thanh toán");
         }
             break;
@@ -827,6 +835,40 @@ public final class MainFrame extends JFrame implements ActionListener {
             break;
         }
 
+    }
+
+    /** Đối chiếu đúng mã được chọn; không tự thay bằng phiếu đầu danh sách. */
+    public void moDoiChieuChiPhi(String maPhieu) {
+        if (maPhieu == null || thuNganDAO.timPhieuTheoMa(getTaiKhoanDangNhap(), maPhieu) == null) {
+            setStatus("Phiếu không còn chờ thu. Hãy làm mới danh sách."); return;
+        }
+        pnlDieuHuongThuNgan.chonMuc("Phiếu chờ thu");
+        setScreen(new DoiChieuChiPhiPanel(new DoiChieuChiPhiDAO(thuNganDAO, getTaiKhoanDangNhap()), maPhieu,
+            new ActionListener() {
+                /** Mở đúng bước xác nhận theo hình thức đã chọn. */
+                @Override public void actionPerformed(ActionEvent event) {
+                    if (event.getSource() == HinhThucThanhToan.TIEN_MAT) { moThanhToanTienMat(maPhieu); }
+                    else { moThanhToanChuyenKhoan(maPhieu); }
+                }
+            }, new ActionListener() {
+                /** Trở lại danh sách phiếu chờ thu. */
+                @Override public void actionPerformed(ActionEvent event) { dieuHuongThuNgan("Phiếu chờ thu"); }
+            }));
+        setStatus("Đối chiếu chi phí · " + maPhieu);
+    }
+
+    /** Mở chuyển khoản cho phiếu đã đối chiếu và chưa được thu. */
+    private void moThanhToanChuyenKhoan(String maPhieu) {
+        PhieuChoThu phieu = thuNganDAO.timPhieuTheoMa(getTaiKhoanDangNhap(), maPhieu);
+        if (phieu == null) { setStatus("Phiếu không còn chờ thu."); return; }
+        setScreen(new BankTransferPaymentPanel(thuNganDAO, phieu, getTaiKhoanDangNhap(), new ActionListener() {
+            /** Quay lại bước đối chiếu. */
+            @Override public void actionPerformed(ActionEvent event) { moDoiChieuChiPhi(maPhieu); }
+        }, new ActionListener() {
+            /** Đọc lại nguồn sau khi xác nhận chuyển khoản thành công. */
+            @Override public void actionPerformed(ActionEvent event) { dieuHuongThuNgan("Hoá đơn đã thanh toán"); }
+        }));
+        setStatus("Thanh toán chuyển khoản / QR · " + maPhieu);
     }
 
     /** Tạo vùng giữ chỗ cho chức năng chưa triển khai. */

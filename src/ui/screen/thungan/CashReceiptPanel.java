@@ -38,7 +38,7 @@ public final class CashReceiptPanel extends JPanel implements ActionListener {
     private final JTextField txtTim = new JTextField(24);
     private final JComboBox<String> cmbHinhThuc = new JComboBox<>(
             new String[] { "Tất cả", "Tiền mặt", "Chuyển khoản" });
-    private final DefaultTableModel model = new DefaultTableModel(new String[] { "Mã hóa đơn", "Mã lệnh", "Khách hàng",
+    private final DefaultTableModel model = new DefaultTableModel(new String[] { "Mã hóa đơn", "Mã lệnh", "Khách hàng", "Biển số",
             "Hình thức", "Số tiền", "Thanh toán lúc", "Người thu" }, 0) {
         private static final long serialVersionUID = 1L;
 
@@ -48,7 +48,7 @@ public final class CashReceiptPanel extends JPanel implements ActionListener {
             return false;
         }
     };
-    private final JTable tblChungTu = UiChung.taoBang(model, 140, 140, 210, 130, 140, 190, 130);
+    private final JTable tblChungTu = UiChung.taoBang(model, 140, 140, 210, 130, 130, 140, 190, 130);
     private final JLabel lblKetQua = new JLabel();
     private ActionListener khiDoiTieuChi;
     private ActionListener khiXem;
@@ -133,7 +133,7 @@ public final class CashReceiptPanel extends JPanel implements ActionListener {
         }
         model.setRowCount(0);
         for (HoaDon hoaDon : dao.timKiem(taiKhoan, txtTim.getText(), hinhThuc)) {
-            model.addRow(new Object[] { hoaDon.getMaHoaDon(), hoaDon.getMaPhieuSuaChua(), hoaDon.getTenKhachHang(),
+            model.addRow(new Object[] { hoaDon.getMaHoaDon(), hoaDon.getMaPhieuSuaChua(), hoaDon.getTenKhachHang(), hoaDon.getBienSo(),
                     hoaDon.getHinhThucThanhToan().getTenHienThi(), UiChung.so(hoaDon.getTongTien()) + " đ",
                     hoaDon.getThoiDiemThanhToan().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")),
                     hoaDon.getNguoiThucHien() });
@@ -162,7 +162,7 @@ public final class CashReceiptPanel extends JPanel implements ActionListener {
             return;
         }
         JTextArea txt = new JTextArea("Garage Ô tô Đức Dũng\nHÓA ĐƠN " + hoaDon.getMaHoaDon() + "\nLệnh sửa chữa: "
-                + hoaDon.getMaPhieuSuaChua() + "\nKhách hàng: " + hoaDon.getTenKhachHang() + "\nĐã thanh toán: "
+                + hoaDon.getMaPhieuSuaChua() + "\nBiển số: " + hoaDon.getBienSo() + "\nMã giao dịch: " + hoaDon.getMaGiaoDich() + "\nKhách hàng: " + hoaDon.getTenKhachHang() + "\nĐã thanh toán: "
                 + UiChung.so(hoaDon.getTongTien()) + " đ\nHình thức: " + hoaDon.getHinhThucThanhToan().getTenHienThi()
                 + "\nThời điểm: "
                 + hoaDon.getThoiDiemThanhToan().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))

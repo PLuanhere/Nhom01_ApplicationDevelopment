@@ -346,13 +346,8 @@ public class PendingCollectionPanel extends JPanel {
             if (noiDung.toLowerCase().contains(khoa)) {
                 long dichVu = 0;
                 long phuTung = 0;
-                if (winChinh == null) {
-                    dichVu = phieu.getTongTien();
-                } else {
-                    long[] tien = dao.docChiPhi(taiKhoan, phieu.getMaPhieu());
-                    dichVu = tien[0];
-                    phuTung = tien[1];
-                }
+                long[] tien = dao.docChiPhi(taiKhoan, phieu.getMaPhieu());
+                dichVu = tien[0]; phuTung = tien[1];
                 model.addRow(new Object[] { phieu.getMaPhieu(), phieu.getTenKhach(), phieu.getBienSo(), dichVu, phuTung,
                         phieu.getTongTien(), "Chờ lập hóa đơn", "Xem chi tiết" });
             }
@@ -439,9 +434,9 @@ public class PendingCollectionPanel extends JPanel {
         }
         String ma = model.getValueAt(table.convertRowIndexToModel(dong), 0).toString();
         if (winChinh != null) {
-            winChinh.moThanhToanTienMat(ma);
+            winChinh.moDoiChieuChiPhi(ma);
         } else if (onCreateInvoice != null) {
-            onCreateInvoice.actionPerformed(new ActionEvent(onCreateInvoice, ActionEvent.ACTION_PERFORMED, "thaoTac"));
+            onCreateInvoice.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, ma));
         }
     }
 }

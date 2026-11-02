@@ -30,10 +30,10 @@ public final class HoaDonDAO {
                 LocalDateTime.of(2026, 10, 5, 11, 0)));
         phieuTaoSan.add(new PhieuChoThu("SC-2026-0124", "51H-246.80", "Nguyễn Văn An", 1270000,
                 LocalDateTime.of(2026, 10, 5, 15, 30)));
-        danhSachHoaDon.add(new HoaDon("HD-2026-0108", "SC-2026-0108", "Nguyễn Văn An", 1270000,
-                HinhThucThanhToan.CHUYEN_KHOAN, LocalDateTime.of(2026, 10, 5, 14, 30), "thungan"));
-        danhSachHoaDon.add(new HoaDon("HD-2026-0104", "SC-2026-0104", "Lê Văn Cường", 1000000,
-                HinhThucThanhToan.TIEN_MAT, LocalDateTime.of(2026, 10, 4, 10, 15), "thungan"));
+        danhSachHoaDon.add(new HoaDon("HD-2026-0108", "SC-2026-0108", "Nguyễn Văn An", "51H-246.80", 1270000,
+                HinhThucThanhToan.CHUYEN_KHOAN, LocalDateTime.of(2026, 10, 5, 14, 30), "thungan", ""));
+        danhSachHoaDon.add(new HoaDon("HD-2026-0104", "SC-2026-0104", "Lê Văn Cường", "51G-789.12", 1000000,
+                HinhThucThanhToan.TIEN_MAT, LocalDateTime.of(2026, 10, 4, 10, 15), "thungan", ""));
     }
 
     /** Nhận nguồn sửa chữa dùng chung, không trộn chứng từ tạo sẵn vào luồng này. */
@@ -116,7 +116,7 @@ public final class HoaDonDAO {
         String khoa = tuKhoa == null ? "" : tuKhoa.trim().toLowerCase();
         List<HoaDon> ketQua = new ArrayList<>();
         for (HoaDon hoaDon : layHoaDonDaThu(taiKhoan)) {
-            String noiDung = hoaDon.getMaHoaDon() + " " + hoaDon.getMaPhieuSuaChua() + " " + hoaDon.getTenKhachHang();
+            String noiDung = hoaDon.getMaHoaDon() + " " + hoaDon.getMaPhieuSuaChua() + " " + hoaDon.getTenKhachHang() + " " + hoaDon.getBienSo();
             if (noiDung.toLowerCase().contains(khoa)
                     && (hinhThuc == null || hoaDon.getHinhThucThanhToan() == hinhThuc)) {
                 ketQua.add(hoaDon);
@@ -132,6 +132,20 @@ public final class HoaDonDAO {
 
     /** Ghi nhận tiền thực nhận đã đối chiếu; từ chối phiếu chưa hoàn thành hoặc đã thu. */
     public String xacNhanThanhToan(TaiKhoan taiKhoan, String maPhieu, long soTienNhan, HinhThucThanhToan hinhThuc) {
+        return ghiThanhToan(taiKhoan, maPhieu, soTienNhan, hinhThuc, "");
+    }
+
+    /** Chuyển khoản phải có mã tham chiếu và tiền đã đối chiếu đủ trước khi lưu. */
+    public String xacNhanThanhToanChuyenKhoan(TaiKhoan tk, String maPhieu, long tienNhan, String maGiaoDich) {
+        kiemTraThuNgan(tk);
+        if (maGiaoDich == null || maGiaoDich.isBlank()) {
+            throw new IllegalArgumentException("Nhập mã giao dịch chuyển khoản.");
+        }
+        return ghiThanhToan(tk, maPhieu, tienNhan, HinhThucThanhToan.CHUYEN_KHOAN, maGiaoDich.trim());
+    }
+
+    /** Lưu một lần vào nguồn hóa đơn chung sau khi kiểm tra phiếu và số tiền. */
+    private String ghiThanhToan(TaiKhoan taiKhoan, String maPhieu, long soTienNhan, HinhThucThanhToan hinhThuc, String maGiaoDich) {
         kiemTraThuNgan(taiKhoan);
         if (hinhThuc == null) {
             throw new IllegalArgumentException("Cần chọn hình thức thanh toán.");
@@ -148,8 +162,8 @@ public final class HoaDonDAO {
         do {
             maHoaDon = String.format("HD-%04d-%04d", thoiDiem.getYear(), soTiepTheo++);
         } while (timHoaDonTheoMa(taiKhoan, maHoaDon) != null);
-        HoaDon hoaDon = new HoaDon(maHoaDon, phieu.getMaPhieu(), phieu.getTenKhach(), phieu.getTongTien(), hinhThuc,
-                thoiDiem, taiKhoan.getTenDangNhap());
+        HoaDon hoaDon = new HoaDon(maHoaDon, phieu.getMaPhieu(), phieu.getTenKhach(), phieu.getBienSo(), phieu.getTongTien(), hinhThuc,
+                thoiDiem, taiKhoan.getTenDangNhap(), maGiaoDich);
         danhSachHoaDon.add(hoaDon);
         return maHoaDon;
     }
@@ -216,6 +230,21 @@ public final class HoaDonDAO {
             throw new SecurityException("Chỉ Thu ngân được thao tác hóa đơn và thanh toán.");
         }
         taiKhoan.kiemTraPhien();
+    }
+
+    /** Đọc các dòng đã duyệt để đối chiếu; không dùng một bộ chi phí tạo sẵn khác. */
+    public List<ChiTietBaoGia> layChiTietDoiChieu(TaiKhoan tk, String maPhieu) {
+        PhieuChoThu phieu = timPhieuTheoMa(tk, maPhieu);
+        if (phieu == null) { throw new IllegalArgumentException("Phiếu không còn chờ thu."); }
+        if (suaChuaDAO == null) {
+            List<ChiTietBaoGia> dong = new ArrayList<>();
+            dong.add(new ChiTietBaoGia("Chi phí sửa chữa", "Dịch vụ", "lần", 1, phieu.getTongTien()));
+            return dong;
+        }
+        for (PhieuSuaChua lenh : suaChuaDAO.layLenhHoanThanhNoiBo()) {
+            if (lenh.getMaPhieu().equals(maPhieu)) { return new ArrayList<>(suaChuaDAO.docBaoGiaNoiBo(lenh.getMaBaoGia()).getChiTiet()); }
+        }
+        throw new IllegalArgumentException("Không tìm thấy lệnh đã hoàn thành.");
     }
 
     /** Tách tiền dịch vụ và phụ tùng của báo giá đã duyệt cho màn đối chiếu. */

@@ -38,8 +38,8 @@ public final class ThuNganNavigationPanel extends JPanel {
         JPanel pnlDanhSach = new JPanel(new GridLayout(0, 1, 0, 2));
         pnlDanhSach.setOpaque(false);
 
-        String[] tenCacMuc = { "Trung tâm thanh toán", "Phiếu chờ thu", "Đối chiếu chi phí", "Hoá đơn đã thanh toán" };
-        String[] tenIcon = { "chart", "clipboard", "search", "package" };
+        String[] tenCacMuc = { "Trung tâm thanh toán", "Phiếu chờ thu", "Hoá đơn đã thanh toán" };
+        String[] tenIcon = { "chart", "clipboard", "package" };
 
         for (int i = 0; i < tenCacMuc.length; i++) {
             JToggleButton tglMuc = taoMuc(tenCacMuc[i], khiChonMuc);
