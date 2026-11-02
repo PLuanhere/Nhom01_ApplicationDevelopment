@@ -31,11 +31,11 @@ public final class ChonHinhThucThanhToanDialog extends JDialog {
 
     private static final long serialVersionUID = 1L;
 
-    private static final Color INK    = new Color(28, 41, 59);
-    private static final Color MUTED  = new Color(99, 115, 135);
+    private static final Color INK = new Color(28, 41, 59);
+    private static final Color MUTED = new Color(99, 115, 135);
     private static final Color BORDER = new Color(217, 227, 237);
-    private static final Color BLUE   = new Color(34, 100, 166);
-    private static final Color PAGE   = new Color(244, 246, 249);
+    private static final Color BLUE = new Color(34, 100, 166);
+    private static final Color PAGE = new Color(244, 246, 249);
 
     /** Kết quả lựa chọn; null nếu hủy. */
     private HinhThucThanhToan ketQua = null;
@@ -52,8 +52,7 @@ public final class ChonHinhThucThanhToanDialog extends JDialog {
 
         JPanel root = new JPanel(new BorderLayout(0, 0));
         root.setBackground(Color.WHITE);
-        root.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER, 1),
+        root.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER, 1),
                 BorderFactory.createEmptyBorder(24, 24, 20, 24)));
 
         // ── Tiêu đề ───────────────────────────────────────────────────
@@ -78,14 +77,10 @@ public final class ChonHinhThucThanhToanDialog extends JDialog {
         pnlOptions.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
 
         ButtonGroup grp = new ButtonGroup();
-        JRadioButton radTienMat   = taoLuaChon(
-                "Tiền mặt",
-                "Khách trả tiền mặt tại quầy, thu ngân kiểm và xác nhận.",
-                grp, true);
-        JRadioButton radChuyenKhoan = taoLuaChon(
-                "Chuyển khoản / QR",
-                "Khách chuyển khoản, thu ngân đối chiếu trước khi xác nhận.",
-                grp, false);
+        JRadioButton radTienMat = taoLuaChon("Tiền mặt", "Khách trả tiền mặt tại quầy, thu ngân kiểm và xác nhận.", grp,
+                true);
+        JRadioButton radChuyenKhoan = taoLuaChon("Chuyển khoản / QR",
+                "Khách chuyển khoản, thu ngân đối chiếu trước khi xác nhận.", grp, false);
 
         pnlOptions.add(wrapOption(radTienMat));
         pnlOptions.add(wrapOption(radChuyenKhoan));
@@ -94,8 +89,7 @@ public final class ChonHinhThucThanhToanDialog extends JDialog {
         // ── Nút ───────────────────────────────────────────────────
         JPanel pnlButtons = new JPanel(new BorderLayout(12, 0));
         pnlButtons.setOpaque(false);
-        pnlButtons.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER),
+        pnlButtons.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER),
                 BorderFactory.createEmptyBorder(16, 0, 0, 0)));
 
         JButton btnHuy = new JButton("Hủy");
@@ -106,12 +100,14 @@ public final class ChonHinhThucThanhToanDialog extends JDialog {
         btnHuy.setContentAreaFilled(true);
         btnHuy.setBorderPainted(true);
         btnHuy.setFocusPainted(false);
-        btnHuy.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER),
+        btnHuy.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER),
                 BorderFactory.createEmptyBorder(9, 18, 9, 18)));
         btnHuy.addActionListener(new ActionListener() {
             /** Thực hiện thao tác vừa chọn trên biểu mẫu. */
-            @Override public void actionPerformed(ActionEvent e) { dispose(); }
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+            }
         });
         pnlButtons.add(btnHuy, BorderLayout.WEST);
 
@@ -126,23 +122,23 @@ public final class ChonHinhThucThanhToanDialog extends JDialog {
         btnXacNhan.setBorder(BorderFactory.createEmptyBorder(9, 18, 9, 18));
         btnXacNhan.addActionListener(new ActionListener() {
             /** Thực hiện thao tác vừa chọn trên biểu mẫu. */
-            @Override public void actionPerformed(ActionEvent e) {
-            ketQua = radTienMat.isSelected()
-                    ? HinhThucThanhToan.TIEN_MAT
-                    : HinhThucThanhToan.CHUYEN_KHOAN;
-            dispose();
-        }
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ketQua = radTienMat.isSelected() ? HinhThucThanhToan.TIEN_MAT : HinhThucThanhToan.CHUYEN_KHOAN;
+                dispose();
+            }
         });
         pnlButtons.add(btnXacNhan, BorderLayout.EAST);
         root.add(pnlButtons, BorderLayout.SOUTH);
 
         // ESC để hủy
-        getRootPane().registerKeyboardAction(
-                new ActionListener() {
-                    /** Đóng hộp chọn bằng phím Escape. */
-                    @Override public void actionPerformed(ActionEvent e) { dispose(); }
-                },
-                javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
+        getRootPane().registerKeyboardAction(new ActionListener() {
+            /** Đóng hộp chọn bằng phím Escape. */
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+            }
+        }, javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
                 javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         setContentPane(root);
@@ -162,8 +158,7 @@ public final class ChonHinhThucThanhToanDialog extends JDialog {
 
     // ── Tiện ích ───────────────────────────────────────────────────
 
-    private JRadioButton taoLuaChon(String ten, String moTa,
-            ButtonGroup grp, boolean macDinh) {
+    private JRadioButton taoLuaChon(String ten, String moTa, ButtonGroup grp, boolean macDinh) {
         JRadioButton rad = new JRadioButton(ten);
         rad.setFont(new Font("Dialog", Font.BOLD, 13));
         rad.setForeground(INK);
@@ -177,8 +172,7 @@ public final class ChonHinhThucThanhToanDialog extends JDialog {
     private JPanel wrapOption(JRadioButton rad) {
         JPanel pnl = new JPanel(new BorderLayout(0, 3));
         pnl.setBackground(PAGE);
-        pnl.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER),
+        pnl.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER),
                 BorderFactory.createEmptyBorder(12, 14, 12, 14)));
         pnl.add(rad, BorderLayout.NORTH);
         JLabel lblMoTa = new JLabel((String) rad.getClientProperty("moTa"));

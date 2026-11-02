@@ -38,8 +38,8 @@ public final class CashReceiptPanel extends JPanel implements ActionListener {
     private final JTextField txtTim = new JTextField(24);
     private final JComboBox<String> cmbHinhThuc = new JComboBox<>(
             new String[] { "Tất cả", "Tiền mặt", "Chuyển khoản" });
-    private final DefaultTableModel model = new DefaultTableModel(new String[] { "Mã hóa đơn", "Mã lệnh", "Khách hàng", "Biển số",
-            "Hình thức", "Số tiền", "Thanh toán lúc", "Người thu" }, 0) {
+    private final DefaultTableModel model = new DefaultTableModel(new String[] { "Mã hóa đơn", "Mã lệnh", "Khách hàng",
+            "Biển số", "Hình thức", "Số tiền", "Thanh toán lúc", "Người thu" }, 0) {
         private static final long serialVersionUID = 1L;
 
         /** Cho biết cell editable. */
@@ -114,6 +114,11 @@ public final class CashReceiptPanel extends JPanel implements ActionListener {
         taiDanhSach();
     }
 
+    /** Gắn thao tác mở chi tiết/in hóa đơn của khung chính. */
+    public void setKhiXem(ActionListener thaoTac) {
+        khiXem = thaoTac;
+    }
+
     /** Tạo nút có phím Alt và lệnh xử lý rõ ràng. */
     private JButton taoNut(String chu, String lenh, char phim) {
         JButton btn = UiTheme.createAppButton(chu, lenh.equals("xem"));
@@ -133,8 +138,9 @@ public final class CashReceiptPanel extends JPanel implements ActionListener {
         }
         model.setRowCount(0);
         for (HoaDon hoaDon : dao.timKiem(taiKhoan, txtTim.getText(), hinhThuc)) {
-            model.addRow(new Object[] { hoaDon.getMaHoaDon(), hoaDon.getMaPhieuSuaChua(), hoaDon.getTenKhachHang(), hoaDon.getBienSo(),
-                    hoaDon.getHinhThucThanhToan().getTenHienThi(), UiChung.so(hoaDon.getTongTien()) + " đ",
+            model.addRow(new Object[] { hoaDon.getMaHoaDon(), hoaDon.getMaPhieuSuaChua(), hoaDon.getTenKhachHang(),
+                    hoaDon.getBienSo(), hoaDon.getHinhThucThanhToan().getTenHienThi(),
+                    UiChung.so(hoaDon.getTongTien()) + " đ",
                     hoaDon.getThoiDiemThanhToan().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")),
                     hoaDon.getNguoiThucHien() });
         }
@@ -152,7 +158,8 @@ public final class CashReceiptPanel extends JPanel implements ActionListener {
             return;
         }
         if (khiXem != null) {
-            khiXem.actionPerformed(new ActionEvent(khiXem, ActionEvent.ACTION_PERFORMED, "thaoTac"));
+            khiXem.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED,
+                    model.getValueAt(tblChungTu.convertRowIndexToModel(dong), 0).toString()));
             return;
         }
         HoaDon hoaDon = dao.timHoaDonTheoMa(taiKhoan,
@@ -162,7 +169,8 @@ public final class CashReceiptPanel extends JPanel implements ActionListener {
             return;
         }
         JTextArea txt = new JTextArea("Garage Ô tô Đức Dũng\nHÓA ĐƠN " + hoaDon.getMaHoaDon() + "\nLệnh sửa chữa: "
-                + hoaDon.getMaPhieuSuaChua() + "\nBiển số: " + hoaDon.getBienSo() + "\nMã giao dịch: " + hoaDon.getMaGiaoDich() + "\nKhách hàng: " + hoaDon.getTenKhachHang() + "\nĐã thanh toán: "
+                + hoaDon.getMaPhieuSuaChua() + "\nBiển số: " + hoaDon.getBienSo() + "\nMã giao dịch: "
+                + hoaDon.getMaGiaoDich() + "\nKhách hàng: " + hoaDon.getTenKhachHang() + "\nĐã thanh toán: "
                 + UiChung.so(hoaDon.getTongTien()) + " đ\nHình thức: " + hoaDon.getHinhThucThanhToan().getTenHienThi()
                 + "\nThời điểm: "
                 + hoaDon.getThoiDiemThanhToan().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))

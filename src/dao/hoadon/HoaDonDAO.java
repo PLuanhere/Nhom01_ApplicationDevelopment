@@ -116,7 +116,8 @@ public final class HoaDonDAO {
         String khoa = tuKhoa == null ? "" : tuKhoa.trim().toLowerCase();
         List<HoaDon> ketQua = new ArrayList<>();
         for (HoaDon hoaDon : layHoaDonDaThu(taiKhoan)) {
-            String noiDung = hoaDon.getMaHoaDon() + " " + hoaDon.getMaPhieuSuaChua() + " " + hoaDon.getTenKhachHang() + " " + hoaDon.getBienSo();
+            String noiDung = hoaDon.getMaHoaDon() + " " + hoaDon.getMaPhieuSuaChua() + " " + hoaDon.getTenKhachHang()
+                    + " " + hoaDon.getBienSo();
             if (noiDung.toLowerCase().contains(khoa)
                     && (hinhThuc == null || hoaDon.getHinhThucThanhToan() == hinhThuc)) {
                 ketQua.add(hoaDon);
@@ -145,7 +146,8 @@ public final class HoaDonDAO {
     }
 
     /** Lưu một lần vào nguồn hóa đơn chung sau khi kiểm tra phiếu và số tiền. */
-    private String ghiThanhToan(TaiKhoan taiKhoan, String maPhieu, long soTienNhan, HinhThucThanhToan hinhThuc, String maGiaoDich) {
+    private String ghiThanhToan(TaiKhoan taiKhoan, String maPhieu, long soTienNhan, HinhThucThanhToan hinhThuc,
+            String maGiaoDich) {
         kiemTraThuNgan(taiKhoan);
         if (hinhThuc == null) {
             throw new IllegalArgumentException("Cần chọn hình thức thanh toán.");
@@ -162,8 +164,8 @@ public final class HoaDonDAO {
         do {
             maHoaDon = String.format("HD-%04d-%04d", thoiDiem.getYear(), soTiepTheo++);
         } while (timHoaDonTheoMa(taiKhoan, maHoaDon) != null);
-        HoaDon hoaDon = new HoaDon(maHoaDon, phieu.getMaPhieu(), phieu.getTenKhach(), phieu.getBienSo(), phieu.getTongTien(), hinhThuc,
-                thoiDiem, taiKhoan.getTenDangNhap(), maGiaoDich);
+        HoaDon hoaDon = new HoaDon(maHoaDon, phieu.getMaPhieu(), phieu.getTenKhach(), phieu.getBienSo(),
+                phieu.getTongTien(), hinhThuc, thoiDiem, taiKhoan.getTenDangNhap(), maGiaoDich);
         danhSachHoaDon.add(hoaDon);
         return maHoaDon;
     }
@@ -235,16 +237,50 @@ public final class HoaDonDAO {
     /** Đọc các dòng đã duyệt để đối chiếu; không dùng một bộ chi phí tạo sẵn khác. */
     public List<ChiTietBaoGia> layChiTietDoiChieu(TaiKhoan tk, String maPhieu) {
         PhieuChoThu phieu = timPhieuTheoMa(tk, maPhieu);
-        if (phieu == null) { throw new IllegalArgumentException("Phiếu không còn chờ thu."); }
+        if (phieu == null) {
+            throw new IllegalArgumentException("Phiếu không còn chờ thu.");
+        }
         if (suaChuaDAO == null) {
             List<ChiTietBaoGia> dong = new ArrayList<>();
             dong.add(new ChiTietBaoGia("Chi phí sửa chữa", "Dịch vụ", "lần", 1, phieu.getTongTien()));
             return dong;
         }
         for (PhieuSuaChua lenh : suaChuaDAO.layLenhHoanThanhNoiBo()) {
-            if (lenh.getMaPhieu().equals(maPhieu)) { return new ArrayList<>(suaChuaDAO.docBaoGiaNoiBo(lenh.getMaBaoGia()).getChiTiet()); }
+            if (lenh.getMaPhieu().equals(maPhieu)) {
+                return new ArrayList<>(suaChuaDAO.docBaoGiaNoiBo(lenh.getMaBaoGia()).getChiTiet());
+            }
         }
         throw new IllegalArgumentException("Không tìm thấy lệnh đã hoàn thành.");
+    }
+
+    /** Đọc lại các dòng của chứng từ đã thu để xem/in; không mở lại phiếu chờ. */
+    public List<ChiTietBaoGia> layChiTietHoaDon(TaiKhoan tk, String maHoaDon) {
+        HoaDon hd = timHoaDonTheoMa(tk, maHoaDon);
+        if (hd == null) {
+            throw new IllegalArgumentException("Không tìm thấy hóa đơn.");
+        }
+        if (suaChuaDAO == null) {
+            List<ChiTietBaoGia> dong = new ArrayList<>();
+            dong.add(new ChiTietBaoGia("Chi phí sửa chữa", "Dịch vụ", "lần", 1, hd.getTongTien()));
+            return dong;
+        }
+        for (PhieuSuaChua lenh : suaChuaDAO.layLenhHoanThanhNoiBo()) {
+            if (lenh.getMaPhieu().equals(hd.getMaPhieuSuaChua())) {
+                List<ChiTietBaoGia> dong = suaChuaDAO.docBaoGiaNoiBo(lenh.getMaBaoGia()).getChiTiet();
+                long tong = 0;
+                for (ChiTietBaoGia ct : dong) {
+                    if (Long.MAX_VALUE - tong < ct.getThanhTien()) {
+                        throw new IllegalStateException("Tổng chi phí vượt giới hạn.");
+                    }
+                    tong += ct.getThanhTien();
+                }
+                if (tong != hd.getTongTien()) {
+                    throw new IllegalStateException("Chi tiết không khớp hóa đơn đã lưu.");
+                }
+                return new ArrayList<>(dong);
+            }
+        }
+        throw new IllegalArgumentException("Thiếu lệnh gốc của hóa đơn.");
     }
 
     /** Tách tiền dịch vụ và phụ tùng của báo giá đã duyệt cho màn đối chiếu. */

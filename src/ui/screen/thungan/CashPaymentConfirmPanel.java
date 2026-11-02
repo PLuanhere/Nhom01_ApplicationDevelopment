@@ -328,7 +328,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
             String maHoaDon = dao.xacNhanThanhToanTienMat(taiKhoan, phieu.getMaPhieu(), nhan);
             message.setForeground(SUCCESS);
             message.setText("Đã lưu hóa đơn " + maHoaDon + ". Chuyển hồ sơ cho Tiếp nhận bàn giao.");
-            onConfirm.actionPerformed(new ActionEvent(onConfirm, ActionEvent.ACTION_PERFORMED, "thaoTac"));
+            onConfirm.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, maHoaDon));
         } catch (IllegalStateException ex) {
             message.setForeground(ERROR);
             message.setText(ex.getMessage());

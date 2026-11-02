@@ -12,7 +12,6 @@ import java.awt.Window;
 import java.util.List;
 import java.util.Locale;
 
-
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -37,12 +36,12 @@ public final class DoiChieuChiPhiPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    private static final Color PAGE   = new Color(244, 246, 249);
-    private static final Color WHITE  = Color.WHITE;
-    private static final Color INK    = new Color(28, 41, 59);
-    private static final Color MUTED  = new Color(99, 115, 135);
+    private static final Color PAGE = new Color(244, 246, 249);
+    private static final Color WHITE = Color.WHITE;
+    private static final Color INK = new Color(28, 41, 59);
+    private static final Color MUTED = new Color(99, 115, 135);
     private static final Color BORDER = new Color(217, 227, 237);
-    private static final Color BLUE   = new Color(34, 100, 166);
+    private static final Color BLUE = new Color(34, 100, 166);
 
     private final ActionListener onChoosePayment;
     private final ActionListener onBack;
@@ -51,10 +50,10 @@ public final class DoiChieuChiPhiPanel extends JPanel {
         this(new DoiChieuChiPhiDAO(), "SC-2026-0111", null, null);
     }
 
-    public DoiChieuChiPhiPanel(DoiChieuChiPhiDAO dao, String maPhieu,
-            ActionListener onChoosePayment, ActionListener onBack) {
+    public DoiChieuChiPhiPanel(DoiChieuChiPhiDAO dao, String maPhieu, ActionListener onChoosePayment,
+            ActionListener onBack) {
         this.onChoosePayment = onChoosePayment;
-        this.onBack          = onBack;
+        this.onBack = onBack;
 
         setLayout(new BorderLayout());
         setBackground(PAGE);
@@ -76,8 +75,11 @@ public final class DoiChieuChiPhiPanel extends JPanel {
         JButton quayLai = new JButton("Quay lại");
         quayLai.addActionListener(new ActionListener() {
             /** Quay về danh sách mà không ghi thanh toán. */
-            @Override public void actionPerformed(ActionEvent e) {
-                if (onBack != null) { onBack.actionPerformed(e); }
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (onBack != null) {
+                    onBack.actionPerformed(e);
+                }
             }
         });
         header.add(quayLai, BorderLayout.EAST);
@@ -99,14 +101,14 @@ public final class DoiChieuChiPhiPanel extends JPanel {
         JPanel heading = new JPanel(new BorderLayout(0, 5));
         heading.setOpaque(false);
 
-        heading.add(label("Thu ngân  /  Nghiệp vụ  /  Đối chiếu chi phí", 11, Font.PLAIN, MUTED),
-                BorderLayout.NORTH);
+        heading.add(label("Thu ngân  /  Nghiệp vụ  /  Đối chiếu chi phí", 11, Font.PLAIN, MUTED), BorderLayout.NORTH);
 
         JPanel titleBlock = new JPanel(new BorderLayout(0, 5));
         titleBlock.setOpaque(false);
         titleBlock.add(label("Đối chiếu chi phí", 24, Font.BOLD, INK), BorderLayout.NORTH);
-        titleBlock.add(label("Đối chiếu chi phí dịch vụ, tiền công, phụ tùng thực tế và thuế nếu có.",
-                12, Font.PLAIN, MUTED), BorderLayout.SOUTH);
+        titleBlock.add(
+                label("Đối chiếu chi phí dịch vụ, tiền công, phụ tùng thực tế và thuế nếu có.", 12, Font.PLAIN, MUTED),
+                BorderLayout.SOUTH);
         heading.add(titleBlock, BorderLayout.CENTER);
 
         heading.setBorder(BorderFactory.createEmptyBorder(0, 0, 3, 0));
@@ -119,20 +121,19 @@ public final class DoiChieuChiPhiPanel extends JPanel {
         JPanel card = new JPanel();
         card.setLayout(new javax.swing.BoxLayout(card, javax.swing.BoxLayout.Y_AXIS));
         card.setBackground(WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER),
+        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER),
                 BorderFactory.createEmptyBorder(18, 18, 18, 18)));
 
         JPanel top = new JPanel(new BorderLayout(0, 10));
         top.setOpaque(false);
         top.setAlignmentX(LEFT_ALIGNMENT);
         top.add(label("Đối chiếu chi phí trước khi thu tiền", 18, Font.BOLD, INK), BorderLayout.NORTH);
-        top.add(label("Chỉ đối chiếu phiếu đã hoàn tất sửa chữa; không tự lập hóa đơn khi chưa xác nhận.",
-                12, Font.PLAIN, MUTED), BorderLayout.CENTER);
+        top.add(label("Chỉ đối chiếu phiếu đã hoàn tất sửa chữa; không tự lập hóa đơn khi chưa xác nhận.", 12,
+                Font.PLAIN, MUTED), BorderLayout.CENTER);
         JPanel facts = new JPanel(new GridLayout(1, 3, 12, 0));
         facts.setOpaque(false);
-        facts.add(fact("Lệnh sửa chữa",        kq.getNhanPhieu()));
-        facts.add(fact("Khách / xe",            kq.getNhanKhach()));
+        facts.add(fact("Lệnh sửa chữa", kq.getNhanPhieu()));
+        facts.add(fact("Khách / xe", kq.getNhanKhach()));
         facts.add(fact("Trạng thái thanh toán", kq.getTrangThaiThanhToan()));
         top.add(facts, BorderLayout.SOUTH);
         card.add(top);
@@ -152,8 +153,7 @@ public final class DoiChieuChiPhiPanel extends JPanel {
         JPanel actionBar = new JPanel(new java.awt.GridBagLayout());
         actionBar.setOpaque(false);
         actionBar.setAlignmentX(LEFT_ALIGNMENT);
-        actionBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER),
+        actionBar.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER),
                 BorderFactory.createEmptyBorder(12, 0, 0, 0)));
 
         java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
@@ -180,16 +180,17 @@ public final class DoiChieuChiPhiPanel extends JPanel {
         choosePayment.setBorder(BorderFactory.createEmptyBorder(11, 20, 11, 20));
         choosePayment.addActionListener(new ActionListener() {
             /** Thực hiện thao tác vừa chọn trên biểu mẫu. */
-            @Override public void actionPerformed(ActionEvent e) {
-            Window win = javax.swing.SwingUtilities.getWindowAncestor(DoiChieuChiPhiPanel.this);
-            ui.dialog.thungan.ChonHinhThucThanhToanDialog dlg =
-                    new ui.dialog.thungan.ChonHinhThucThanhToanDialog(win);
-            dlg.setVisible(true);
-            HinhThucThanhToan ht = dlg.getKetQua();
-            if (ht != null && onChoosePayment != null) {
-                onChoosePayment.actionPerformed(new ActionEvent(ht, ActionEvent.ACTION_PERFORMED, kq.getMaPhieu()));
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Window win = javax.swing.SwingUtilities.getWindowAncestor(DoiChieuChiPhiPanel.this);
+                ui.dialog.thungan.ChonHinhThucThanhToanDialog dlg = new ui.dialog.thungan.ChonHinhThucThanhToanDialog(
+                        win);
+                dlg.setVisible(true);
+                HinhThucThanhToan ht = dlg.getKetQua();
+                if (ht != null && onChoosePayment != null) {
+                    onChoosePayment.actionPerformed(new ActionEvent(ht, ActionEvent.ACTION_PERFORMED, kq.getMaPhieu()));
+                }
             }
-        }
         });
         gbc.gridx = 1;
         gbc.weightx = 0;
@@ -208,16 +209,17 @@ public final class DoiChieuChiPhiPanel extends JPanel {
         middle.add(label("Bảng chi phí hợp lệ", 15, Font.BOLD, INK), BorderLayout.NORTH);
 
         DefaultTableModel model = new DefaultTableModel(
-                new Object[]{"Hạng mục", "SL / ĐVT", "Đơn giá", "Thành tiền"}, 0) {
+                new Object[] { "Hạng mục", "SL / ĐVT", "Đơn giá", "Thành tiền" }, 0) {
             private static final long serialVersionUID = 1L;
-            @Override public boolean isCellEditable(int r, int c) { return false; }
+
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
         };
         List<DongChiPhi> ds = kq.getDanhSachChiPhi();
         for (DongChiPhi d : ds) {
-            model.addRow(new Object[]{
-                d.getHangMuc(), d.getSlDvt(),
-                d.getDonGia(), d.getThanhTien()
-            });
+            model.addRow(new Object[] { d.getHangMuc(), d.getSlDvt(), d.getDonGia(), d.getThanhTien() });
         }
 
         JTable table = new JTable(model);
@@ -239,10 +241,9 @@ public final class DoiChieuChiPhiPanel extends JPanel {
 
         // Tính đúng preferred height = header + tất cả dòng, không scroll dọc
         int headerH = table.getTableHeader().getPreferredSize().height;
-        int bodyH   = table.getRowHeight() * model.getRowCount();
-        int totalH  = headerH + bodyH;
-        table.setPreferredScrollableViewportSize(
-                new Dimension(table.getPreferredSize().width, bodyH));
+        int bodyH = table.getRowHeight() * model.getRowCount();
+        int totalH = headerH + bodyH;
+        table.setPreferredScrollableViewportSize(new Dimension(table.getPreferredSize().width, bodyH));
 
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createLineBorder(BORDER));
@@ -263,14 +264,13 @@ public final class DoiChieuChiPhiPanel extends JPanel {
         JPanel totals = new JPanel(new GridLayout(1, 2, 12, 0));
         totals.setOpaque(false);
         totals.setAlignmentX(LEFT_ALIGNMENT);
-        totals.add(readOnlyField("Tổng chi phí thực tế · tự tính · chỉ đọc",
-                formatMoney(kq.getTongThucTe()) + "đ"));
-        totals.add(readOnlyField("Thuế / điều chỉnh · chỉ đọc",
-                "Theo chính sách chưa chốt; không tự cộng"));
+        totals.add(readOnlyField("Tổng chi phí thực tế · tự tính · chỉ đọc", formatMoney(kq.getTongThucTe()) + "đ"));
+        totals.add(readOnlyField("Thuế / điều chỉnh · chỉ đọc", "Theo chính sách chưa chốt; không tự cộng"));
         bottom.add(totals);
         bottom.add(javax.swing.Box.createVerticalStrut(10));
 
-        JLabel note = new JLabel("Đối chiếu phụ tùng đã dùng và dịch vụ thực hiện. Nếu sai lệch, chuyển lại bộ phận phụ trách để xác nhận.");
+        JLabel note = new JLabel(
+                "Đối chiếu phụ tùng đã dùng và dịch vụ thực hiện. Nếu sai lệch, chuyển lại bộ phận phụ trách để xác nhận.");
         note.setOpaque(true);
         note.setBackground(new Color(245, 248, 252));
         note.setForeground(MUTED);
@@ -301,7 +301,7 @@ public final class DoiChieuChiPhiPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(0, 4));
         panel.setOpaque(false);
         panel.add(label(title, 12, Font.PLAIN, MUTED), BorderLayout.NORTH);
-        panel.add(label(value, 14, Font.BOLD,  INK),   BorderLayout.SOUTH);
+        panel.add(label(value, 14, Font.BOLD, INK), BorderLayout.SOUTH);
         return panel;
     }
 
@@ -312,8 +312,7 @@ public final class DoiChieuChiPhiPanel extends JPanel {
         JLabel field = label(value, 14, Font.BOLD, INK);
         field.setOpaque(true);
         field.setBackground(new Color(248, 250, 252));
-        field.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER),
+        field.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER),
                 BorderFactory.createEmptyBorder(11, 10, 11, 10)));
         panel.add(field, BorderLayout.CENTER);
         return panel;
@@ -332,19 +331,43 @@ public final class DoiChieuChiPhiPanel extends JPanel {
 
     private static class ScrollablePanel extends JPanel implements javax.swing.Scrollable {
         private static final long serialVersionUID = 1L;
-        @Override public java.awt.Dimension getPreferredScrollableViewportSize() { return getPreferredSize(); }
-        @Override public int getScrollableUnitIncrement(java.awt.Rectangle r, int o, int d) { return 16; }
-        @Override public int getScrollableBlockIncrement(java.awt.Rectangle r, int o, int d) { return 60; }
-        @Override public boolean getScrollableTracksViewportWidth() { return true; }
-        @Override public boolean getScrollableTracksViewportHeight() { return false; }
+
+        @Override
+        public java.awt.Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(java.awt.Rectangle r, int o, int d) {
+            return 16;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(java.awt.Rectangle r, int o, int d) {
+            return 60;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
     }
 
     private static class MoneyRenderer extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
-        MoneyRenderer() { setHorizontalAlignment(SwingConstants.RIGHT); }
+
+        MoneyRenderer() {
+            setHorizontalAlignment(SwingConstants.RIGHT);
+        }
+
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                boolean selected, boolean focus, int row, int column) {
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean selected, boolean focus,
+                int row, int column) {
             String formatted = formatMoney(((Number) value).longValue()) + "đ";
             super.getTableCellRendererComponent(table, formatted, selected, focus, row, column);
             setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 14));

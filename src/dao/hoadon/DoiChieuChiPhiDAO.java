@@ -14,25 +14,35 @@ public final class DoiChieuChiPhiDAO {
     private final TaiKhoan taiKhoan;
 
     /** Mở dữ liệu xem thử độc lập. */
-    public DoiChieuChiPhiDAO() { this(new HoaDonDAO(), new TaiKhoan("thungan", VaiTro.THU_NGAN)); }
+    public DoiChieuChiPhiDAO() {
+        this(new HoaDonDAO(), new TaiKhoan("thungan", VaiTro.THU_NGAN));
+    }
 
     /** Dùng cùng nguồn và phiên Thu ngân với màn thanh toán. */
     public DoiChieuChiPhiDAO(HoaDonDAO hoaDonDAO, TaiKhoan taiKhoan) {
-        if (hoaDonDAO == null || taiKhoan == null) { throw new IllegalArgumentException("Thiếu nguồn đối chiếu."); }
-        this.hoaDonDAO = hoaDonDAO; this.taiKhoan = taiKhoan;
+        if (hoaDonDAO == null || taiKhoan == null) {
+            throw new IllegalArgumentException("Thiếu nguồn đối chiếu.");
+        }
+        this.hoaDonDAO = hoaDonDAO;
+        this.taiKhoan = taiKhoan;
     }
 
     /** Đọc lại phiếu và chi phí, từ chối phiếu đã thu hoặc chưa hoàn thành. */
     public KetQuaDoiChieu layKetQuaDoiChieu(String maPhieu) {
-        if (maPhieu == null) { throw new IllegalArgumentException("Cần chọn phiếu."); }
+        if (maPhieu == null) {
+            throw new IllegalArgumentException("Cần chọn phiếu.");
+        }
         PhieuChoThu phieu = hoaDonDAO.timPhieuTheoMa(taiKhoan, maPhieu.trim());
-        if (phieu == null) { throw new IllegalArgumentException("Phiếu không còn đủ điều kiện đối chiếu."); }
+        if (phieu == null) {
+            throw new IllegalArgumentException("Phiếu không còn đủ điều kiện đối chiếu.");
+        }
         List<DongChiPhi> dong = new ArrayList<>();
         for (ChiTietBaoGia ct : hoaDonDAO.layChiTietDoiChieu(taiKhoan, phieu.getMaPhieu())) {
-            dong.add(new DongChiPhi(ct.getTenHangMuc(), ct.getSoLuong() + " " + ct.getDonVi(), ct.getDonGia(), ct.getThanhTien()));
+            dong.add(new DongChiPhi(ct.getTenHangMuc(), ct.getSoLuong() + " " + ct.getDonVi(), ct.getDonGia(),
+                    ct.getThanhTien()));
         }
         KetQuaDoiChieu kq = new KetQuaDoiChieu(phieu.getMaPhieu(), phieu.getTenKhach(), phieu.getBienSo(),
-            "Chưa phát hành hóa đơn", dong);
+                "Chưa phát hành hóa đơn", dong);
         if (kq.getTongThucTe() != phieu.getTongTien()) {
             throw new IllegalStateException("Chi phí không khớp tổng phải thu. Hãy kiểm tra lại chứng từ.");
         }
@@ -41,20 +51,26 @@ public final class DoiChieuChiPhiDAO {
 
     /** Tra cứu phiếu đủ điều kiện hoặc trả null khi không có. */
     public KetQuaDoiChieu timKetQua(String maPhieu) {
-        if (!duDieuKienDoiChieu(maPhieu)) { return null; }
+        if (!duDieuKienDoiChieu(maPhieu)) {
+            return null;
+        }
         return layKetQuaDoiChieu(maPhieu);
     }
 
     /** Kiểm tra điều kiện từ nguồn hiện tại, không giữ trạng thái riêng. */
     public boolean duDieuKienDoiChieu(String maPhieu) {
-        if (maPhieu == null) { throw new IllegalArgumentException("Cần chọn phiếu."); }
+        if (maPhieu == null) {
+            throw new IllegalArgumentException("Cần chọn phiếu.");
+        }
         return hoaDonDAO.timPhieuTheoMa(taiKhoan, maPhieu.trim()) != null;
     }
 
     /** Lấy mã các phiếu đang chờ để người dùng lựa chọn. */
     public List<String> layDanhSachMaPhieu() {
         List<String> ketQua = new ArrayList<>();
-        for (PhieuChoThu p : hoaDonDAO.layPhieuChoThu(taiKhoan)) { ketQua.add(p.getMaPhieu()); }
+        for (PhieuChoThu p : hoaDonDAO.layPhieuChoThu(taiKhoan)) {
+            ketQua.add(p.getMaPhieu());
+        }
         return ketQua;
     }
 
@@ -64,21 +80,37 @@ public final class DoiChieuChiPhiDAO {
         private final String slDvt;
         private final long donGia;
         private final long thanhTien;
+
         /** Kiểm tra dữ liệu dòng trước khi đưa lên bảng. */
         public DongChiPhi(String hangMuc, String slDvt, long donGia, long thanhTien) {
             if (hangMuc == null || slDvt == null || donGia < 0 || thanhTien < 0) {
                 throw new IllegalArgumentException("Chi phí không hợp lệ.");
             }
-            this.hangMuc = hangMuc; this.slDvt = slDvt; this.donGia = donGia; this.thanhTien = thanhTien;
+            this.hangMuc = hangMuc;
+            this.slDvt = slDvt;
+            this.donGia = donGia;
+            this.thanhTien = thanhTien;
         }
+
         /** Trả tên hạng mục. */
-        public String getHangMuc() { return hangMuc; }
+        public String getHangMuc() {
+            return hangMuc;
+        }
+
         /** Trả số lượng và đơn vị đã lưu trên chứng từ. */
-        public String getSlDvt() { return slDvt; }
+        public String getSlDvt() {
+            return slDvt;
+        }
+
         /** Trả đơn giá nguyên đồng. */
-        public long getDonGia() { return donGia; }
+        public long getDonGia() {
+            return donGia;
+        }
+
         /** Trả thành tiền đã làm tròn của dòng. */
-        public long getThanhTien() { return thanhTien; }
+        public long getThanhTien() {
+            return thanhTien;
+        }
     }
 
     /** Kết quả đối chiếu chỉ đọc của một phiếu cụ thể. */
@@ -86,12 +118,16 @@ public final class DoiChieuChiPhiDAO {
         private final String maPhieu, tenKhach, bienSo, trangThaiThanhToan;
         private final List<DongChiPhi> danhSachChiPhi;
         private final long tongThucTe;
+
         /** Tính tổng từ từng dòng và kiểm tra tràn tiền. */
         public KetQuaDoiChieu(String ma, String ten, String bien, String trangThai, List<DongChiPhi> dong) {
             if (ma == null || ten == null || bien == null || trangThai == null || dong == null) {
                 throw new IllegalArgumentException("Thiếu dữ liệu đối chiếu.");
             }
-            maPhieu = ma; tenKhach = ten; bienSo = bien; trangThaiThanhToan = trangThai;
+            maPhieu = ma;
+            tenKhach = ten;
+            bienSo = bien;
+            trangThaiThanhToan = trangThai;
             danhSachChiPhi = new ArrayList<>(dong);
             long tong = 0;
             for (DongChiPhi ct : dong) {
@@ -102,21 +138,45 @@ public final class DoiChieuChiPhiDAO {
             }
             tongThucTe = tong;
         }
+
         /** Trả mã phiếu đang đối chiếu. */
-        public String getMaPhieu() { return maPhieu; }
+        public String getMaPhieu() {
+            return maPhieu;
+        }
+
         /** Trả khách hàng của phiếu. */
-        public String getTenKhach() { return tenKhach; }
+        public String getTenKhach() {
+            return tenKhach;
+        }
+
         /** Trả biển số đã lưu trên phiếu. */
-        public String getBienSo() { return bienSo; }
+        public String getBienSo() {
+            return bienSo;
+        }
+
         /** Trả trạng thái phát hành hóa đơn. */
-        public String getTrangThaiThanhToan() { return trangThaiThanhToan; }
+        public String getTrangThaiThanhToan() {
+            return trangThaiThanhToan;
+        }
+
         /** Trả bản sao danh sách dòng chi phí. */
-        public List<DongChiPhi> getDanhSachChiPhi() { return new ArrayList<>(danhSachChiPhi); }
+        public List<DongChiPhi> getDanhSachChiPhi() {
+            return new ArrayList<>(danhSachChiPhi);
+        }
+
         /** Trả tổng các dòng hợp lệ. */
-        public long getTongThucTe() { return tongThucTe; }
+        public long getTongThucTe() {
+            return tongThucTe;
+        }
+
         /** Trả nhãn phiếu cho màn đối chiếu. */
-        public String getNhanPhieu() { return maPhieu + " · Hoàn tất"; }
+        public String getNhanPhieu() {
+            return maPhieu + " · Hoàn tất";
+        }
+
         /** Trả nhãn khách và xe. */
-        public String getNhanKhach() { return tenKhach + " · " + bienSo; }
+        public String getNhanKhach() {
+            return tenKhach + " · " + bienSo;
+        }
     }
 }

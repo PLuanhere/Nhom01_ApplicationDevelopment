@@ -347,7 +347,8 @@ public class PendingCollectionPanel extends JPanel {
                 long dichVu = 0;
                 long phuTung = 0;
                 long[] tien = dao.docChiPhi(taiKhoan, phieu.getMaPhieu());
-                dichVu = tien[0]; phuTung = tien[1];
+                dichVu = tien[0];
+                phuTung = tien[1];
                 model.addRow(new Object[] { phieu.getMaPhieu(), phieu.getTenKhach(), phieu.getBienSo(), dichVu, phuTung,
                         phieu.getTongTien(), "Chờ lập hóa đơn", "Xem chi tiết" });
             }

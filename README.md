@@ -45,9 +45,9 @@ Entity/DAO cũ và mở lại từ package mới. Không lưu nội dung tab cũ
 | Quản lý | Trang chủ điều hành; Nhân viên; Tài khoản/phân quyền; Dịch vụ/bảng giá; Phụ tùng/kho; báo cáo doanh thu, tiếp nhận/sửa chữa, tồn kho và hiệu suất kỹ thuật viên. |
 | Tiếp nhận | Hồ sơ khách/xe; tiếp nhận và phân công kiểm tra; báo giá, phản hồi khách; phát hành lệnh và bàn giao xe. |
 | Kỹ thuật | Công việc được giao; báo cáo kiểm tra; tiến độ; phụ tùng thực dùng; phát sinh và xác nhận hoàn tất. |
-| Thu ngân | Phiếu hoàn thành chờ thu; đối chiếu chi phí; xác nhận tiền mặt; tra cứu và xem hóa đơn đã thanh toán. |
+| Thu ngân | Phiếu hoàn thành chờ thu; đối chiếu chi phí; xác nhận tiền mặt/chuyển khoản; tra cứu, xem chi tiết và in lại hóa đơn đã thanh toán. |
 
-Trang chủ và Báo cáo Quản lý đã được triển khai theo yêu cầu ngày 02/11/2026. QR/chuyển khoản trên UI còn mục giữ chỗ; API thanh toán có lưu hình thức chuyển khoản nhưng chưa có tích hợp ngân hàng. Các màn xem trước cũ nằm trong package vai trò tương ứng không đồng nghĩa đã được nối vào luồng chính.
+Trang chủ và Báo cáo Quản lý đã được triển khai theo yêu cầu ngày 02/11/2026. Đã có đối chiếu chi phí, thu tiền mặt/chuyển khoản thủ công, xem và in lại hóa đơn. Tài khoản ngân hàng/QR thật chưa được cấu hình; chưa tích hợp ngân hàng. Các màn xem trước cũ nằm trong package vai trò tương ứng không đồng nghĩa đã được nối vào luồng chính.
 
 ## Cấu trúc code
 
@@ -146,7 +146,7 @@ foreach ($testFile in (Get-ChildItem test/dao -Recurse -Filter '*Test.java')) {
 }
 ```
 
-Các bộ kiểm tra gồm Nhân viên, Tài khoản/quyền, Dịch vụ, Phụ tùng, kiểu số, Hóa đơn, Báo cáo và toàn luồng đến Bàn giao. Lần đổi package: cả 11 bộ kiểm tra DAO PASS; JDK 17 `-Xlint:all` và Eclipse compiler đều 0 lỗi. Eclipse compiler còn các cảnh báo cũ về biến/hàm UI chưa sử dụng, không tắt cảnh báo để che chúng. Chương trình kiểm tra Swing và ảnh mới nằm trong `output/package-refactor`; kiểm tra điều hướng bốn vai trò ở 1920×1234, 1366×768 và 960×600 đạt 199 kiểm tra.
+Các bộ kiểm tra gồm Nhân viên, Tài khoản/quyền, Dịch vụ, Phụ tùng, kiểu số, Hóa đơn, Báo cáo và toàn luồng đến Bàn giao. Lần đổi package: các bộ kiểm tra DAO PASS; JDK 17 `-Xlint:all` và Eclipse compiler đều 0 lỗi. Eclipse compiler còn các cảnh báo cũ về biến/hàm UI chưa sử dụng, không tắt cảnh báo để che chúng. Chương trình kiểm tra Swing và ảnh mới nằm trong `output/package-refactor`; kiểm tra điều hướng bốn vai trò ở 1920×1234, 1366×768 và 960×600 đạt 199 kiểm tra.
 
 `skills`, `output` và phần lớn file mới trong `test` hiện bị `.gitignore` bỏ qua. Kiểm tra danh sách file trước khi bàn giao; cấu hình ignore được giữ nguyên. Chưa kiểm thử kết nối SQL Server hoặc sử dụng nhiều người dùng đồng thời.
 
@@ -164,6 +164,15 @@ Các frame Page 3: `manager-overview`, `manager-reports`, `manager-report-worksh
 - Xuất **CSV UTF-8 có BOM**, dấu chấm phẩy, mở bằng Excel; có thông tin kỳ/người lập/thời điểm, chỉ số và toàn bộ dòng kết quả. Lưu/CSV dùng toàn bộ báo cáo, tìm trong bảng chỉ đổi các dòng đang nhìn thấy. Có chọn nơi lưu, hủy và xác nhận ghi đè. Không cần thư viện Excel; chưa xuất XLSX/PDF.
 - `entity.baocao.BaoCao` giữ bản chụp; `dao.baocao.BaoCaoDAO` tính và lưu; `ui.screen.quanly.TrangChuQuanLyPanel`, `BaoCaoPanel`, `BaoCaoDaLuuPanel` hiển thị. `BaoCaoUi` và `BieuDoDoanhThuPanel` dùng Swing cơ bản. Không thêm service/controller.
 
-## Nhánh hiện tại
+## Nhánh phát triển
 
 `feature/manager-dashboard-reports`: Trang chủ và Báo cáo Quản lý, phần đơn giản hóa Java và chia Entity/DAO theo nhóm thực thể. Các thay đổi từ nhánh `refactor/fix-errors-group-domain-packages` được giữ nguyên khi chuyển về nhánh bàn giao này.
+
+## Tích hợp Thu ngân từ main
+
+Đã đối chiếu thay đổi Thu ngân trên main đến `e4f1117` (đối chiếu chi phí, chuyển khoản, chi tiết/in hóa đơn). Giữ package theo nhóm thực thể và tiền long; không khôi phục nguồn ThuNganDAO độc lập.
+
+- Chọn đúng phiếu chờ → đối chiếu chi phí từ báo giá liên kết → chọn tiền mặt hoặc chuyển khoản → xác nhận thành công → mở đúng mã hóa đơn vừa tạo.
+- Chuyển khoản cần số tiền thực nhận hợp lệ và mã tham chiếu; biển số, mã giao dịch được giữ trên hóa đơn. Phiếu đã thu rời danh sách đối chiếu/chờ thu, không thu lặp.
+- Xem/in lại đọc được chi tiết sau thanh toán và sau bàn giao; không dựa vào danh sách phiếu còn chờ thu. Quản lý và Bàn giao vẫn đọc cùng nguồn hóa đơn.
+- Bản in chứa mã hóa đơn, khách/xe, người/thời điểm thu, hình thức/tham chiếu, từng dòng và tổng tiền. Có chia trang; chỉ gửi đến máy in khi người dùng chấp thuận hộp thoại in. Kiểm tra bản in bằng ảnh và Printable, chưa in thử lên máy in vật lý.

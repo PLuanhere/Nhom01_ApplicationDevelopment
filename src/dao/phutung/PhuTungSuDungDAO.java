@@ -116,8 +116,8 @@ public final class PhuTungSuDungDAO {
 
     // Ghi lượng thực dùng sau khi DAO kỹ thuật đã kiểm tra lệnh và hạng mục hiện tại.
     /** Thực hiện ghi theo hang muc cho thành phần hiện tại. */
-    public PhuTungSuDung ghiTheoHangMuc(TaiKhoan taiKhoan, String maLenh, String hangMuc, String maPhuTung, double soLuong,
-            double gioiHan, String maLuot) {
+    public PhuTungSuDung ghiTheoHangMuc(TaiKhoan taiKhoan, String maLenh, String hangMuc, String maPhuTung,
+            double soLuong, double gioiHan, String maLuot) {
         if (nguonLenh != null) {
             throw new IllegalStateException("Cần chọn đúng dòng báo giá khi ghi nhận phụ tùng.");
         }

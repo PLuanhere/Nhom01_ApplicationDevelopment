@@ -18,14 +18,19 @@ public final class HoaDon {
     /** Tạo hóa đơn đã thanh toán. */
     public HoaDon(String maHoaDon, String maPhieuSuaChua, String tenKhachHang, long tongTien,
             HinhThucThanhToan hinhThucThanhToan, LocalDateTime thoiDiemThanhToan, String nguoiThucHien) {
-        this(maHoaDon, maPhieuSuaChua, tenKhachHang, "", tongTien, hinhThucThanhToan, thoiDiemThanhToan, nguoiThucHien, "");
+        this(maHoaDon, maPhieuSuaChua, tenKhachHang, "", tongTien, hinhThucThanhToan, thoiDiemThanhToan, nguoiThucHien,
+                "");
     }
 
     /** Giữ biển số và tham chiếu chuyển khoản trên chính hóa đơn đã thu. */
     public HoaDon(String maHoaDon, String maPhieuSuaChua, String tenKhachHang, String bienSo, long tongTien,
-            HinhThucThanhToan hinhThucThanhToan, LocalDateTime thoiDiemThanhToan, String nguoiThucHien, String maGiaoDich) {
-        if (bienSo == null || maGiaoDich == null) { throw new IllegalArgumentException("Thiếu thông tin hóa đơn."); }
-        this.bienSo = bienSo.trim(); this.maGiaoDich = maGiaoDich.trim();
+            HinhThucThanhToan hinhThucThanhToan, LocalDateTime thoiDiemThanhToan, String nguoiThucHien,
+            String maGiaoDich) {
+        if (bienSo == null || maGiaoDich == null) {
+            throw new IllegalArgumentException("Thiếu thông tin hóa đơn.");
+        }
+        this.bienSo = bienSo.trim();
+        this.maGiaoDich = maGiaoDich.trim();
         this.maHoaDon = requireNonBlank(maHoaDon, "Mã hóa đơn");
         this.maPhieuSuaChua = requireNonBlank(maPhieuSuaChua, "Mã phiếu sửa chữa");
         this.tenKhachHang = requireNonBlank(tenKhachHang, "Tên khách hàng");
@@ -46,10 +51,14 @@ public final class HoaDon {
     }
 
     /** Trả biển số tại thời điểm lập hóa đơn. */
-    public String getBienSo() { return bienSo; }
+    public String getBienSo() {
+        return bienSo;
+    }
 
     /** Trả mã tham chiếu chuyển khoản, rỗng với thanh toán tiền mặt. */
-    public String getMaGiaoDich() { return maGiaoDich; }
+    public String getMaGiaoDich() {
+        return maGiaoDich;
+    }
 
     /** Trả về ma hoa don. */
     public String getMaHoaDon() {
