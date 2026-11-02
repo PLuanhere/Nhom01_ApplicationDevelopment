@@ -508,7 +508,7 @@ public final class PhieuSuaChuaDAO {
      * @param baoDuong nhóm bảo dưỡng hoặc điều hòa
      * @return các dòng báo giá mẫu
      */
-    // Tạo chi tiết báo giá mẫu để kiểm tra bố cục và điều kiện phân công.
+    // Tạo chi tiết báo giá mẫu và truyền đúng tham số của constructor.
     private static List<ChiTietBaoGia> taoChiTietBaoGia(boolean baoDuong) {
         List<ChiTietBaoGia> ketQua = new ArrayList<ChiTietBaoGia>();
         if (baoDuong) {
