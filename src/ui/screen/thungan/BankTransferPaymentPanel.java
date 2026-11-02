@@ -9,6 +9,7 @@ import java.awt.GridLayout;
 
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -42,14 +43,14 @@ public class BankTransferPaymentPanel extends JPanel {
     private JTextField referenceField;
     private JLabel statusLabel;
     private JButton confirmButton;
-    private final ActionListener onConfirm;
+    private final Consumer<String> onConfirm;
 
     public BankTransferPaymentPanel() {
-        this(null, null, null, null, null);
+        this(null, null, null, () -> {}, maHoaDon -> {});
     }
 
-    public BankTransferPaymentPanel(HoaDonDAO dao, PhieuChoThu phieu, TaiKhoan taiKhoan, ActionListener onBack,
-            ActionListener onConfirm) {
+    public BankTransferPaymentPanel(HoaDonDAO dao, PhieuChoThu phieu, TaiKhoan taiKhoan, Runnable onBack,
+            Consumer<String> onConfirm) {
         this.dao = dao != null ? dao : new HoaDonDAO();
         this.taiKhoan = taiKhoan != null ? taiKhoan : new TaiKhoan("thungan", VaiTro.THU_NGAN);
         if (phieu == null) {
@@ -212,7 +213,7 @@ public class BankTransferPaymentPanel extends JPanel {
 
                     confirmButton.setEnabled(false);
                     if (onConfirm != null)
-                        onConfirm.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, maHoaDon));
+                        onConfirm.accept(maHoaDon);
                 } catch (RuntimeException ex) {
                     javax.swing.JOptionPane.showMessageDialog(BankTransferPaymentPanel.this, ex.getMessage(),
                             "Lỗi xác nhận thanh toán", javax.swing.JOptionPane.ERROR_MESSAGE);

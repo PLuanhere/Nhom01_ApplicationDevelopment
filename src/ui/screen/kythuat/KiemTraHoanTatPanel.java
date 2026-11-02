@@ -5,9 +5,9 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
-import entity.HangMucSuaChua;
-import entity.PhieuSuaChua;
-import entity.TrangThaiSuaChua;
+import entity.suachua.HangMucSuaChua;
+import entity.suachua.PhieuSuaChua;
+import entity.suachua.TrangThaiSuaChua;
 import ui.component.PhuTungUi;
 import static ui.component.GiaoDienKyThuat.*;
 
@@ -83,7 +83,7 @@ final class KiemTraHoanTatPanel extends TrangKyThuatPanel {
         themThanhPhan(pnlCot, taoHang(taoTruong("Kết quả kiểm tra cuối *", khongGian.txtKetLuan),
                 taoTruong("Phát sinh chưa duyệt? · chỉ đọc", khongGian.taoONhap(
                         lenh.getPhatSinh() != null && lenh.getPhatSinh().getTrangThai()
-                                == entity.TrangThaiPhatSinh.CHO_DUYET ? "Có → buộc xử lý" : "Không có", true))));
+                                == entity.suachua.TrangThaiPhatSinh.CHO_DUYET ? "Có → buộc xử lý" : "Không có", true))));
         khongGian.btnHoanTat = taoNut("Hoàn tất khi đủ điều kiện", "HOAN_TAT_LENH", true, khongGian);
         khongGian.btnHoanTat.setEnabled(false);
         khongGian.modelNhap.addTableModelListener(new javax.swing.event.TableModelListener() {

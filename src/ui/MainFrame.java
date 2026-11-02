@@ -886,19 +886,10 @@ public final class MainFrame extends JFrame implements ActionListener {
             setStatus("Phiếu không còn chờ thu.");
             return;
         }
-        setScreen(new BankTransferPaymentPanel(thuNganDAO, phieu, getTaiKhoanDangNhap(), new ActionListener() {
-            /** Quay lại bước đối chiếu. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                moDoiChieuChiPhi(maPhieu);
-            }
-        }, new ActionListener() {
-            /** Chuyển tới đúng hóa đơn vừa thu, có thể xem và in lại. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                moChiTietHoaDon(event.getActionCommand());
-            }
-        }));
+        setScreen(new BankTransferPaymentPanel(thuNganDAO, phieu, getTaiKhoanDangNhap(), 
+            () -> moDoiChieuChiPhi(maPhieu),
+            maHoaDon -> moChiTietHoaDon(maHoaDon)
+        ));
         setStatus("Thanh toán chuyển khoản / QR · " + maPhieu);
     }
 
@@ -920,19 +911,10 @@ public final class MainFrame extends JFrame implements ActionListener {
             setStatus("Phiếu không còn chờ thu. Hãy làm mới danh sách.");
             return;
         }
-        setScreen(new CashPaymentConfirmPanel(thuNganDAO, phieu, taiKhoanDangNhap, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                dieuHuongThuNgan("Trung tâm thanh toán");
-            }
-        }, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                moChiTietHoaDon(event.getActionCommand());
-            }
-        }));
+        setScreen(new CashPaymentConfirmPanel(thuNganDAO, phieu, taiKhoanDangNhap, 
+            () -> dieuHuongThuNgan("Trung tâm thanh toán"),
+            maHoaDon -> moChiTietHoaDon(maHoaDon)
+        ));
         setStatus("Thanh toán tiền mặt · " + phieu.getMaPhieu());
     }
 
@@ -943,13 +925,9 @@ public final class MainFrame extends JFrame implements ActionListener {
             return;
         }
         pnlDieuHuongThuNgan.chonMuc("Hoá đơn đã thanh toán");
-        setScreen(new PaidInvoiceDetailPanel(thuNganDAO, getTaiKhoanDangNhap(), ma, new ActionListener() {
-            /** Quay về danh sách đã thanh toán và đọc lại dữ liệu. */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                dieuHuongThuNgan("Hoá đơn đã thanh toán");
-            }
-        }));
+        setScreen(new PaidInvoiceDetailPanel(thuNganDAO, getTaiKhoanDangNhap(), ma, 
+            () -> dieuHuongThuNgan("Hoá đơn đã thanh toán")
+        ));
         setStatus("Chi tiết hóa đơn · " + ma);
     }
 }
