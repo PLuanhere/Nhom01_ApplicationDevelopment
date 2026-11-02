@@ -508,16 +508,19 @@ public final class PhieuSuaChuaDAO {
      * @param baoDuong nhóm bảo dưỡng hoặc điều hòa
      * @return các dòng báo giá mẫu
      */
-    // Tạo chi tiết báo giá mẫu để kiểm tra bố cục và điều kiện phân công.
+    // Tạo chi tiết báo giá mẫu và truyền đúng tham số của constructor.
     private static List<ChiTietBaoGia> taoChiTietBaoGia(boolean baoDuong) {
         List<ChiTietBaoGia> ketQua = new ArrayList<ChiTietBaoGia>();
         if (baoDuong) {
-            ketQua.add(new ChiTietBaoGia("DV001", "Bảo dưỡng định kỳ", "Dịch vụ / tiền công", "", "1", "300000"));
-            ketQua.add(new ChiTietBaoGia("DV002", "Vệ sinh phanh trước", "Tiền công", "", "1", "100000"));
+            ketQua.add(new ChiTietBaoGia("DV001", "Bảo dưỡng định kỳ",
+                    "Dịch vụ / tiền công", "", "1", "300000", ""));
+            ketQua.add(new ChiTietBaoGia("DV002", "Vệ sinh phanh trước",
+                    "Tiền công", "", "1", "100000", ""));
             ketQua.add(new ChiTietBaoGia("Dầu động cơ 5W-30", "Phụ tùng", "lít", "4", "180000"));
             ketQua.add(new ChiTietBaoGia("Lọc dầu động cơ", "Phụ tùng", "cái", "1", "150000"));
         } else {
-            ketQua.add(new ChiTietBaoGia("DV003", "Kiểm tra điều hòa", "Dịch vụ / tiền công", "", "1", "300000"));
+            ketQua.add(new ChiTietBaoGia("DV003", "Kiểm tra điều hòa",
+                    "Dịch vụ / tiền công", "", "1", "300000", ""));
         }
         return ketQua;
     }
