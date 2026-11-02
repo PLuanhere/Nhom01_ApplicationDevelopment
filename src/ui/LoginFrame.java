@@ -31,8 +31,6 @@ import javax.swing.SwingUtilities;
 
 import ui.component.LoginBackgroundPanel;
 import ui.component.UiTheme;
-import ui.component.WindowMouseHandler;
-import ui.component.WindowTitlePanel;
 
 /** Hiển thị trang đăng nhập và mở khu vực làm việc theo vai trò. */
 public final class LoginFrame extends JFrame {
@@ -82,15 +80,13 @@ public final class LoginFrame extends JFrame {
             throw new NullPointerException("Thiếu dữ liệu bắt buộc.");
         }
         this.duLieuChung = duLieuChung;
-        setUndecorated(true);
+        setUndecorated(false);
         setMinimumSize(new Dimension(960, 600));
         setSize(1280, 800);
         setLocationRelativeTo(null);
         setIconImage(UiTheme.createWindowIcon());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-        getRootPane().setBorder(BorderFactory.createLineBorder(UiTheme.APP_BORDER));
-        add(new WindowTitlePanel(this), BorderLayout.NORTH);
 
         LoginBackgroundPanel pnlNen = new LoginBackgroundPanel();
         GridBagConstraints viTri = new GridBagConstraints();
@@ -102,9 +98,6 @@ public final class LoginFrame extends JFrame {
         add(scrDangNhap, BorderLayout.CENTER);
         getRootPane().setDefaultButton(btnDangNhap);
 
-        WindowMouseHandler mouseHandler = new WindowMouseHandler(this);
-        addMouseListener(mouseHandler);
-        addMouseMotionListener(mouseHandler);
         txtMatKhau.setEchoChar('•');
         chkHienMatKhau.addActionListener(new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */

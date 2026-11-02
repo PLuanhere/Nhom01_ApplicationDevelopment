@@ -45,7 +45,6 @@ import ui.component.ThuNganNavigationPanel;
 import ui.component.TiepNhanNavigationPanel;
 import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
-import ui.component.WindowTitlePanel;
 import ui.screen.kythuat.BaoCaoKiemTraPanel;
 import ui.screen.kythuat.KhongGianKyThuatPanel;
 import ui.screen.kythuat.PhieuSuaChuaPanel;
@@ -152,7 +151,7 @@ public final class MainFrame extends JFrame implements ActionListener {
         taiKhoanDAO.themTheoDoi(theoDoiTaiKhoan);
 
         setTitle(getTitle() + " — " + taiKhoan.getVaiTro().getTenHienThi());
-        setUndecorated(true);
+        setUndecorated(false);
         setIconImage(UiTheme.createWindowIcon());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(960, 600));
@@ -165,7 +164,6 @@ public final class MainFrame extends JFrame implements ActionListener {
         getRootPane().setBorder(BorderFactory.createLineBorder(UiTheme.APP_BORDER));
 
         if (taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT) {
-            add(new WindowTitlePanel(this), BorderLayout.NORTH);
             KyThuatDAO nguonKyThuat = new KyThuatDAO(MainFrame.this.getTaiKhoanDangNhap(), duLieuChung.getSuaChuaDAO(),
                     duLieuChung.getKiemTraDAO(), duLieuChung.getPhuTungDAO());
             pnlKhongGianKyThuat = new KhongGianKyThuatPanel(this, taiKhoan, new ActionListener() {
@@ -179,8 +177,6 @@ public final class MainFrame extends JFrame implements ActionListener {
             return;
 
         }
-
-        add(new WindowTitlePanel(this), BorderLayout.NORTH);
 
         WindowMouseHandler mouseHandler = new WindowMouseHandler(this);
         addMouseListener(mouseHandler);
