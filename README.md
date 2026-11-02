@@ -100,6 +100,8 @@ Entity/DAO không chia theo Quản lý/Tiếp nhận/Kỹ thuật/Thu ngân. Kh�
 
 ## Luồng dữ liệu dùng chung
 
+Đợt rà soát lỗi, package và luồng tiếp nhận → thanh toán nằm trong [REVIEW_LUONG_NGHIEP_VU.md](docs/REVIEW_LUONG_NGHIEP_VU.md). Phần duyệt phát sinh chưa hoàn thiện và được giữ lại để làm sau theo yêu cầu.
+
 Một `DuLieuGarageDAO` được tạo khi mở ứng dụng và truyền qua các lần đăng xuất/đăng nhập. Tồn kho, khách/xe, phiếu, báo giá và hóa đơn cùng thuộc nguồn này; không tạo bộ hóa đơn hoặc tồn riêng cho mỗi vai trò.
 
 1. Tiếp nhận tạo khách/xe, xác nhận phiếu và giao kiểm tra cho tài khoản Kỹ thuật.

@@ -167,10 +167,11 @@ public final class PhuTungSuDungDAO {
             throw new NullPointerException("Thiếu dữ liệu bắt buộc.");
         }
         String khoa = tuKhoa.trim().toLowerCase();
+        List<String> lenhDuocXem = docLenhDaDuyet(taiKhoan);
         for (PhuTungSuDung banGhi : hoSo) {
             String noiDung = banGhi.getMaGhiNhan() + " " + banGhi.getMaLenhSuaChua() + " " + banGhi.getPhuTung();
             boolean duocDoc = nguonLenh == null ? taiKhoan.getTenDangNhap().equals("kythuat")
-                    : (nguonLenh.timTheoMa(taiKhoan, banGhi.getMaLenhSuaChua()) != null);
+                    : lenhDuocXem.contains(banGhi.getMaLenhSuaChua());
             if (duocDoc && noiDung.toLowerCase().contains(khoa)
                     && (trangThai == null || trangThai == banGhi.getTrangThai())) {
                 ketQua.add(banGhi);

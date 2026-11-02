@@ -37,6 +37,7 @@ public final class DuLieuGarageDAO {
     /** Nối nguồn lệnh với kho để các vai trò cùng theo dõi lượng thực dùng. */
     public DuLieuGarageDAO() {
         phuTungDAO.noiNguonLenh(suaChuaDAO);
+        suaChuaDAO.noiNguonThucDung(phuTungDAO);
         dichVuDAO.noiNguonBaoGia(baoGiaDAO);
     }
 

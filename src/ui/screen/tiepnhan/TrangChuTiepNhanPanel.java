@@ -49,7 +49,6 @@ public final class TrangChuTiepNhanPanel extends JPanel {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent event) {
-                String ma = (String) event.getSource();
                 dieuHuong.actionPerformed(new ActionEvent("Bàn giao xe", ActionEvent.ACTION_PERFORMED, "thaoTac"));
             }
         });

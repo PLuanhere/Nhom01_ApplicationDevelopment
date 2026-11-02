@@ -36,10 +36,6 @@ public final class DocumentSearchPanel extends JPanel {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent event) {
-                String[] duLieu = (String[]) event.getSource();
-                String tuKhoa = duLieu[0];
-                String phuongThuc = duLieu[1];
-
             }
         }, new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
@@ -56,10 +52,6 @@ public final class DocumentSearchPanel extends JPanel {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent event) {
-                String[] duLieu = (String[]) event.getSource();
-                String t = duLieu[0];
-                String p = duLieu[1];
-
             }
         };
         ActionListener homeAction = veTrangChu != null ? veTrangChu : new ActionListener() {

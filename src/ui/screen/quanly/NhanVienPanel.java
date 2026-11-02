@@ -36,7 +36,6 @@ public final class NhanVienPanel extends JPanel implements ActionListener {
 
     private static final long serialVersionUID = 1L;
 
-    private static final Color DUONG_KE = new Color(0xE9EDF2);
 
     private final NhanVienDAO nhanVienDAO = new NhanVienDAO();
     private final TaiKhoan taiKhoan;

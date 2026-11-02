@@ -152,6 +152,9 @@ public final class HoaDonDAO {
         if (hinhThuc == null) {
             throw new IllegalArgumentException("Cần chọn hình thức thanh toán.");
         }
+        if (hinhThuc == HinhThucThanhToan.CHUYEN_KHOAN && (maGiaoDich == null || maGiaoDich.isBlank())) {
+            throw new IllegalArgumentException("Nhập mã giao dịch chuyển khoản.");
+        }
         PhieuChoThu phieu = timPhieuTheoMa(taiKhoan, maPhieu);
         if (phieu == null) {
             throw new IllegalStateException("Phiếu không tồn tại, chưa hoàn thành hoặc đã thanh toán.");
