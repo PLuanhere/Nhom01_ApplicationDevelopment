@@ -925,9 +925,8 @@ public final class MainFrame extends JFrame implements ActionListener {
             return;
         }
         pnlDieuHuongThuNgan.chonMuc("Hoá đơn đã thanh toán");
-        setScreen(new PaidInvoiceDetailPanel(thuNganDAO, getTaiKhoanDangNhap(), ma, 
-            () -> dieuHuongThuNgan("Hoá đơn đã thanh toán")
-        ));
+        setScreen(new PaidInvoiceDetailPanel(thuNganDAO, getTaiKhoanDangNhap(), ma,
+                suKien -> dieuHuongThuNgan("Hoá đơn đã thanh toán")));
         setStatus("Chi tiết hóa đơn · " + ma);
     }
 }
