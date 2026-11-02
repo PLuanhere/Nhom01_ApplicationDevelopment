@@ -77,7 +77,7 @@ public class BankTransferPaymentPanel extends JPanel {
         content.add(buildPaymentCard(), BorderLayout.CENTER);
     }
 
-    private JPanel buildHeading(ActionListener onBack) {
+    private JPanel buildHeading(Runnable onBack) {
         JPanel heading = new JPanel(new BorderLayout());
         heading.setOpaque(false);
 
@@ -107,7 +107,7 @@ public class BankTransferPaymentPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (onBack != null)
-                    onBack.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "quayLai"));
+                    ((ActionListener) onBack).actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "quayLai"));
             }
         });
         heading.add(back, BorderLayout.EAST);
