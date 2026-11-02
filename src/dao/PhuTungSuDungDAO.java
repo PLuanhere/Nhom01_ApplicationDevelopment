@@ -15,8 +15,8 @@ import entity.VaiTro;
 
 // Quản lý phụ tùng và tồn kho mẫu trong bộ nhớ của phiên sử dụng.
 public final class PhuTungSuDungDAO {
-    private final Map<String, PhuTung> danhMuc = new LinkedHashMap<String, PhuTung>();
-    private final Map<String, BigDecimal> tonKho = new LinkedHashMap<String, BigDecimal>();
+    /** Danh mục và tồn do DAO kho quản lý, dùng chung với Quản lý và báo giá. */
+    private final PhuTungDAO kho;
     private final Map<String, PhuTungSuDung> hoSo = new LinkedHashMap<String, PhuTungSuDung>();
     private final Map<String, Map<String, BigDecimal>> phamViDuyet =
             new LinkedHashMap<String, Map<String, BigDecimal>>();
@@ -27,13 +27,14 @@ public final class PhuTungSuDungDAO {
 
     private PhieuSuaChuaDAO nguonLenh;
 
-    public PhuTungSuDungDAO() { this(true); }
+    public PhuTungSuDungDAO() { this(new PhuTungDAO(), true); }
 
     /** Giữ danh mục/tồn đầu kỳ, nhưng không nạp lệnh và chứng từ mẫu khi dùng luồng chung. */
-    public PhuTungSuDungDAO(boolean coHoSoMau) {
-        themDanhMuc("PT001", "Dầu 5W-30", "lít", "48", "12");
-        themDanhMuc("PT005", "Lọc dầu động cơ", "cái", "6", "12");
-        themDanhMuc("PT004", "Rotuyn lái", "cái", "5", "2");
+    public PhuTungSuDungDAO(boolean coHoSoMau) { this(new PhuTungDAO(), coHoSoMau); }
+
+    /** Nhận đúng nguồn kho đang dùng trong lần chạy ứng dụng. */
+    public PhuTungSuDungDAO(PhuTungDAO kho, boolean coHoSoMau) {
+        this.kho = Objects.requireNonNull(kho);
         if (!coHoSoMau) { soTiepTheo = 1; return; }
         String[] maLenh = {"SC-2026-0111", "SC-2026-0113", "SC-2026-0114", "SC-2026-0108"};
         for (String ma : maLenh) {
@@ -57,10 +58,17 @@ public final class PhuTungSuDungDAO {
         nguonLenh = Objects.requireNonNull(nguon);
     }
 
-    public List<PhuTung> docDanhMuc() { return new ArrayList<>(danhMuc.values()); }
+    /** Lệnh đã được duyệt vẫn có thể dùng phụ tùng sau khi danh mục ngừng hoạt động. */
+    public List<PhuTung> docDanhMuc() { return kho.danhMucNoiBo(); }
+
+    /** Chỉ các phụ tùng đang hoạt động được chọn cho báo giá mới. */
+    public List<PhuTung> docDanhMucDangHoatDong() { return kho.danhMucDangHoatDong(); }
+
+    /** @return nguồn kho để Quản lý dùng cùng tồn với Kỹ thuật */
+    public PhuTungDAO getKhoDAO() { return kho; }
 
     /** Khóa đúng dòng báo giá bằng vị trí, không suy ra phụ tùng từ tên hạng mục. */
-    synchronized PhuTungSuDung ghiTheoHangMuc(TaiKhoan tk, String maLenh, int viTri, String maPT, BigDecimal so, String luot) {
+    PhuTungSuDung ghiTheoHangMuc(TaiKhoan tk, String maLenh, int viTri, String maPT, BigDecimal so, String luot) {
         kiemTraLenh(tk, maLenh);
         entity.PhieuSuaChua lenh = nguonLenh.timTheoMa(tk, maLenh).orElseThrow();
         List<entity.ChiTietBaoGia> chiTiet = nguonLenh.layBaoGia(tk, maLenh).getChiTiet();
@@ -69,7 +77,7 @@ public final class PhuTungSuDungDAO {
         if (!hm.getTaiKhoanThucHien().equals(tk.getTenDangNhap()) && !lenh.getKyThuatChinh().equals(tk.getTenDangNhap())) throw new SecurityException("Không được ghi phụ tùng cho hạng mục này.");
         entity.ChiTietBaoGia ct = chiTiet.get(viTri);
         if (!"Phụ tùng".equals(ct.getLoai()) || !ct.getMaPhuTung().equals(maPT)) throw new IllegalArgumentException("Phụ tùng không thuộc dòng đã duyệt.");
-        docPhuTung(maPT).kiemTraSoLuong(so);
+        docPhuTung(maPT).kiemTraSoLuong(so.doubleValue());
         String khoa = maLenh + "#" + viTri;
         BigDecimal daDung = BigDecimal.ZERO;
         for (PhuTungSuDung dong : hoSo.values()) if (dong.getHangMuc().equals(khoa) && dong.getTrangThai() == TrangThaiSuDung.DA_GHI_NHAN) daDung = daDung.add(dong.getSoLuong());
@@ -78,7 +86,7 @@ public final class PhuTungSuDungDAO {
     }
 
     // Ghi lượng thực dùng sau khi DAO kỹ thuật đã kiểm tra lệnh và hạng mục hiện tại.
-    synchronized PhuTungSuDung ghiTheoHangMuc(TaiKhoan taiKhoan, String maLenh, String hangMuc,
+    PhuTungSuDung ghiTheoHangMuc(TaiKhoan taiKhoan, String maLenh, String hangMuc,
             String maPhuTung, BigDecimal soLuong, BigDecimal gioiHan, String maLuot) {
         if (nguonLenh != null) throw new IllegalStateException("Cần chọn đúng dòng báo giá khi ghi nhận phụ tùng.");
         return ghiNoiBo(taiKhoan, maLenh, hangMuc, maPhuTung, soLuong, gioiHan, maLuot);
@@ -86,37 +94,40 @@ public final class PhuTungSuDungDAO {
 
     private PhuTungSuDung ghiNoiBo(TaiKhoan taiKhoan, String maLenh, String hangMuc,
             String maPhuTung, BigDecimal soLuong, BigDecimal gioiHan, String maLuot) {
-        kiemTraTaiKhoan(taiKhoan);
-        if (maLuot == null || maLuot.isBlank() || luotDaGhi.containsKey(maLuot)) {
-            throw new IllegalStateException("Lượt sử dụng đã được ghi nhận hoặc không hợp lệ.");
-        }
-        PhuTung phuTung = docPhuTung(maPhuTung);
-        phuTung.kiemTraSoLuong(soLuong);
-        BigDecimal daDung = BigDecimal.ZERO;
-        for (PhuTungSuDung dong : hoSo.values()) {
-            if (maLenh.equals(dong.getMaLenhSuaChua()) && maPhuTung.equals(dong.getPhuTung().getMaPhuTung())
-                    && dong.getTrangThai() == TrangThaiSuDung.DA_GHI_NHAN) {
-                daDung = daDung.add(dong.getSoLuong());
+
+            kiemTraTaiKhoan(taiKhoan);
+            if (maLuot == null || maLuot.isBlank() || luotDaGhi.containsKey(maLuot)) {
+                throw new IllegalStateException("Lượt sử dụng đã được ghi nhận hoặc không hợp lệ.");
             }
-        }
-        if (soLuong.compareTo(docTon(maPhuTung)) > 0) {
-            throw new IllegalArgumentException("Số lượng thực dùng vượt tồn khả dụng.");
-        }
-        if (gioiHan == null || daDung.add(soLuong).compareTo(gioiHan) > 0) {
-            throw new IllegalArgumentException("Tổng lượng dùng vượt phạm vi báo giá đã được duyệt.");
-        }
-        String ma = taoMaMoi();
-        PhuTungSuDung dong = new PhuTungSuDung(ma, maLenh, phuTung, soLuong,
-                taiKhoan.getTenDangNhap(), "Ghi nhận thực dùng", TrangThaiSuDung.DA_GHI_NHAN, hangMuc);
-        hoSo.put(ma, dong);
-        tonKho.put(maPhuTung, tonKho.get(maPhuTung).subtract(soLuong));
-        phanCong.put(maLenh, taiKhoan.getTenDangNhap());
-        luotDaGhi.put(maLuot, ma);
-        return dong;
+            PhuTung phuTung = docPhuTung(maPhuTung);
+            phuTung.kiemTraSoLuong(soLuong.doubleValue());
+            BigDecimal daDung = BigDecimal.ZERO;
+            for (PhuTungSuDung dong : hoSo.values()) {
+                if (maLenh.equals(dong.getMaLenhSuaChua()) && maPhuTung.equals(dong.getPhuTung().getMaPhuTung())
+                        && dong.getTrangThai() == TrangThaiSuDung.DA_GHI_NHAN) {
+                    daDung = daDung.add(dong.getSoLuong());
+                }
+            }
+            if (soLuong.compareTo(docTon(maPhuTung)) > 0) {
+                throw new IllegalArgumentException("Số lượng thực dùng vượt tồn khả dụng.");
+            }
+            if (gioiHan == null || daDung.add(soLuong).compareTo(gioiHan) > 0) {
+                throw new IllegalArgumentException("Tổng lượng dùng vượt phạm vi báo giá đã được duyệt.");
+            }
+            String ma = taoMaMoi();
+            PhuTungSuDung dong = new PhuTungSuDung(ma, maLenh, phuTung, soLuong,
+                    taiKhoan.getTenDangNhap(), "Ghi nhận thực dùng", TrangThaiSuDung.DA_GHI_NHAN, hangMuc);
+            ghiBienDongKho(Map.of(maPhuTung, soLuong), false, maLenh, taiKhoan,
+                    "Ghi nhận thực dùng · " + ma, java.time.LocalDateTime.now());
+            hoSo.put(ma, dong);
+            phanCong.put(maLenh, taiKhoan.getTenDangNhap());
+            luotDaGhi.put(maLuot, ma);
+            return dong;
+
     }
 
     // Lọc hồ sơ theo từ khóa, trạng thái và người được phân công.
-    public synchronized List<PhuTungSuDung> docDanhSach(TaiKhoan taiKhoan, String tuKhoa,
+    public List<PhuTungSuDung> docDanhSach(TaiKhoan taiKhoan, String tuKhoa,
             TrangThaiSuDung trangThai) {
         kiemTraTaiKhoan(taiKhoan);
         List<PhuTungSuDung> ketQua = new ArrayList<PhuTungSuDung>();
@@ -134,7 +145,7 @@ public final class PhuTungSuDungDAO {
     }
 
     /** Tiếp nhận tra cứu thực dùng của lệnh để xem lịch sử; không có quyền xác nhận xuất kho. */
-    public synchronized List<PhuTungSuDung> layThucDungChoTiepNhan(TaiKhoan tk, String maLenh) {
+    public List<PhuTungSuDung> layThucDungChoTiepNhan(TaiKhoan tk, String maLenh) {
         if (tk == null || tk.getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN) throw new SecurityException("Chỉ tiếp nhận được tra lịch sử tại quầy.");
         if (nguonLenh == null || nguonLenh.timTheoMa(tk, maLenh).isEmpty()) throw new IllegalArgumentException("Lệnh sửa chữa không tồn tại.");
         List<PhuTungSuDung> ketQua = new ArrayList<>();
@@ -143,7 +154,7 @@ public final class PhuTungSuDungDAO {
     }
 
     // Đọc các lệnh được phân công và có phạm vi phụ tùng đã duyệt.
-    public synchronized List<String> docLenhDaDuyet(TaiKhoan taiKhoan) {
+    public List<String> docLenhDaDuyet(TaiKhoan taiKhoan) {
         kiemTraTaiKhoan(taiKhoan);
         List<String> ketQua = new ArrayList<String>();
         if (nguonLenh != null) {
@@ -159,7 +170,7 @@ public final class PhuTungSuDungDAO {
     }
 
     // Trả bản sao phạm vi duyệt để màn hình không sửa trực tiếp dữ liệu nội bộ.
-    public synchronized Map<String, BigDecimal> docPhamViDuyet(TaiKhoan taiKhoan, String maLenh) {
+    public Map<String, BigDecimal> docPhamViDuyet(TaiKhoan taiKhoan, String maLenh) {
         kiemTraLenh(taiKhoan, maLenh);
         if (nguonLenh != null) {
             Map<String, BigDecimal> ketQua = new LinkedHashMap<>();
@@ -172,22 +183,17 @@ public final class PhuTungSuDungDAO {
     }
 
     // Tìm phụ tùng trong danh mục và báo lỗi nếu mã không tồn tại.
-    public synchronized PhuTung docPhuTung(String maPhuTung) {
-        PhuTung phuTung = danhMuc.get(maPhuTung);
-        if (phuTung == null) {
-            throw new IllegalArgumentException("Phụ tùng không tồn tại.");
-        }
-        return phuTung;
+    public PhuTung docPhuTung(String maPhuTung) {
+        return new PhuTung(kho.timNoiBo(maPhuTung));
     }
 
-    // Đọc tồn hiện tại từ nguồn dữ liệu dùng chung của phiên.
-    public synchronized BigDecimal docTon(String maPhuTung) {
-        docPhuTung(maPhuTung);
-        return tonKho.get(maPhuTung);
+    /** Tồn luôn đọc từ nguồn kho dùng chung. */
+    public BigDecimal docTon(String maPhuTung) {
+        return BigDecimal.valueOf(kho.tonNoiBo(maPhuTung));
     }
 
     // Tính lượng còn được dùng sau các lần đã ghi nhận theo lệnh.
-    public synchronized BigDecimal docLuongConLai(TaiKhoan taiKhoan, String maLenh, String maPhuTung) {
+    public BigDecimal docLuongConLai(TaiKhoan taiKhoan, String maLenh, String maPhuTung) {
         kiemTraLenh(taiKhoan, maLenh);
         BigDecimal conLai = docPhamViDuyet(taiKhoan, maLenh).get(maPhuTung);
         if (conLai == null) {
@@ -203,7 +209,7 @@ public final class PhuTungSuDungDAO {
     }
 
     // Lưu nháp sau khi kiểm tra phân công, phạm vi duyệt và phiên bản đang sửa.
-    public synchronized PhuTungSuDung luuNhap(TaiKhoan taiKhoan, PhuTungSuDung banCu, String maLenh,
+    public PhuTungSuDung luuNhap(TaiKhoan taiKhoan, PhuTungSuDung banCu, String maLenh,
             String maPhuTung, BigDecimal soLuong, String ghiChu) {
         if (nguonLenh != null) throw new IllegalStateException("Ghi thực dùng theo từng hạng mục trong không gian kỹ thuật.");
         kiemTraLenh(taiKhoan, maLenh);
@@ -211,7 +217,7 @@ public final class PhuTungSuDungDAO {
             kiemTraNhap(taiKhoan, banCu);
         }
         PhuTung phuTung = docPhuTung(maPhuTung);
-        phuTung.kiemTraSoLuong(soLuong);
+        phuTung.kiemTraSoLuong(soLuong.doubleValue());
         kiemTraPhamVi(taiKhoan, maLenh, maPhuTung, soLuong);
         for (PhuTungSuDung banGhi : hoSo.values()) {
             if (banGhi != banCu && banGhi.getTrangThai() == TrangThaiSuDung.NHAP
@@ -227,72 +233,69 @@ public final class PhuTungSuDungDAO {
     }
 
     // Xóa bản nháp chưa xuất kho và giữ nguyên tồn kho hiện tại.
-    public synchronized void xoaNhap(TaiKhoan taiKhoan, PhuTungSuDung banCu) {
+    public void xoaNhap(TaiKhoan taiKhoan, PhuTungSuDung banCu) {
         kiemTraNhap(taiKhoan, banCu);
         hoSo.remove(banCu.getMaGhiNhan());
     }
 
     // Kiểm tra toàn bộ nhóm trước khi ghi để lỗi một dòng không làm trừ kho các dòng khác.
-    public synchronized PhuTungSuDung xacNhanThucDung(TaiKhoan taiKhoan, PhuTungSuDung banCu,
+    public PhuTungSuDung xacNhanThucDung(TaiKhoan taiKhoan, PhuTungSuDung banCu,
             Map<String, BigDecimal> luongDung, String ghiChu) {
-        kiemTraNhap(taiKhoan, banCu);
-        String maLenh = banCu.getMaLenhSuaChua();
-        Map<String, PhuTungSuDung> hoSoMoi = new LinkedHashMap<String, PhuTungSuDung>(hoSo);
-        Map<String, BigDecimal> tonMoi = new LinkedHashMap<String, BigDecimal>(tonKho);
-        BigDecimal luongGoc = luongDung.get(banCu.getPhuTung().getMaPhuTung());
-        if (luongGoc == null || luongGoc.signum() <= 0) {
-            throw new IllegalArgumentException("Phụ tùng của bản nháp đang xác nhận phải có lượng dùng lớn hơn 0.");
-        }
-        for (Map.Entry<String, BigDecimal> dong : luongDung.entrySet()) {
-            PhuTung phuTung = docPhuTung(dong.getKey());
-            BigDecimal soLuong = Objects.requireNonNull(dong.getValue(), "Thiếu số lượng.");
-            if (soLuong.signum() == 0) {
-                continue;
+
+            kiemTraNhap(taiKhoan, banCu);
+            String maLenh = banCu.getMaLenhSuaChua();
+            Map<String, PhuTungSuDung> hoSoMoi = new LinkedHashMap<String, PhuTungSuDung>(hoSo);
+            BigDecimal luongGoc = luongDung.get(banCu.getPhuTung().getMaPhuTung());
+            if (luongGoc == null || luongGoc.signum() <= 0) {
+                throw new IllegalArgumentException("Phụ tùng của bản nháp đang xác nhận phải có lượng dùng lớn hơn 0.");
             }
-            phuTung.kiemTraSoLuong(soLuong);
-            if (soLuong.compareTo(tonKho.get(dong.getKey())) > 0) {
-                throw new IllegalArgumentException(phuTung.getMaPhuTung() + " còn "
-                        + tonKho.get(dong.getKey()).toPlainString() + " " + phuTung.getDonViTinh()
-                        + " nhưng nhập " + soLuong.toPlainString() + " " + phuTung.getDonViTinh() + ".");
-            }
-            kiemTraPhamVi(taiKhoan, maLenh, dong.getKey(), soLuong);
-        }
-        for (Map.Entry<String, BigDecimal> dong : luongDung.entrySet()) {
-            if (dong.getValue().signum() == 0) {
-                continue;
-            }
-            PhuTungSuDung nhap = null;
-            for (PhuTungSuDung banGhi : hoSo.values()) {
-                if (banGhi.getTrangThai() == TrangThaiSuDung.NHAP && maLenh.equals(banGhi.getMaLenhSuaChua())
-                        && dong.getKey().equals(banGhi.getPhuTung().getMaPhuTung())) {
-                    nhap = banGhi;
+            for (Map.Entry<String, BigDecimal> dong : luongDung.entrySet()) {
+                PhuTung phuTung = docPhuTung(dong.getKey());
+                BigDecimal soLuong = Objects.requireNonNull(dong.getValue(), "Thiếu số lượng.");
+                if (soLuong.signum() == 0) {
+                    continue;
                 }
+                phuTung.kiemTraSoLuong(soLuong.doubleValue());
+                if (soLuong.compareTo(docTon(dong.getKey())) > 0) {
+                    throw new IllegalArgumentException(phuTung.getMaPhuTung() + " còn "
+                            + docTon(dong.getKey()).toPlainString() + " " + phuTung.getDonViTinh()
+                            + " nhưng nhập " + soLuong.toPlainString() + " " + phuTung.getDonViTinh() + ".");
+                }
+                kiemTraPhamVi(taiKhoan, maLenh, dong.getKey(), soLuong);
             }
-            String ma = nhap == null ? taoMaMoi() : nhap.getMaGhiNhan();
-            hoSoMoi.put(ma, taoBanGhi(ma, maLenh, dong.getKey(), dong.getValue(), ghiChu,
-                    TrangThaiSuDung.DA_GHI_NHAN));
-            tonMoi.put(dong.getKey(), tonKho.get(dong.getKey()).subtract(dong.getValue()));
-        }
-        hoSo.clear();
-        hoSo.putAll(hoSoMoi);
-        tonKho.clear();
-        tonKho.putAll(tonMoi);
-        lenhChoPhuTung.remove(maLenh);
-        return hoSo.get(banCu.getMaGhiNhan());
+            for (Map.Entry<String, BigDecimal> dong : luongDung.entrySet()) {
+                if (dong.getValue().signum() == 0) {
+                    continue;
+                }
+                PhuTungSuDung nhap = null;
+                for (PhuTungSuDung banGhi : hoSo.values()) {
+                    if (banGhi.getTrangThai() == TrangThaiSuDung.NHAP && maLenh.equals(banGhi.getMaLenhSuaChua())
+                            && dong.getKey().equals(banGhi.getPhuTung().getMaPhuTung())) {
+                        nhap = banGhi;
+                    }
+                }
+                String ma = nhap == null ? taoMaMoi() : nhap.getMaGhiNhan();
+                hoSoMoi.put(ma, taoBanGhi(ma, maLenh, dong.getKey(), dong.getValue(), ghiChu,
+                        TrangThaiSuDung.DA_GHI_NHAN));
+            }
+            Map<String, BigDecimal> luongXuat = new LinkedHashMap<>();
+            for (Map.Entry<String, BigDecimal> dong : luongDung.entrySet()) {
+                if (dong.getValue().signum() > 0) { luongXuat.put(dong.getKey(), dong.getValue()); }
+            }
+            ghiBienDongKho(luongXuat, false, maLenh, taiKhoan, ghiChu, java.time.LocalDateTime.now());
+            hoSo.clear();
+            hoSo.putAll(hoSoMoi);
+            lenhChoPhuTung.remove(maLenh);
+            return hoSo.get(banCu.getMaGhiNhan());
+
     }
 
     // Lưu trạng thái chờ phụ tùng mà không xuất kho hoặc xóa bản nháp.
-    public synchronized void chuyenChoPhuTung(TaiKhoan taiKhoan, PhuTungSuDung banCu) {
+    public void chuyenChoPhuTung(TaiKhoan taiKhoan, PhuTungSuDung banCu) {
         kiemTraNhap(taiKhoan, banCu);
         if (!lenhChoPhuTung.contains(banCu.getMaLenhSuaChua())) {
             lenhChoPhuTung.add(banCu.getMaLenhSuaChua());
         }
-    }
-
-    // Thêm phụ tùng và số lượng tồn đầu phiên vào danh mục mẫu.
-    private void themDanhMuc(String ma, String ten, String donVi, String ton, String toiThieu) {
-        danhMuc.put(ma, new PhuTung(ma, ten, donVi, new BigDecimal(toiThieu)));
-        tonKho.put(ma, new BigDecimal(ton));
     }
 
     // Tạo bản ghi dùng cho dữ liệu và chức năng phụ tùng hiện có.
@@ -348,5 +351,17 @@ public final class PhuTungSuDungDAO {
         if (soLuong.compareTo(docLuongConLai(taiKhoan, maLenh, maPhuTung)) > 0) {
             throw new IllegalArgumentException("Số lượng " + maPhuTung + " vượt lượng còn được khách duyệt.");
         }
+    }
+
+    /** Chỗ nối với module Kỹ thuật hiện có; không đổi kiểu dữ liệu của module đó. */
+    private void ghiBienDongKho(Map<String, BigDecimal> luong, boolean nhap, String chungTu,
+            TaiKhoan tk, String lyDo, java.time.LocalDateTime ngay) {
+        String[] ma = new String[luong.size()];
+        double[] soLuong = new double[luong.size()];
+        int i = 0;
+        for (Map.Entry<String, BigDecimal> dong : luong.entrySet()) {
+            ma[i] = dong.getKey(); soLuong[i] = dong.getValue().doubleValue(); i++;
+        }
+        kho.ghiBienDong(ma, soLuong, nhap, chungTu, tk, lyDo, ngay);
     }
 }

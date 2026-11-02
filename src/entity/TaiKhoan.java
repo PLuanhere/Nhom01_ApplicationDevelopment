@@ -1,12 +1,10 @@
 package entity;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
-/** Hồ sơ tài khoản và danh tính đăng nhập, không chứa mật khẩu hoặc hash. */
+/** Lưu thông tin tài khoản, vai trò và trạng thái phiên đăng nhập. */
 public final class TaiKhoan {
 
-    /** Thông tin hồ sơ; thay đổi được thực hiện thông qua DAO. */
     private final String maTaiKhoan;
     private final String maNhanVien;
     private final String tenDangNhap;
@@ -14,108 +12,97 @@ public final class TaiKhoan {
     private final boolean hoatDong;
     private final LocalDateTime ngayTao;
 
-    /** Cờ thu hồi được đọc từ EDT và các DAO nghiệp vụ. */
-    private volatile boolean phienHopLe = true;
+    private boolean phienHopLe = true;
 
-    /** Tương thích các màn/kiểm thử cũ, chưa có liên kết nhân viên. */
+    /** Tạo thông tin tài khoản với vai trò và trạng thái truy cập. */
     public TaiKhoan(String tenDangNhap, VaiTro vaiTro) {
         this(tenDangNhap, vaiTro, "");
     }
 
-    /**
-     * Giữ constructor của main để liên kết hồ sơ nhân viên.
-     * Không tự cấp quyền quản trị tại TaiKhoanDAO.
-     *
-     * @param tenDangNhap tên đăng nhập
-     * @param vaiTro vai trò đăng nhập
-     * @param maNhanVien mã nhân viên, có thể trống với dữ liệu cũ
-     */
+    /** Tạo thông tin tài khoản với vai trò và trạng thái truy cập. */
     public TaiKhoan(String tenDangNhap, VaiTro vaiTro, String maNhanVien) {
         this.maTaiKhoan = "";
-        this.maNhanVien = Objects.requireNonNull(maNhanVien).strip();
+        if (maNhanVien == null) { throw new IllegalArgumentException("Thiếu maNhanVien."); }
+        this.maNhanVien = maNhanVien.trim();
         this.tenDangNhap = kiemTraTen(tenDangNhap);
-        this.vaiTro = Objects.requireNonNull(vaiTro, "Vai trò không được null.");
+        if (vaiTro == null) { throw new IllegalArgumentException("Thiếu vaiTro."); }
+        this.vaiTro = vaiTro;
         this.hoatDong = true;
         this.ngayTao = LocalDateTime.now();
     }
 
-    /**
-     * Tạo hồ sơ tài khoản đầy đủ, không chứa mật khẩu.
-     *
-     * @param maTaiKhoan mã do DAO cấp
-     * @param maNhanVien nhân viên sở hữu tài khoản
-     * @param tenDangNhap tên đăng nhập duy nhất
-     * @param vaiTro một vai trò được cấp
-     * @param hoatDong false nếu tài khoản đã khóa
-     * @param ngayTao thời điểm cấp tài khoản
-     */
+    /** Tạo thông tin tài khoản với vai trò và trạng thái truy cập. */
     public TaiKhoan(String maTaiKhoan, String maNhanVien, String tenDangNhap,
-            VaiTro vaiTro, boolean hoatDong, LocalDateTime ngayTao) {
-        this.maTaiKhoan = Objects.requireNonNull(maTaiKhoan).trim();
-        this.maNhanVien = Objects.requireNonNull(maNhanVien).trim();
+        VaiTro vaiTro, boolean hoatDong, LocalDateTime ngayTao) {
+        if (maTaiKhoan == null) { throw new IllegalArgumentException("Thiếu maTaiKhoan."); }
+        this.maTaiKhoan = maTaiKhoan.trim();
+        if (maNhanVien == null) { throw new IllegalArgumentException("Thiếu maNhanVien."); }
+        this.maNhanVien = maNhanVien.trim();
 
         if (this.maTaiKhoan.isEmpty() || this.maNhanVien.isEmpty()) {
             throw new IllegalArgumentException(
-                    "Mã tài khoản và mã nhân viên không được rỗng.");
+                "Mã tài khoản và mã nhân viên không được rỗng.");
         }
 
         this.tenDangNhap = kiemTraTen(tenDangNhap);
-        this.vaiTro = Objects.requireNonNull(vaiTro, "Vai trò không được null.");
+        if (vaiTro == null) { throw new IllegalArgumentException("Thiếu vaiTro."); }
+        this.vaiTro = vaiTro;
         this.hoatDong = hoatDong;
-        this.ngayTao = Objects.requireNonNull(ngayTao);
+        if (ngayTao == null) { throw new IllegalArgumentException("Thiếu ngayTao."); }
+        this.ngayTao = ngayTao;
     }
 
-    /** @return mã tài khoản */
+    /** Trả về mã tài khoản. */
     public String getMaTaiKhoan() {
         return maTaiKhoan;
     }
 
-    /** @return mã hồ sơ nhân viên liên kết */
+    /** Trả về mã nhân viên. */
     public String getMaNhanVien() {
         return maNhanVien;
     }
 
-    /** @return tên đăng nhập cố định sau khi cấp */
+    /** Trả về tên đăng nhập. */
     public String getTenDangNhap() {
         return tenDangNhap;
     }
 
-    /** @return vai trò được cấp; cần kiểm tra phiên trước thao tác nghiệp vụ */
+    /** Trả về vai trò được cấp. */
     public VaiTro getVaiTro() {
         return vaiTro;
     }
 
-    /** @return true nếu tài khoản đang hoạt động */
+    /** Cho biết tài khoản đang được mở hay đã khóa. */
     public boolean isHoatDong() {
         return hoatDong;
     }
 
-    /** @return thời điểm cấp tài khoản */
+    /** Trả về thời điểm tạo tài khoản. */
     public LocalDateTime getNgayTao() {
         return ngayTao;
     }
 
-    /** @return false nếu danh tính đã bị thu hồi */
+    /** Cho biết phiên đăng nhập đã bị thu hồi hay chưa. */
     public boolean isPhienHopLe() {
         return phienHopLe;
     }
 
-    /** DAO thu hồi danh tính cũ khi thay đổi quyền, trạng thái hoặc mật khẩu. */
+    /** Đánh dấu phiên cũ hết hiệu lực để chặn các thao tác tiếp theo. */
     public void ketThucPhien() {
         phienHopLe = false;
     }
 
-    /** Chặn thao tác từ màn hình còn giữ danh tính đã bị thu hồi. */
+    /** Từ chối thao tác nếu phiên đã hết hiệu lực hoặc tài khoản bị khóa. */
     public void kiemTraPhien() {
         if (!phienHopLe || !hoatDong) {
             throw new SecurityException(
-                    "Phiên đăng nhập đã hết hiệu lực. Vui lòng đăng nhập lại.");
+                "Phiên đăng nhập đã hết hiệu lực. Vui lòng đăng nhập lại.");
         }
     }
 
-    /** Kiểm tra mật khẩu mới; bốn tài khoản ban đầu vẫn dùng mật khẩu 123. */
+    /** Kiểm tra mật khẩu mới có đủ độ dài, chữ hoa, số và ký tự đặc biệt. */
     public static void kiemTraMatKhauMoi(char[] matKhau) {
-        Objects.requireNonNull(matKhau);
+        if (matKhau == null) { throw new IllegalArgumentException("Thiếu matKhau."); }
 
         boolean chuHoa = false;
         boolean chuSo = false;
@@ -125,28 +112,22 @@ public final class TaiKhoan {
             chuHoa |= Character.isUpperCase(kyTu);
             chuSo |= Character.isDigit(kyTu);
             dacBiet |= !Character.isLetterOrDigit(kyTu)
-                    && !Character.isWhitespace(kyTu);
+                && !Character.isWhitespace(kyTu);
         }
 
         if (matKhau.length < 8 || !chuHoa || !chuSo || !dacBiet) {
             throw new IllegalArgumentException(
-                    "Ít nhất 8 ký tự, có chữ hoa, chữ số và ký tự đặc biệt.");
+                "Ít nhất 8 ký tự, có chữ hoa, chữ số và ký tự đặc biệt.");
         }
     }
 
-    /** Chuẩn hóa tên, giữ nguyên cách viết hoa/thường. */
+    /** Kiểm tra tên đăng nhập không rỗng và bỏ khoảng trắng hai đầu. */
     private static String kiemTraTen(String ten) {
-        String tenHopLe = Objects.requireNonNull(
-                ten, "Tên đăng nhập không được null.").trim();
-
-        if (tenHopLe.isEmpty()) {
-            throw new IllegalArgumentException("Tên đăng nhập không được rỗng.");
-        }
-
-        return tenHopLe;
+        if (ten == null || ten.trim().isEmpty()) { throw new IllegalArgumentException("Tên đăng nhập không được rỗng."); }
+        return ten.trim();
     }
 
-    /** @return thông tin an toàn để hiển thị, không chứa mật khẩu */
+    /** Trả về mã và tên đăng nhập để hiển thị tài khoản. */
     @Override
     public String toString() {
         return maTaiKhoan + " · " + tenDangNhap;
