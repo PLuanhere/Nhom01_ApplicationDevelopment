@@ -10,8 +10,8 @@ import java.awt.event.ActionListener;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -31,15 +31,12 @@ public final class KiemTraUi {
     public static final String QUY_TAC = "Kỹ thuật chỉ sửa nháp thuộc phân công. Chỉ báo cáo hoàn tất hợp lệ "
             + "mới làm căn cứ báo giá; báo cáo đã liên kết được giữ lại.";
 
+    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     private KiemTraUi() {
     }
 
-    /**
-     * @param chu nội dung
-     * @param dam có dùng font đậm
-     * @return nhãn theo theme chung
-     */
     // Tạo nhãn có chiều cao đủ cho font để không cắt chữ và dấu tiếng Việt.
+    /** Tạo nhan cho giao diện. */
     public static JLabel taoNhan(String chu, boolean dam) {
         JLabel lblChu = new JLabel(chu);
         lblChu.setFont(dam ? UiTheme.BRAND_FONT : UiTheme.SHELL_FONT);
@@ -49,11 +46,8 @@ public final class KiemTraUi {
         return lblChu;
     }
 
-    /**
-     * @param chu nội dung
-     * @return vùng văn bản chỉ đọc
-     */
     // Hiển thị văn bản dài có tự xuống dòng.
+    /** Tạo van ban cho giao diện. */
     public static JTextArea taoVanBan(String chu) {
         JTextArea txaChu = new JTextArea(chu);
         txaChu.setFont(UiTheme.SHELL_FONT);
@@ -65,19 +59,12 @@ public final class KiemTraUi {
         return txaChu;
     }
 
-    /**
-     * @param chu nhãn nút
-     * @param lenh mã thao tác
-     * @param chinh nút chính
-     * @param xuLy đối tượng xử lý sự kiện
-     * @return nút đã định dạng
-     */
     // Tạo nút theo theme và dùng viền đỏ, chữ đỏ cho thao tác xóa hoặc bỏ thay đổi.
+    /** Tạo nut cho giao diện. */
     public static JButton taoNut(String chu, String lenh, boolean chinh, ActionListener xuLy) {
         JButton btnNut = new JButton(chu);
         UiTheme.styleButton(btnNut, chinh);
-        if ("XOA".equals(lenh) || "BO_THAY_DOI".equals(lenh) || "Xóa".equals(chu)
-                || "Bỏ thay đổi".equals(chu)) {
+        if ("XOA".equals(lenh) || "BO_THAY_DOI".equals(lenh) || "Xóa".equals(chu) || "Bỏ thay đổi".equals(chu)) {
             btnNut.setForeground(NGUY_HIEM);
             btnNut.setBackground(UiTheme.SURFACE);
             btnNut.setBorder(BorderFactory.createLineBorder(NGUY_HIEM));
@@ -89,11 +76,8 @@ public final class KiemTraUi {
         return btnNut;
     }
 
-    /**
-     * @param tieuDe tiêu đề thẻ
-     * @return thẻ nền trắng có viền
-     */
     // Tạo thẻ để nhóm thông tin hoặc các trường nhập liên quan.
+    /** Tạo the cho giao diện. */
     public static JPanel taoThe(String tieuDe) {
         JPanel pnlThe = new JPanel(new BorderLayout(8, 8));
         pnlThe.setBackground(UiTheme.SURFACE);
@@ -103,12 +87,8 @@ public final class KiemTraUi {
         return pnlThe;
     }
 
-    /**
-     * @param chu nhãn trường
-     * @param truong thành phần nhập hoặc hiển thị
-     * @return panel chứa nhãn và trường
-     */
     // Ghép nhãn ở trên và trường nhập ở dưới thành một ô biểu mẫu.
+    /** Tạo truong cho giao diện. */
     public static JPanel taoTruong(String chu, JComponent truong) {
         JPanel pnlTruong = new JPanel(new BorderLayout(0, 4));
         pnlTruong.setOpaque(false);
@@ -135,11 +115,8 @@ public final class KiemTraUi {
         return pnlTruong;
     }
 
-    /**
-     * @param cot tên các cột
-     * @return model bảng chỉ đọc
-     */
     // Tạo DefaultTableModel không cho sửa dữ liệu trực tiếp trên bảng.
+    /** Tạo model cho giao diện. */
     public static DefaultTableModel taoModel(String[] cot) {
         return new DefaultTableModel(cot, 0) {
             private static final long serialVersionUID = 1L;
@@ -153,13 +130,12 @@ public final class KiemTraUi {
         };
     }
 
-    /**
-     * @param modelBang model chứa dữ liệu
-     * @return bảng đã định dạng
-     */
     // Định dạng bảng theo thiết kế và chỉ cho chọn một dòng.
+    /** Tạo bang cho giao diện. */
     public static JTable taoBang(DefaultTableModel modelBang) {
         JTable tblBang = new JTable(modelBang);
+        tblBang.getTableHeader().setReorderingAllowed(false);
+        tblBang.getTableHeader().setResizingAllowed(false);
         tblBang.setFont(UiTheme.SHELL_FONT);
         tblBang.setForeground(UiTheme.TEXT);
         tblBang.setBackground(UiTheme.SURFACE);
@@ -170,6 +146,7 @@ public final class KiemTraUi {
         tblBang.setSelectionForeground(UiTheme.TEXT);
         tblBang.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tblBang.getTableHeader().setReorderingAllowed(false);
+        tblBang.getTableHeader().setResizingAllowed(false);
         tblBang.getTableHeader().setPreferredSize(new Dimension(0, 30));
         DefaultTableCellRenderer rendererBang = new DefaultTableCellRenderer() {
             private static final long serialVersionUID = 1L;
@@ -177,13 +154,13 @@ public final class KiemTraUi {
             /** {@inheritDoc} */
             // Định dạng font, nền và khoảng đệm cho ô tiêu đề hoặc ô dữ liệu.
             @Override
-            public Component getTableCellRendererComponent(JTable tblBangDuLieu, Object giaTri,
-                    boolean chon, boolean coTieuDiem, int dong, int cot) {
-                JLabel lblO = (JLabel) super.getTableCellRendererComponent(
-                        tblBangDuLieu, giaTri, chon, coTieuDiem, dong, cot);
+            public Component getTableCellRendererComponent(JTable tblBangDuLieu, Object giaTri, boolean chon,
+                    boolean coTieuDiem, int dong, int cot) {
+                JLabel lblO = (JLabel) super.getTableCellRendererComponent(tblBangDuLieu, giaTri, chon, coTieuDiem,
+                        dong, cot);
                 lblO.setFont(dong < 0 ? UiTheme.BRAND_FONT.deriveFont(13.0f) : UiTheme.SHELL_FONT);
-                lblO.setBackground(dong < 0 ? UiTheme.WINDOW
-                        : chon ? tblBangDuLieu.getSelectionBackground() : UiTheme.SURFACE);
+                lblO.setBackground(
+                        dong < 0 ? UiTheme.WINDOW : chon ? tblBangDuLieu.getSelectionBackground() : UiTheme.SURFACE);
                 lblO.setForeground(UiTheme.TEXT);
                 lblO.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
                 return lblO;
@@ -194,11 +171,8 @@ public final class KiemTraUi {
         return tblBang;
     }
 
-    /**
-     * @param thanhPhan nội dung
-     * @return vùng cuộn có viền
-     */
     // Bọc bảng hoặc nội dung dài trong vùng cuộn theo theme.
+    /** Tạo vung cuon cho giao diện. */
     public static JScrollPane taoVungCuon(Component thanhPhan) {
         JScrollPane scrCuon = new JScrollPane(thanhPhan);
         scrCuon.setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
@@ -207,18 +181,11 @@ public final class KiemTraUi {
         return scrCuon;
     }
 
-    /**
-     * @param winChu khung cha
-     * @param tieuDe tiêu đề
-     * @param chu nội dung thông báo
-     * @param dongY nhãn nút xác nhận
-     * @param huy nhãn nút hủy, null khi chỉ thông báo
-     * @return người dùng có xác nhận hay không
-     */
     // Hiển thị thông báo, xác nhận xóa hoặc bỏ thay đổi theo bố cục và màu nút của Figma.
+    /** Thực hiện xac nhan cho thành phần hiện tại. */
     public static boolean xacNhan(JFrame winChu, String tieuDe, String chu, String dongY, String huy) {
         final JDialog winHoi = new JDialog(winChu, tieuDe, true);
-        final boolean[] ketQua = {false};
+        final boolean[] ketQua = { false };
         boolean boThayDoi = "Bỏ thay đổi".equals(dongY);
         boolean xoa = "Xóa".equals(dongY);
         ActionListener xuLy = new ActionListener() {
@@ -259,8 +226,7 @@ public final class KiemTraUi {
             txaNhan.setForeground(NGUY_HIEM);
         }
         pnlThongBao.add(txaNhan, BorderLayout.NORTH);
-        String moTa = boThayDoi
-                ? "Nếu bỏ thay đổi, danh sách giữ nguyên dữ liệu trước khi mở biểu mẫu."
+        String moTa = boThayDoi ? "Nếu bỏ thay đổi, danh sách giữ nguyên dữ liệu trước khi mở biểu mẫu."
                 : cacDoan.length > 1 ? cacDoan[1] : "";
         if (!moTa.isEmpty()) {
             pnlThongBao.add(taoVanBan(moTa), BorderLayout.CENTER);

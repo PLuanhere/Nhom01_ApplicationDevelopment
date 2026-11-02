@@ -1,6 +1,7 @@
 package ui.component;
 
 import java.awt.BorderLayout;
+
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 
@@ -15,9 +16,12 @@ public class QuanLyFormPanel extends JPanel {
     }
 
     /** Căn lề và bố trí nội dung theo chiều rộng cửa sổ. */
-    @Override public void doLayout() {
+    @Override
+    public void doLayout() {
         int le = Math.max(0, (getWidth() - 1100) / 2);
-        if (getInsets().left != le) { setBorder(BorderFactory.createEmptyBorder(0, le, 0, le)); }
+        if (getInsets().left != le) {
+            setBorder(BorderFactory.createEmptyBorder(0, le, 0, le));
+        }
         super.doLayout();
     }
 }

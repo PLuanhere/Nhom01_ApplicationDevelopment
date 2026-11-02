@@ -14,18 +14,19 @@ import javax.swing.border.Border;
 public final class KyThuatUi {
     public static final int LINE_HEIGHT = 20;
 
+    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     private KyThuatUi() {
     }
 
-    /** @return viền thẻ với khoảng đệm theo thiết kế */
     // Ghép đường viền và khoảng đệm của thẻ nội dung.
+    /** Tạo vien the cho giao diện. */
     public static Border taoVienThe() {
         return BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(UiTheme.BORDER),
                 BorderFactory.createEmptyBorder(16, 16, 16, 16));
     }
 
-    /** @return thẻ nền trắng có bố cục co giãn */
     // Tạo thẻ nội dung chung cho dashboard và hộp thoại.
+    /** Tạo the cho giao diện. */
     public static JPanel taoThe() {
         JPanel pnlThe = new JPanel(new BorderLayout(8, 8));
         pnlThe.setBackground(UiTheme.SURFACE);
@@ -33,12 +34,8 @@ public final class KyThuatUi {
         return pnlThe;
     }
 
-    /**
-     * @param noiDung nội dung hiển thị
-     * @param font font của nhãn
-     * @return nhãn có kích thước đủ hiển thị chữ và dấu
-     */
     // Tính chiều cao theo font thực tế để chữ và dấu tiếng Việt không bị cắt.
+    /** Tạo nhan cho giao diện. */
     public static JLabel taoNhan(String noiDung, Font font) {
         JLabel lblNoiDung = new JLabel(noiDung);
         lblNoiDung.setFont(font);
@@ -49,12 +46,8 @@ public final class KyThuatUi {
         return lblNoiDung;
     }
 
-    /**
-     * @param nhan nội dung nút
-     * @param chieuRong chiều rộng thiết kế
-     * @return nút đã định dạng
-     */
     // Dùng định dạng nút của leader cho các thao tác trên dashboard.
+    /** Tạo nut cho giao diện. */
     public static JButton taoNut(String nhan, int chieuRong) {
         JButton btnThaoTac = new JButton(nhan);
         UiTheme.styleButton(btnThaoTac, false);

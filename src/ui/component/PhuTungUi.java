@@ -11,12 +11,15 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
-import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
@@ -55,16 +58,11 @@ public final class PhuTungUi {
     public static final String QUY_TAC = "Sửa/xóa nháp chưa xuất kho. Xác nhận sử dụng giảm tồn đúng một lần; "
             + "không vượt tồn và không dùng hạng mục chưa được khách duyệt.";
 
+    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     private PhuTungUi() {
     }
 
-    /**
-     * Tạo nút thao tác theo thiết kế.
-     * @param noiDung nhãn nút
-     * @param chinh true cho nút xanh
-     * @param nguyHiem true cho chữ đỏ và viền đỏ
-     * @return nút chưa gắn sự kiện
-     */
+    /** Tạo nút thao tác theo thiết kế. */
     // Tạo nút phẳng với chiều cao 30 px và khoảng đệm theo nội dung.
     public static JButton taoNut(String noiDung, boolean chinh, boolean nguyHiem) {
         JButton btnNut = new JButton(noiDung);
@@ -78,8 +76,7 @@ public final class PhuTungUi {
         btnNut.setBackground(chinh && !nguyHiem ? UiTheme.PRIMARY : UiTheme.SURFACE);
         btnNut.setForeground(nguyHiem ? MAU_NGUY_HIEM : chinh ? UiTheme.SURFACE : UiTheme.TEXT);
         Color mauVien = nguyHiem ? MAU_NGUY_HIEM : chinh ? UiTheme.PRIMARY : UiTheme.BORDER;
-        btnNut.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(mauVien),
+        btnNut.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(mauVien),
                 BorderFactory.createEmptyBorder(0, 7, 0, 7)));
         int chieuRong = Math.max(82, btnNut.getFontMetrics(btnNut.getFont()).stringWidth(noiDung) + 18);
         btnNut.setPreferredSize(new Dimension(chieuRong, 30));
@@ -87,29 +84,21 @@ public final class PhuTungUi {
         return btnNut;
     }
 
-    /**
-     * Tạo nhãn giá trị hoặc tiêu đề nhóm.
-     * @param noiDung nội dung nhãn
-     * @param dam true cho tiêu đề nhóm
-     * @return nhãn đã định dạng
-     */
+    /** Tạo nhãn giá trị hoặc tiêu đề nhóm. */
     // Tạo nhãn 13 px hoặc tiêu đề nhóm 14 px bằng font có sẵn của leader.
     public static JLabel taoNhan(String noiDung, boolean dam) {
         JLabel lblNhan = new JLabel(noiDung);
-        lblNhan.setFont(dam ? UiTheme.BRAND_FONT.deriveFont(14.0f)
-                : UiTheme.SHELL_FONT.deriveFont(13.0f));
+        lblNhan.setFont(dam ? UiTheme.BRAND_FONT.deriveFont(14.0f) : UiTheme.SHELL_FONT.deriveFont(13.0f));
         lblNhan.setForeground(UiTheme.TEXT);
         return lblNhan;
     }
 
-    /**
-     * Định dạng ô chọn.
-     * @param cmbDanhSach danh sách cần định dạng
-     */
+    /** Định dạng ô chọn. */
     // Thay giao diện ô chọn mặc định bằng nền trắng, viền mảnh và mũi tên nhỏ.
     public static void dinhDangCombo(JComboBox<?> cmbDanhSach) {
         cmbDanhSach.setUI(new BasicComboBoxUI() {
             // Tạo nút mũi tên phẳng, không dùng nút mặc định của hệ điều hành.
+            /** Tạo arrow button cho giao diện. */
             @Override
             protected JButton createArrowButton() {
                 JButton btnMo = taoNut("▾", false, false);
@@ -124,11 +113,12 @@ public final class PhuTungUi {
             private static final long serialVersionUID = 1L;
 
             // Căn chữ và màu lựa chọn đồng nhất giữa ô đóng và danh sách xổ xuống.
+            /** Trả về list cell renderer component. */
             @Override
-            public Component getListCellRendererComponent(JList<?> danhSach, Object giaTri,
-                    int viTri, boolean duocChon, boolean coTieuDiem) {
-                JLabel lblGiaTri = (JLabel) super.getListCellRendererComponent(
-                        danhSach, giaTri, viTri, duocChon, coTieuDiem);
+            public Component getListCellRendererComponent(JList<?> danhSach, Object giaTri, int viTri, boolean duocChon,
+                    boolean coTieuDiem) {
+                JLabel lblGiaTri = (JLabel) super.getListCellRendererComponent(danhSach, giaTri, viTri, duocChon,
+                        coTieuDiem);
                 lblGiaTri.setFont(UiTheme.SHELL_FONT.deriveFont(13.0f));
                 lblGiaTri.setForeground(UiTheme.TEXT);
                 lblGiaTri.setBackground(duocChon && viTri >= 0 ? MAU_CHON : UiTheme.SURFACE);
@@ -144,12 +134,7 @@ public final class PhuTungUi {
         cmbDanhSach.setMinimumSize(new Dimension(0, 30));
     }
 
-    /**
-     * Tạo trường có nhãn phía trên.
-     * @param nhan nhãn trường
-     * @param thanhPhan ô nhập hoặc giá trị
-     * @return vùng trường
-     */
+    /** Tạo trường có nhãn phía trên. */
     // Ghép nhãn 11 px và điều khiển nhập, cách nhau 4 px.
     public static JPanel taoTruong(String nhan, JComponent thanhPhan) {
         JPanel pnlTruong = new JPanel(new BorderLayout(0, 4));
@@ -165,8 +150,7 @@ public final class PhuTungUi {
             txtTruong.setForeground(UiTheme.TEXT);
             txtTruong.setCaretColor(UiTheme.TEXT);
             txtTruong.setBackground(txtTruong.isEditable() ? UiTheme.SURFACE : UiTheme.WINDOW);
-            txtTruong.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(UiTheme.BORDER),
+            txtTruong.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(UiTheme.BORDER),
                     BorderFactory.createEmptyBorder(3, 7, 3, 7)));
             txtTruong.setPreferredSize(new Dimension(0, 30));
             txtTruong.setMinimumSize(new Dimension(0, 30));
@@ -175,43 +159,35 @@ public final class PhuTungUi {
         return pnlTruong;
     }
 
-    /**
-     * Tạo thẻ nội dung.
-     * @param tieuDe tiêu đề nhóm
-     * @param noiDung thành phần bên trong
-     * @return thẻ nền trắng
-     */
+    /** Tạo thẻ nội dung. */
     // Tạo thẻ viền xám với lề 8 px đúng các nhóm trong màn nghiệp vụ.
     public static JPanel taoThe(String tieuDe, JComponent noiDung) {
         JPanel pnlThe = new JPanel(new BorderLayout(0, 8)) {
             private static final long serialVersionUID = 1L;
 
             // Giữ thẻ theo chiều cao nội dung khi đặt trong BoxLayout.
+            /** Trả về maximum size. */
             @Override
             public Dimension getMaximumSize() {
                 return new Dimension(Integer.MAX_VALUE, getPreferredSize().height);
             }
         };
         pnlThe.setBackground(UiTheme.SURFACE);
-        pnlThe.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(MAU_LUOI),
+        pnlThe.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(MAU_LUOI),
                 BorderFactory.createEmptyBorder(8, 8, 8, 8)));
         pnlThe.add(taoNhan(tieuDe, true), BorderLayout.NORTH);
         pnlThe.add(noiDung, BorderLayout.CENTER);
         return pnlThe;
     }
 
-    /**
-     * Tạo văn bản chỉ đọc tự xuống hàng.
-     * @param noiDung nội dung văn bản
-     * @return vùng văn bản trong suốt
-     */
+    /** Tạo văn bản chỉ đọc tự xuống hàng. */
     // Tính chiều cao theo chiều rộng thực tế thay vì ấn định một hoặc hai dòng.
     public static JTextArea taoMoTa(String noiDung) {
         JTextArea txaMoTa = new JTextArea(noiDung) {
             private static final long serialVersionUID = 1L;
 
             // Đo chiều cao văn bản đã xuống hàng để không cắt mất dòng cuối.
+            /** Trả về preferred size. */
             @Override
             public Dimension getPreferredSize() {
                 Insets le = getInsets();
@@ -226,6 +202,7 @@ public final class PhuTungUi {
             }
 
             // Cho phép văn bản thu chiều ngang mà vẫn giữ đủ chiều cao.
+            /** Trả về minimum size. */
             @Override
             public Dimension getMinimumSize() {
                 return getPreferredSize();
@@ -243,14 +220,12 @@ public final class PhuTungUi {
         return txaMoTa;
     }
 
-    /**
-     * Tạo bảng dữ liệu.
-     * @param model dữ liệu bảng
-     * @return bảng theo thiết kế
-     */
+    /** Tạo bảng dữ liệu. */
     // Định dạng toàn bộ ô và header để không nhận nền hoặc viền mặc định Windows.
     public static JTable taoBang(DefaultTableModel model) {
         JTable tblBang = new JTable(model);
+        tblBang.getTableHeader().setReorderingAllowed(false);
+        tblBang.getTableHeader().setResizingAllowed(false);
         tblBang.setFont(UiTheme.SHELL_FONT.deriveFont(13.0f));
         tblBang.setForeground(UiTheme.TEXT);
         tblBang.setBackground(UiTheme.SURFACE);
@@ -265,22 +240,23 @@ public final class PhuTungUi {
         tblBang.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         tblBang.getTableHeader().setUI(new BasicTableHeaderUI());
         tblBang.getTableHeader().setReorderingAllowed(false);
+        tblBang.getTableHeader().setResizingAllowed(false);
         tblBang.getTableHeader().setResizingAllowed(true);
         tblBang.getTableHeader().setPreferredSize(new Dimension(0, 30));
         tblBang.getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
             private static final long serialVersionUID = 1L;
 
             // Vẽ header nền xám, chữ đậm, căn trái và lề 8 px.
+            /** Trả về table cell renderer component. */
             @Override
-            public Component getTableCellRendererComponent(JTable bang, Object giaTri,
-                    boolean duocChon, boolean coTieuDiem, int dong, int cot) {
+            public Component getTableCellRendererComponent(JTable bang, Object giaTri, boolean duocChon,
+                    boolean coTieuDiem, int dong, int cot) {
                 super.getTableCellRendererComponent(bang, giaTri, false, false, dong, cot);
                 setFont(UiTheme.BRAND_FONT.deriveFont(13.0f));
                 setForeground(UiTheme.TEXT);
                 setBackground(UiTheme.WINDOW);
                 setHorizontalAlignment(SwingConstants.LEFT);
-                setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, 0, 1, 1, MAU_LUOI),
+                setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 1, MAU_LUOI),
                         BorderFactory.createEmptyBorder(0, 8, 0, 8)));
                 return this;
             }
@@ -289,9 +265,10 @@ public final class PhuTungUi {
             private static final long serialVersionUID = 1L;
 
             // Vẽ ô dữ liệu với màu chọn xanh nhạt và không có viền tiêu điểm mặc định.
+            /** Trả về table cell renderer component. */
             @Override
-            public Component getTableCellRendererComponent(JTable bang, Object giaTri,
-                    boolean duocChon, boolean coTieuDiem, int dong, int cot) {
+            public Component getTableCellRendererComponent(JTable bang, Object giaTri, boolean duocChon,
+                    boolean coTieuDiem, int dong, int cot) {
                 super.getTableCellRendererComponent(bang, giaTri, duocChon, false, dong, cot);
                 setFont(UiTheme.SHELL_FONT.deriveFont(13.0f));
                 setForeground(UiTheme.TEXT);
@@ -304,17 +281,14 @@ public final class PhuTungUi {
         return tblBang;
     }
 
-    /**
-     * Tạo model chỉ đọc.
-     * @param cot tên các cột
-     * @return model trống
-     */
+    /** Tạo model chỉ đọc. */
     // Chỉ cho sửa dữ liệu qua biểu mẫu nghiệp vụ.
     public static DefaultTableModel taoModel(String... cot) {
         return new DefaultTableModel(cot, 0) {
             private static final long serialVersionUID = 1L;
 
             // Khóa việc chỉnh sửa trực tiếp trong ô bảng.
+            /** Cho biết cell editable. */
             @Override
             public boolean isCellEditable(int dong, int cotDuocChon) {
                 return false;
@@ -322,35 +296,25 @@ public final class PhuTungUi {
         };
     }
 
-    /**
-     * Định dạng số lượng.
-     * @param soLuong giá trị cần hiển thị
-     * @return chuỗi không có số không thập phân dư
-     */
-    // Định dạng BigDecimal mà không chuyển qua double.
-    public static String dinhDangLuong(BigDecimal soLuong) {
-        return soLuong.stripTrailingZeros().toPlainString();
+    /** Định dạng số lượng. */
+    // Định dạng double mà không chuyển qua double.
+    public static String dinhDangLuong(double soLuong) {
+        DecimalFormat dinhDang = new DecimalFormat("0.###",
+                DecimalFormatSymbols.getInstance(Locale.forLanguageTag("vi-VN")));
+        return dinhDang.format(soLuong);
     }
 
-    /**
-     * Đọc số lượng từ ô nhập.
-     * @param txtSoLuong ô cần đọc
-     * @return giá trị số lượng
-     * @throws IllegalArgumentException nếu không phải số
-     */
+    /** Đọc số lượng từ ô nhập. */
     // Đọc số thập phân và hỗ trợ dấu phẩy theo cách nhập tiếng Việt.
-    public static BigDecimal docSoLuong(JTextField txtSoLuong) {
+    public static double docSoLuong(JTextField txtSoLuong) {
         try {
-            return new BigDecimal(txtSoLuong.getText().trim().replace(',', '.'));
+            return Double.parseDouble(txtSoLuong.getText().trim().replace(',', '.'));
         } catch (NumberFormatException loi) {
             throw new IllegalArgumentException("Số lượng phải là số hợp lệ.", loi);
         }
     }
 
-    /**
-     * Định dạng checkbox.
-     * @param chkLuaChon checkbox cần định dạng
-     */
+    /** Định dạng checkbox. */
     // Thay ô tích Windows bằng ô phẳng có nền xanh và dấu tích trắng.
     public static void dinhDangKiemTra(JCheckBox chkLuaChon) {
         chkLuaChon.setUI(new BasicCheckBoxUI());
@@ -369,14 +333,11 @@ public final class PhuTungUi {
         chkLuaChon.setMinimumSize(new Dimension(0, 24));
     }
 
-    /**
-     * Định dạng vùng cuộn.
-     * @param scrNoiDung vùng cuộn cần định dạng
-     */
+    /** Định dạng vùng cuộn. */
     // Áp dụng thanh cuộn rộng 14 px, nền xám và thanh kéo phẳng.
     public static void dinhDangVungCuon(JScrollPane scrNoiDung) {
-        scrNoiDung.setBorder(BorderFactory.createLineBorder(
-                scrNoiDung.getViewport().getView() instanceof JTextArea ? UiTheme.BORDER : MAU_LUOI));
+        scrNoiDung.setBorder(BorderFactory
+                .createLineBorder(scrNoiDung.getViewport().getView() instanceof JTextArea ? UiTheme.BORDER : MAU_LUOI));
         scrNoiDung.setViewportBorder(BorderFactory.createEmptyBorder());
         scrNoiDung.getViewport().setBackground(UiTheme.SURFACE);
         scrNoiDung.getVerticalScrollBar().setUnitIncrement(16);
@@ -384,6 +345,7 @@ public final class PhuTungUi {
         thanhCuon.setPreferredSize(new Dimension(14, 0));
         thanhCuon.setUI(new BasicScrollBarUI() {
             // Gán màu cho thanh cuộn mà không lấy màu từ Look and Feel.
+            /** Thực hiện configure scroll bar colors cho thành phần hiện tại. */
             @Override
             protected void configureScrollBarColors() {
                 trackColor = UiTheme.WINDOW;
@@ -391,28 +353,33 @@ public final class PhuTungUi {
             }
 
             // Tạo nút cuộn lên nhỏ ở đầu thanh cuộn.
+            /** Tạo decrease button cho giao diện. */
             @Override
             protected JButton createDecreaseButton(int huong) {
                 return taoNutCuon(true);
             }
 
             // Tạo nút cuộn xuống nhỏ ở cuối thanh cuộn.
+            /** Tạo increase button cho giao diện. */
             @Override
             protected JButton createIncreaseButton(int huong) {
                 return taoNutCuon(false);
             }
 
             // Vẽ rãnh cuộn nền xám phẳng.
+            /** Vẽ nội dung của thành phần theo trạng thái hiện tại. */
             @Override
-            protected void paintTrack(Graphics doHoa, JComponent thanhPhan, java.awt.Rectangle vung) {
+            protected void paintTrack(Graphics doHoa, JComponent thanhPhan, Rectangle vung) {
                 doHoa.setColor(UiTheme.WINDOW);
                 doHoa.fillRect(vung.x, vung.y, vung.width, vung.height);
             }
 
             // Vẽ thanh kéo nằm giữa rãnh với khoảng trống hai bên.
+            /** Vẽ nội dung của thành phần theo trạng thái hiện tại. */
             @Override
-            protected void paintThumb(Graphics doHoa, JComponent thanhPhan, java.awt.Rectangle vung) {
+            protected void paintThumb(Graphics doHoa, JComponent thanhPhan, Rectangle vung) {
                 if (vung.isEmpty() || !thanhPhan.isEnabled()) {
+
                     return;
                 }
                 doHoa.setColor(UiTheme.BORDER);
@@ -422,20 +389,22 @@ public final class PhuTungUi {
     }
 
     // Tạo nút mũi tên cuộn bằng hình tam giác nhỏ, không dùng nút nổi mặc định.
+    /** Tạo nut cuon cho giao diện. */
     private static JButton taoNutCuon(boolean huongLen) {
         JButton btnCuon = new JButton() {
             private static final long serialVersionUID = 1L;
 
             // Vẽ mũi tên theo chiều cuộn trên nền phẳng.
+            /** Vẽ nội dung của thành phần theo trạng thái hiện tại. */
             @Override
             protected void paintComponent(Graphics doHoa) {
                 doHoa.setColor(UiTheme.WINDOW);
                 doHoa.fillRect(0, 0, getWidth(), getHeight());
                 int tamX = getWidth() / 2;
                 int tamY = getHeight() / 2;
-                int[] cacX = {tamX - 3, tamX + 3, tamX};
-                int[] cacY = huongLen ? new int[] {tamY + 2, tamY + 2, tamY - 2}
-                        : new int[] {tamY - 2, tamY - 2, tamY + 2};
+                int[] cacX = { tamX - 3, tamX + 3, tamX };
+                int[] cacY = huongLen ? new int[] { tamY + 2, tamY + 2, tamY - 2 }
+                        : new int[] { tamY - 2, tamY - 2, tamY + 2 };
                 doHoa.setColor(UiTheme.MUTED);
                 doHoa.fillPolygon(cacX, cacY, 3);
             }
@@ -449,10 +418,7 @@ public final class PhuTungUi {
         return btnCuon;
     }
 
-    /**
-     * Định dạng các điều khiển trong một màn.
-     * @param thanhPhan gốc của cây giao diện
-     */
+    /** Định dạng các điều khiển trong một màn. */
     // Áp dụng checkbox và thanh cuộn đã tùy chỉnh cho toàn bộ màn đang mở.
     public static void dinhDangCay(Component thanhPhan) {
         if (thanhPhan instanceof JCheckBox) {
@@ -468,11 +434,7 @@ public final class PhuTungUi {
         }
     }
 
-    /**
-     * Tạo tiêu đề hộp thoại.
-     * @param winHopThoai hộp thoại chủ
-     * @return thanh tiêu đề
-     */
+    /** Tạo tiêu đề hộp thoại. */
     // Tạo thanh tiêu đề trắng và nút đóng không có khung nổi.
     public static JPanel taoTieuDe(JDialog winHopThoai) {
         winHopThoai.getContentPane().setBackground(UiTheme.WINDOW);
@@ -491,6 +453,7 @@ public final class PhuTungUi {
         btnDong.setMinimumSize(new Dimension(24, 24));
         btnDong.addActionListener(new ActionListener() {
             // Gửi sự kiện đóng để biểu mẫu kiểm tra dữ liệu chưa lưu.
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent suKien) {
                 winHopThoai.dispatchEvent(new WindowEvent(winHopThoai, WindowEvent.WINDOW_CLOSING));
@@ -500,21 +463,12 @@ public final class PhuTungUi {
         return pnlTieuDe;
     }
 
-    /**
-     * Mở thông báo hoặc xác nhận.
-     * @param winChu cửa sổ chủ
-     * @param tieuDe tiêu đề
-     * @param thongBao nội dung
-     * @param nhanDongY nhãn nút xác nhận
-     * @param nguyHiem true cho nút nguy hiểm
-     * @param canHuy true để có nút hủy
-     * @return true khi người dùng xác nhận
-     */
+    /** Mở thông báo hoặc xác nhận. */
     // Mở hộp thoại vừa đủ nội dung, không dùng JOptionPane hoặc vùng cuộn ngoài.
-    public static boolean hienHopThoai(Window winChu, String tieuDe, String thongBao,
-            String nhanDongY, boolean nguyHiem, boolean canHuy) {
+    public static boolean hienHopThoai(Window winChu, String tieuDe, String thongBao, String nhanDongY,
+            boolean nguyHiem, boolean canHuy) {
         JDialog winHopThoai = new JDialog(winChu, tieuDe, JDialog.ModalityType.APPLICATION_MODAL);
-        boolean[] daDongY = {false};
+        boolean[] daDongY = { false };
         winHopThoai.setUndecorated(true);
         winHopThoai.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         winHopThoai.getRootPane().setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
@@ -550,6 +504,7 @@ public final class PhuTungUi {
             JButton btnHuy = taoNut("Bỏ thay đổi".equals(nhanDongY) ? "Tiếp tục nhập" : "Hủy", false, false);
             btnHuy.addActionListener(new ActionListener() {
                 // Đóng thông báo và giữ nguyên nội dung của biểu mẫu chủ.
+                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
                 @Override
                 public void actionPerformed(ActionEvent suKien) {
                     winHopThoai.dispose();
@@ -560,6 +515,7 @@ public final class PhuTungUi {
         JButton btnDongY = taoNut(nhanDongY, !nguyHiem, nguyHiem);
         btnDongY.addActionListener(new ActionListener() {
             // Ghi nhận lựa chọn đồng ý rồi đóng hộp thoại.
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent suKien) {
                 daDongY[0] = true;
@@ -575,29 +531,29 @@ public final class PhuTungUi {
         return daDongY[0];
     }
 
-    /**
-     * Biểu tượng ô kiểm tra phẳng theo màu của thiết kế.
-     */
+    /** Biểu tượng ô kiểm tra phẳng theo màu của thiết kế. */
     private static final class BieuTuongKiemTra implements Icon {
         // Trả chiều rộng ô kiểm tra theo thiết kế.
+        /** Trả về icon width. */
         @Override
         public int getIconWidth() {
             return 12;
         }
 
         // Trả chiều cao ô kiểm tra theo thiết kế.
+        /** Trả về icon height. */
         @Override
         public int getIconHeight() {
             return 12;
         }
 
         // Vẽ trạng thái chọn bằng nền xanh và dấu tích trắng.
+        /** Vẽ nội dung của thành phần theo trạng thái hiện tại. */
         @Override
         public void paintIcon(Component thanhPhan, Graphics doHoa, int x, int y) {
             Graphics2D ve = (Graphics2D) doHoa.create();
             ve.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            boolean duocChon = thanhPhan instanceof AbstractButton
-                    && ((AbstractButton) thanhPhan).isSelected();
+            boolean duocChon = thanhPhan instanceof AbstractButton && ((AbstractButton) thanhPhan).isSelected();
             ve.setColor(duocChon ? UiTheme.PRIMARY : UiTheme.SURFACE);
             ve.fillRect(x, y, 12, 12);
             ve.setColor(duocChon ? UiTheme.PRIMARY : UiTheme.BORDER);

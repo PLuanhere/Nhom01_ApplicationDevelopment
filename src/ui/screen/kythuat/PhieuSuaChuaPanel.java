@@ -1,5 +1,11 @@
 package ui.screen.kythuat;
 
+import dao.kiemtra.BaoCaoKiemTraDAO;
+import dao.phutung.PhuTungSuDungDAO;
+import dao.suachua.KyThuatDAO;
+import dao.suachua.PhieuSuaChuaDAO;
+import entity.nhansu.TaiKhoan;
+import entity.suachua.PhieuSuaChua;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -17,13 +23,15 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
-import dao.BaoCaoKiemTraDAO;
-import dao.KyThuatDAO;
-import dao.PhieuSuaChuaDAO;
-import dao.PhuTungSuDungDAO;
-import entity.PhieuSuaChua;
-import entity.TaiKhoan;
-import static ui.component.GiaoDienKyThuat.*;
+import static ui.component.GiaoDienKyThuat.bocBang;
+import static ui.component.GiaoDienKyThuat.dinhDangCombo;
+import static ui.component.GiaoDienKyThuat.taoBang;
+import static ui.component.GiaoDienKyThuat.taoMatPhang;
+import static ui.component.GiaoDienKyThuat.taoModel;
+import static ui.component.GiaoDienKyThuat.taoNhan;
+import static ui.component.GiaoDienKyThuat.taoNut;
+import static ui.component.GiaoDienKyThuat.taoThe;
+import static ui.component.GiaoDienKyThuat.themThanhPhan;
 
 // Hiển thị danh sách công việc được phân công cho kỹ thuật viên.
 public final class PhieuSuaChuaPanel extends TrangKyThuatPanel {
@@ -33,14 +41,19 @@ public final class PhieuSuaChuaPanel extends TrangKyThuatPanel {
         super(khongGian);
     }
 
+    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     public PhieuSuaChuaPanel(JFrame winChu, TaiKhoan taiKhoan) {
         this(winChu, taiKhoan, new PhieuSuaChuaDAO());
     }
 
+    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     public PhieuSuaChuaPanel(JFrame winChu, TaiKhoan taiKhoan, PhieuSuaChuaDAO nguonChung) {
-        this(new KhongGianKyThuatPanel(winChu, taiKhoan, () -> {},
-                new KyThuatDAO(() -> taiKhoan, nguonChung,
-                        new BaoCaoKiemTraDAO(), new PhuTungSuDungDAO())));
+        this(new KhongGianKyThuatPanel(winChu, taiKhoan, new ActionListener() {
+            // Màn xem riêng không điều hướng đăng xuất.
+            @Override
+            public void actionPerformed(ActionEvent event) {
+            }
+        }, new KyThuatDAO(taiKhoan, nguonChung, new BaoCaoKiemTraDAO(), new PhuTungSuDungDAO())));
         actionPerformed(new ActionEvent(this, 0, "DANH_SACH"));
     }
 

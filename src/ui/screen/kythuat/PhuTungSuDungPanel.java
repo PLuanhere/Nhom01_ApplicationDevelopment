@@ -1,22 +1,30 @@
 package ui.screen.kythuat;
 
+import dao.chung.DuLieuGarageDAO;
+import dao.kiemtra.BaoCaoKiemTraDAO;
+import dao.phutung.PhuTungSuDungDAO;
+import dao.suachua.KyThuatDAO;
+import dao.suachua.PhieuSuaChuaDAO;
+import entity.nhansu.TaiKhoan;
+import entity.phutung.PhuTung;
+import entity.suachua.HangMucSuaChua;
+import entity.suachua.PhieuSuaChua;
+import entity.suachua.TrangThaiSuaChua;
 import java.awt.BorderLayout;
-import java.math.BigDecimal;
-import java.util.UUID;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
-import dao.BaoCaoKiemTraDAO;
-import dao.KyThuatDAO;
-import dao.PhieuSuaChuaDAO;
-import dao.PhuTungSuDungDAO;
-import entity.HangMucSuaChua;
-import entity.PhuTung;
-import entity.PhieuSuaChua;
-import entity.TaiKhoan;
-import entity.TrangThaiSuaChua;
 import ui.component.PhuTungUi;
-import static ui.component.GiaoDienKyThuat.*;
+import static ui.component.GiaoDienKyThuat.dinhDangCombo;
+import static ui.component.GiaoDienKyThuat.taoCot;
+import static ui.component.GiaoDienKyThuat.taoHangNut;
+import static ui.component.GiaoDienKyThuat.taoNut;
+import static ui.component.GiaoDienKyThuat.taoThe;
+import static ui.component.GiaoDienKyThuat.taoThongBao;
+import static ui.component.GiaoDienKyThuat.taoTruong;
+import static ui.component.GiaoDienKyThuat.themThanhPhan;
 
 // Hiển thị biểu mẫu và xử lý ghi nhận phụ tùng thực tế đã dùng.
 public final class PhuTungSuDungPanel extends TrangKyThuatPanel {
@@ -27,9 +35,12 @@ public final class PhuTungSuDungPanel extends TrangKyThuatPanel {
     }
 
     public PhuTungSuDungPanel(TaiKhoan taiKhoan, PhuTungSuDungDAO nguonChung) {
-        this(new KhongGianKyThuatPanel(null, taiKhoan, () -> {},
-                new KyThuatDAO(() -> taiKhoan, new PhieuSuaChuaDAO(),
-                        new BaoCaoKiemTraDAO(), nguonChung)));
+        this(new KhongGianKyThuatPanel(null, taiKhoan, new ActionListener() {
+            // Màn xem riêng không điều hướng đăng xuất.
+            @Override
+            public void actionPerformed(ActionEvent event) {
+            }
+        }, new KyThuatDAO(taiKhoan, new PhieuSuaChuaDAO(), new BaoCaoKiemTraDAO(), nguonChung)));
         moDanhSach();
     }
 
@@ -89,7 +100,7 @@ public final class PhuTungSuDungPanel extends TrangKyThuatPanel {
         JButton btnGhi = taoNut("Ghi nhận đã sử dụng", "GHI_PHU_TUNG", true, khongGian);
         btnGhi.setEnabled(lenh.getTrangThai() != TrangThaiSuaChua.HOAN_THANH);
         pnlCot.add(taoHangNut(btnGhi));
-        khongGian.maLuot = UUID.randomUUID().toString();
+        khongGian.maLuot = DuLieuGarageDAO.taoMaThaoTac();
         themThanhPhan(pnlTrang, taoThe("Ghi nhận phụ tùng thực tế đã dùng",
                 "Chỉ ghi một lần cho cùng lượt sử dụng; giữ chứng từ và lịch sử thực dùng.", pnlCot));
         hienTrang(pnlTrang);
@@ -126,13 +137,20 @@ public final class PhuTungSuDungPanel extends TrangKyThuatPanel {
             khongGian.txtTon.setText("Không có phụ tùng hợp lệ cho hạng mục này");
             khongGian.txtTonSau.setText("Không ghi nhận xuất kho");
             return;
+
         }
-        BigDecimal ton = khongGian.dao.docTon(phuTung.getMaPhuTung());
-        khongGian.txtTon.setText(phuTung.getDonViTinh() + " · " + ton.stripTrailingZeros().toPlainString());
+        double ton = khongGian.dao.docTon(phuTung.getMaPhuTung());
+        khongGian.txtTon.setText(phuTung.getDonViTinh() + " · " + PhuTungUi.dinhDangLuong(ton));
         try {
-            BigDecimal luong = new BigDecimal(khongGian.txtLuong.getText().trim().replace(',', '.'));
-            khongGian.txtTonSau.setText("Tồn dự kiến: " + ton.subtract(luong).stripTrailingZeros().toPlainString());
-        } catch (NumberFormatException loi) {
+            double luong = PhuTungUi.docSoLuong(khongGian.txtLuong);
+            phuTung.kiemTraSoLuong(luong);
+            if (luong > ton) {
+                khongGian.txtTonSau.setText("Số lượng vượt tồn khả dụng");
+            } else {
+                double tonSau = Math.round((ton - luong) * 1000) / 1000.0;
+                khongGian.txtTonSau.setText("Tồn dự kiến: " + PhuTungUi.dinhDangLuong(tonSau));
+            }
+        } catch (IllegalArgumentException loi) {
             khongGian.txtTonSau.setText("Nhập số lượng hợp lệ");
         }
     }
@@ -143,14 +161,14 @@ public final class PhuTungSuDungPanel extends TrangKyThuatPanel {
         if (phuTung == null) {
             throw new IllegalArgumentException("Chưa có phụ tùng hợp lệ để ghi nhận.");
         }
-        BigDecimal soLuong = PhuTungUi.docSoLuong(khongGian.txtLuong);
-        phuTung.kiemTraSoLuong(soLuong.doubleValue());
+        double soLuong = PhuTungUi.docSoLuong(khongGian.txtLuong);
+        phuTung.kiemTraSoLuong(soLuong);
         if (!khongGian.xacNhan("Ghi nhận phụ tùng đã sử dụng",
                 "Gắn phụ tùng vào lệnh và hạng mục được khách đồng ý.",
                 new String[][] {{"Lệnh sửa chữa", khongGian.maLenh},
                     {"Hạng mục đã duyệt", (String) khongGian.cmbHangMuc.getSelectedItem()},
                     {"Phụ tùng", phuTung.toString()}, {"Đơn vị / tồn khả dụng", khongGian.txtTon.getText()},
-                    {"Số lượng thực tế dùng", soLuong.toPlainString()},
+                    {"Số lượng thực tế dùng", PhuTungUi.dinhDangLuong(soLuong)},
                     {"Tồn dự kiến sau ghi", khongGian.txtTonSau.getText()}},
                 "Từ chối nếu vượt tồn hoặc hạng mục chưa được duyệt. Ghi lịch sử xuất một lần cho số thực dùng.",
                 "Ghi nhận đã dùng", false)) {
@@ -161,4 +179,5 @@ public final class PhuTungSuDungPanel extends TrangKyThuatPanel {
         khongGian.anhChup = khongGian.docNoiDung();
         khongGian.chuyen("TIEN_DO");
     }
+
 }

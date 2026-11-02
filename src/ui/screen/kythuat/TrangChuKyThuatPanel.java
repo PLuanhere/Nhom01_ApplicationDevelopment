@@ -1,5 +1,11 @@
 package ui.screen.kythuat;
 
+import entity.baocao.TongQuanKyThuat;
+import entity.kiemtra.BaoCaoKiemTra;
+import entity.kiemtra.TrangThaiKiemTra;
+import entity.suachua.PhieuSuaChua;
+import entity.suachua.TrangThaiSuaChua;
+import entity.tiepnhan.PhieuTiepNhan;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridLayout;
@@ -9,21 +15,23 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
-import entity.BaoCaoKiemTra;
-import entity.PhieuSuaChua;
-import entity.PhieuTiepNhan;
-import entity.TongQuanKyThuat;
-import entity.TrangThaiKiemTra;
-import entity.TrangThaiSuaChua;
 import ui.MainFrame;
 import ui.component.PhuTungUi;
-import static ui.component.GiaoDienKyThuat.*;
+import static ui.component.GiaoDienKyThuat.CHU_DAM;
+import static ui.component.GiaoDienKyThuat.CHU_NHO;
+import static ui.component.GiaoDienKyThuat.CHU_PHU;
+import static ui.component.GiaoDienKyThuat.taoCot;
+import static ui.component.GiaoDienKyThuat.taoMatPhang;
+import static ui.component.GiaoDienKyThuat.taoNhan;
+import static ui.component.GiaoDienKyThuat.taoNut;
+import static ui.component.GiaoDienKyThuat.taoThe;
+import static ui.component.GiaoDienKyThuat.taoThongBao;
+import static ui.component.GiaoDienKyThuat.themThanhPhan;
 
 // Hiển thị tổng quan công việc và các đường tắt của kỹ thuật viên.
 public final class TrangChuKyThuatPanel extends TrangKyThuatPanel {
@@ -35,8 +43,9 @@ public final class TrangChuKyThuatPanel extends TrangKyThuatPanel {
 
     public TrangChuKyThuatPanel(TongQuanKyThuat tongQuan, JFrame winChu, ActionListener boXuLyDieuHuong) {
         this(taoKhongGian(winChu));
-        Objects.requireNonNull(tongQuan, "Cần dữ liệu tổng quan.");
-        Objects.requireNonNull(boXuLyDieuHuong, "Cần thao tác điều hướng.");
+        if (tongQuan == null || boXuLyDieuHuong == null) {
+            throw new IllegalArgumentException("Cần dữ liệu tổng quan và thao tác điều hướng.");
+        }
         khongGian.chuyen("TONG_QUAN");
         add(khongGian.pnlNoiDung, BorderLayout.CENTER);
     }
@@ -47,7 +56,12 @@ public final class TrangChuKyThuatPanel extends TrangKyThuatPanel {
             throw new IllegalArgumentException("Cần khung chính có phiên đăng nhập.");
         }
         MainFrame khungChinh = (MainFrame) winChu;
-        return new KhongGianKyThuatPanel(winChu, khungChinh.getTaiKhoanDangNhap(), () -> {});
+        return new KhongGianKyThuatPanel(winChu, khungChinh.getTaiKhoanDangNhap(), new ActionListener() {
+            // Constructor xem riêng không điều hướng đăng xuất.
+            @Override
+            public void actionPerformed(ActionEvent event) {
+            }
+        });
     }
 
     // Đọc dữ liệu trong phiên và hiển thị tổng quan kỹ thuật.

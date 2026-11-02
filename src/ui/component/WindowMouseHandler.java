@@ -27,10 +27,7 @@ public final class WindowMouseHandler extends MouseAdapter {
     /** Hướng dọc: -1 kéo trên, 0 không đổi chiều cao, 1 kéo dưới. */
     private int canhDoc;
 
-    /**
-     * Tạo bộ xử lý; cửa sổ chủ đăng ký MouseListener và MouseMotionListener.
-     * @param winChu cửa sổ không dùng viền hệ điều hành
-     */
+    /** Tạo bộ xử lý; cửa sổ chủ đăng ký MouseListener và MouseMotionListener. */
     public WindowMouseHandler(JFrame winChu) {
         this.winChu = winChu;
     }
@@ -39,6 +36,7 @@ public final class WindowMouseHandler extends MouseAdapter {
     @Override
     public void mousePressed(MouseEvent event) {
         if (!SwingUtilities.isLeftMouseButton(event) || winChu.getExtendedState() != Frame.NORMAL) {
+
             return;
         }
         canhNgang = findEdge(event.getX(), winChu.getWidth());
@@ -53,6 +51,7 @@ public final class WindowMouseHandler extends MouseAdapter {
     @Override
     public void mouseDragged(MouseEvent event) {
         if (diemBatDau == null) {
+
             return;
         }
         // Tính độ dời từ lần nhấn đầu để vị trí không bị nhảy theo từng sự kiện.
@@ -76,8 +75,7 @@ public final class WindowMouseHandler extends MouseAdapter {
     @Override
     public void mouseClicked(MouseEvent event) {
         if (winChu.isResizable() && SwingUtilities.isLeftMouseButton(event) && event.getClickCount() == 2
-                && event.getY() <= UiTheme.TITLE_HEIGHT
-                && findEdge(event.getX(), winChu.getWidth()) == 0
+                && event.getY() <= UiTheme.TITLE_HEIGHT && findEdge(event.getX(), winChu.getWidth()) == 0
                 && findEdge(event.getY(), winChu.getHeight()) == 0) {
             WindowTitlePanel.toggleMaximized(winChu);
         }
@@ -97,12 +95,7 @@ public final class WindowMouseHandler extends MouseAdapter {
         }
     }
 
-    /**
-     * Xác định cạnh trên một trục; khóa đổi kích thước khi đang phóng to.
-     * @param toaDo vị trí chuột trên trục
-     * @param chieuDai chiều rộng hoặc chiều cao cửa sổ
-     * @return -1 ở đầu trục, 1 ở cuối trục, 0 ở giữa hoặc khi không thể đổi kích thước
-     */
+    /** Xác định cạnh trên một trục; khóa đổi kích thước khi đang phóng to. */
     private int findEdge(int toaDo, int chieuDai) {
         if (winChu.getExtendedState() != Frame.NORMAL || !winChu.isResizable()) {
             return 0;
@@ -113,11 +106,7 @@ public final class WindowMouseHandler extends MouseAdapter {
         return toaDo >= chieuDai - RESIZE_MARGIN ? 1 : 0;
     }
 
-    /**
-     * Chọn con trỏ tương ứng với cạnh hoặc góc nằm dưới chuột.
-     * @param event sự kiện có tọa độ tương đối với JFrame
-     * @return mã con trỏ chuẩn của AWT
-     */
+    /** Chọn con trỏ tương ứng với cạnh hoặc góc nằm dưới chuột. */
     private int getResizeCursor(MouseEvent event) {
         // Kết hợp hai hướng để nhận bốn cạnh và bốn góc.
         int ngang = findEdge(event.getX(), winChu.getWidth());
@@ -137,11 +126,7 @@ public final class WindowMouseHandler extends MouseAdapter {
         return ngang < 0 ? Cursor.SW_RESIZE_CURSOR : Cursor.SE_RESIZE_CURSOR;
     }
 
-    /**
-     * Đổi kích thước theo cạnh đang kéo và giữ giới hạn tối thiểu của MainFrame.
-     * @param doDoiX độ dời chuột theo chiều ngang
-     * @param doDoiY độ dời chuột theo chiều dọc
-     */
+    /** Đổi kích thước theo cạnh đang kéo và giữ giới hạn tối thiểu của MainFrame. */
     private void resizeWindow(int doDoiX, int doDoiY) {
         // Tọa độ cạnh đối diện được giữ cố định khi kéo cạnh trên hoặc cạnh trái.
         Rectangle khungMoi = new Rectangle(khungBanDau);
