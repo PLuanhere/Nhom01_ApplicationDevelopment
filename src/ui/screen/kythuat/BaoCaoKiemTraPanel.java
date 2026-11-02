@@ -1,6 +1,13 @@
 package ui.screen.kythuat;
 
+import dao.kiemtra.BaoCaoKiemTraDAO;
+import entity.kiemtra.BaoCaoKiemTra;
+import entity.kiemtra.TrangThaiKiemTra;
+import entity.nhansu.TaiKhoan;
+import entity.tiepnhan.PhieuTiepNhan;
+
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -17,6 +24,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -26,15 +34,10 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
-import dao.BaoCaoKiemTraDAO;
-import entity.BaoCaoKiemTra;
-import entity.PhieuTiepNhan;
-import entity.TaiKhoan;
-import entity.TrangThaiKiemTra;
 import ui.component.KiemTraUi;
 import ui.component.UiTheme;
-import ui.dialog.BaoCaoKiemTraDialog;
-import ui.dialog.DuLieuLienQuanKiemTraDialog;
+import ui.dialog.kythuat.BaoCaoKiemTraDialog;
+import ui.dialog.kythuat.DuLieuLienQuanKiemTraDialog;
 
 // Giao diện nhánh kiểm tra độc lập; nhận phiên đăng nhập và gọi DAO dữ liệu mẫu.
 public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
@@ -44,8 +47,7 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
     private final BaoCaoKiemTraDAO baoCaoDAO;
     private final JLabel lblTrangThai = KiemTraUi.taoNhan("", false);
     private final JTextField txtTuKhoa = new JTextField("KT-2026-0112");
-    private final JComboBox<String> cmbTrangThai = new JComboBox<String>(
-            new String[]{"Tất cả", "Nháp", "Hoàn tất"});
+    private final JComboBox<String> cmbTrangThai = new JComboBox<String>(new String[] { "Tất cả", "Nháp", "Hoàn tất" });
     private final JTextField[] txtKetQua = new JTextField[5];
     private final JCheckBox chkDoiChieu = new JCheckBox("Kết quả đầy đủ, đúng xe và đúng phiếu tiếp nhận.");
 
@@ -64,12 +66,17 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
     private boolean dangNhapKetQua;
     private String dauVetKetQua;
 
+    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     public BaoCaoKiemTraPanel(JFrame winChu, TaiKhoan taiKhoan) {
         this(winChu, taiKhoan, new BaoCaoKiemTraDAO());
     }
 
+    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     public BaoCaoKiemTraPanel(JFrame winChu, TaiKhoan taiKhoan, BaoCaoKiemTraDAO nguonChung) {
-        this.baoCaoDAO = java.util.Objects.requireNonNull(nguonChung);
+        if (nguonChung == null) {
+            throw new NullPointerException("Thiếu dữ liệu bắt buộc.");
+        }
+        this.baoCaoDAO = nguonChung;
         this.winChu = winChu;
         this.taiKhoan = taiKhoan;
         setBackground(UiTheme.WINDOW);
@@ -83,8 +90,9 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
     public void actionPerformed(ActionEvent suKien) {
         String lenh = suKien.getActionCommand();
         if (("CHO".equals(lenh) || "DANH_SACH".equals(lenh)) && dangNhapKetQua
-                && !layDauVetKetQua().equals(dauVetKetQua) && !KiemTraUi.xacNhan(winChu,
-                    "Bỏ thay đổi chưa lưu?", "Thông tin đang nhập chưa được lưu.", "Bỏ thay đổi", "Tiếp tục nhập")) {
+                && !layDauVetKetQua().equals(dauVetKetQua) && !KiemTraUi.xacNhan(winChu, "Bỏ thay đổi chưa lưu?",
+                        "Thông tin đang nhập chưa được lưu.", "Bỏ thay đổi", "Tiếp tục nhập")) {
+
             return;
         }
         try {
@@ -115,39 +123,38 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
             } else if ("HOAN_TAT".equals(lenh)) {
                 hoanTat();
             } else if ("TIEP_NHAN".equals(lenh)) {
-                KiemTraUi.xacNhan(winChu, "Phiếu tiếp nhận", baoCaoHoanTat.getPhieu().getMaPhieu()
-                        + " · " + baoCaoHoanTat.getPhieu().getBienSo(), "Đóng", null);
+                KiemTraUi.xacNhan(winChu, "Phiếu tiếp nhận",
+                        baoCaoHoanTat.getPhieu().getMaPhieu() + " · " + baoCaoHoanTat.getPhieu().getBienSo(), "Đóng",
+                        null);
             } else if ("BAO_GIA".equals(lenh)) {
-                KiemTraUi.xacNhan(winChu, "Lập báo giá", "Báo cáo đã sẵn sàng cho tiếp nhận. "
-                        + "Màn hình lập báo giá thuộc nhánh khác, chưa tích hợp.", "Đóng", null);
+                KiemTraUi.xacNhan(winChu, "Lập báo giá",
+                        "Báo cáo đã sẵn sàng cho tiếp nhận. " + "Màn hình lập báo giá thuộc nhánh khác, chưa tích hợp.",
+                        "Đóng", null);
             }
         } catch (IllegalArgumentException | IllegalStateException | SecurityException loi) {
             KiemTraUi.xacNhan(winChu, "Không thể thực hiện", loi.getMessage(), "Đóng", null);
         }
     }
 
-    /**
-     * @param loc có áp dụng bộ lọc
-     * @param thongBao kết quả thao tác trước đó
-     */
     // Tải danh sách từ DAO và dùng một bảng cho danh sách, kết quả tìm kiếm và trạng thái rỗng.
+    /** Thực hiện hien danh sach cho thành phần hiện tại. */
     private void hienDanhSach(boolean loc, String thongBao) {
         dangHien = baoCaoDAO.timKiem(taiKhoan, loc ? txtTuKhoa.getText() : "",
                 loc ? String.valueOf(cmbTrangThai.getSelectedItem()) : "Tất cả");
-        DefaultTableModel modelBaoCao = KiemTraUi.taoModel(new String[]{"Số báo cáo", "Phiếu tiếp nhận",
-                "Biển số", "Kỹ thuật viên", "Trạng thái"});
+        DefaultTableModel modelBaoCao = KiemTraUi
+                .taoModel(new String[] { "Số báo cáo", "Phiếu tiếp nhận", "Biển số", "Kỹ thuật viên", "Trạng thái" });
         for (BaoCaoKiemTra baoCao : dangHien) {
-            modelBaoCao.addRow(new Object[]{baoCao.getMaBaoCao(), baoCao.getPhieu().getMaPhieu(),
-                baoCao.getPhieu().getBienSo(), "Chung Ngô Minh Hoàng", baoCao.getTrangThai().getTenHienThi()});
+            modelBaoCao.addRow(new Object[] { baoCao.getMaBaoCao(), baoCao.getPhieu().getMaPhieu(),
+                    baoCao.getPhieu().getBienSo(), "Chung Ngô Minh Hoàng", baoCao.getTrangThai().getTenHienThi() });
         }
         tblBaoCao = KiemTraUi.taoBang(modelBaoCao);
         if (!dangHien.isEmpty() && thongBao.isEmpty()) {
             tblBaoCao.setRowSelectionInterval(0, 0);
         }
         JPanel pnlNoiDung = taoXepDoc();
-        JPanel pnlThaoTac = taoHangNut(new String[]{"Tìm kiếm", "Thêm", "Xem", "Sửa", "Xóa",
-                "Dữ liệu liên quan", "Lập kết quả kiểm tra"}, new String[]{"TIM", "THEM", "XEM", "SUA",
-                "XOA", "LIEN_QUAN", "CHO"}, "THEM");
+        JPanel pnlThaoTac = taoHangNut(
+                new String[] { "Tìm kiếm", "Thêm", "Xem", "Sửa", "Xóa", "Dữ liệu liên quan", "Lập kết quả kiểm tra" },
+                new String[] { "TIM", "THEM", "XEM", "SUA", "XOA", "LIEN_QUAN", "CHO" }, "THEM");
         pnlThaoTac.setLayout(new FlowLayout(FlowLayout.LEFT, 8, 0));
         themThanhPhan(pnlNoiDung, pnlThaoTac, 30);
         themThanhPhan(pnlNoiDung, KiemTraUi.taoVungCuon(tblBaoCao), 400);
@@ -155,18 +162,19 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         txaQuyTac.setFont(UiTheme.CAPTION_FONT);
         themThanhPhan(pnlNoiDung, txaQuyTac, 34);
         lblTrangThai.setForeground(UiTheme.MUTED);
-        lblTrangThai.setText(!thongBao.isEmpty() ? thongBao : dangHien.isEmpty()
-                ? "Không tìm thấy hồ sơ. Đổi từ khóa hoặc bấm Làm mới."
-                : "Có " + dangHien.size() + " hồ sơ. Chọn một dòng để xem, sửa hoặc xóa.");
+        lblTrangThai.setText(!thongBao.isEmpty() ? thongBao
+                : dangHien.isEmpty() ? "Không tìm thấy hồ sơ. Đổi từ khóa hoặc bấm Làm mới."
+                        : "Có " + dangHien.size() + " hồ sơ. Chọn một dòng để xem, sửa hoặc xóa.");
         themThanhPhan(pnlNoiDung, lblTrangThai, 20);
-        String tieuDe = !loc ? "Danh sách báo cáo kiểm tra" : dangHien.isEmpty()
-                ? "Không tìm thấy báo cáo kiểm tra" : "Kết quả tìm kiếm báo cáo kiểm tra";
+        String tieuDe = !loc ? "Danh sách báo cáo kiểm tra"
+                : dangHien.isEmpty() ? "Không tìm thấy báo cáo kiểm tra" : "Kết quả tìm kiếm báo cáo kiểm tra";
         hienThiTrang(tieuDe, loc ? "Từ khóa đã dùng: " + txtTuKhoa.getText() : "", pnlNoiDung,
-                loc ? taoHangNut(new String[]{"Đổi tiêu chí", "Làm mới"},
-                    new String[]{"TIM", "DANH_SACH"}, "") : null);
+                loc ? taoHangNut(new String[] { "Đổi tiêu chí", "Làm mới" }, new String[] { "TIM", "DANH_SACH" }, "")
+                        : null);
     }
 
     // Hiển thị tiêu chí tìm kiếm theo bố cục hai thẻ của thiết kế.
+    /** Thực hiện hien tim kiem cho thành phần hiện tại. */
     private void hienTimKiem() {
         JPanel pnlNoiDung = taoXepDoc();
         JPanel pnlTieuChi = KiemTraUi.taoThe("Tiêu chí tìm kiếm");
@@ -176,14 +184,14 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         pnlTruong.add(KiemTraUi.taoTruong("Trạng thái kiểm tra", cmbTrangThai));
         pnlTieuChi.add(pnlTruong, BorderLayout.CENTER);
         themThanhPhan(pnlNoiDung, pnlTieuChi, 190);
-        themThanhPhan(pnlNoiDung, taoThongTin("Hướng dẫn", "Có thể nhập một phần thông tin. "
-                + "Để xem toàn bộ dữ liệu, quay lại màn danh sách."), 82);
+        themThanhPhan(pnlNoiDung, taoThongTin("Hướng dẫn",
+                "Có thể nhập một phần thông tin. " + "Để xem toàn bộ dữ liệu, quay lại màn danh sách."), 82);
         hienThiTrang("Tìm kiếm báo cáo kiểm tra", "Nhập tiêu chí tìm kiếm rồi chuyển sang màn kết quả.", pnlNoiDung,
-                taoHangNut(new String[]{"Về danh sách", "Tìm kiếm"}, new String[]{"DANH_SACH", "LOC"}, "LOC"));
+                taoHangNut(new String[] { "Về danh sách", "Tìm kiếm" }, new String[] { "DANH_SACH", "LOC" }, "LOC"));
     }
 
-    /** @return báo cáo tương ứng dòng đã chọn */
     // Chuyển chỉ số dòng hiển thị sang model trước khi lấy đối tượng báo cáo.
+    /** Đọc bao cao chon từ dữ liệu hiện tại. */
     private BaoCaoKiemTra layBaoCaoChon() {
         int dong = tblBaoCao.getSelectedRow();
         if (dong < 0) {
@@ -192,11 +200,8 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         return dangHien.get(tblBaoCao.convertRowIndexToModel(dong));
     }
 
-    /**
-     * @param baoCao hồ sơ cần xem hoặc sửa, null khi thêm
-     * @param chiDoc chỉ xem
-     */
     // Mở biểu mẫu modal và chỉ tải lại danh sách sau khi DAO lưu thành công.
+    /** Mở bieu mau khi người dùng yêu cầu. */
     private void moBieuMau(BaoCaoKiemTra baoCao, boolean chiDoc) {
         BaoCaoKiemTraDialog winBieuMau = new BaoCaoKiemTraDialog(winChu, baoCaoDAO, taiKhoan, baoCao, chiDoc);
         winBieuMau.setVisible(true);
@@ -206,6 +211,7 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
     }
 
     // Chặn sửa báo cáo hoàn tất trước khi mở biểu mẫu sửa.
+    /** Thực hiện sua bao cao cho thành phần hiện tại. */
     private void suaBaoCao() {
         BaoCaoKiemTra baoCao = layBaoCaoChon();
         if (baoCao.getTrangThai() != TrangThaiKiemTra.NHAP) {
@@ -215,21 +221,25 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
     }
 
     // Xác nhận xóa nháp và giữ nguyên báo cáo đã hoàn tất hoặc có liên kết.
+    /** Thực hiện xoa bao cao cho thành phần hiện tại. */
     private void xoaBaoCao() {
         BaoCaoKiemTra baoCao = layBaoCaoChon();
         if (baoCao.getTrangThai() != TrangThaiKiemTra.NHAP) {
-            KiemTraUi.xacNhan(winChu, "Không thể xóa dữ liệu", "Không thể xóa " + baoCao.getMaBaoCao()
-                    + " vì đã có dữ liệu liên quan.\n\n" + KiemTraUi.QUY_TAC, "Đóng", null);
-        } else if (KiemTraUi.xacNhan(winChu, "Xác nhận xóa", "Xóa " + baoCao.getMaBaoCao() + " — "
-                + baoCao.getPhieu().getMaPhieu() + "?\n\n"
-                + "Hồ sơ trong tình huống này chưa có dữ liệu liên quan / chưa ghi sổ. "
-                + "Chỉ xóa sau khi bạn xác nhận. " + KiemTraUi.QUY_TAC, "Xóa", "Hủy")) {
+            KiemTraUi.xacNhan(winChu, "Không thể xóa dữ liệu",
+                    "Không thể xóa " + baoCao.getMaBaoCao() + " vì đã có dữ liệu liên quan.\n\n" + KiemTraUi.QUY_TAC,
+                    "Đóng", null);
+        } else if (KiemTraUi.xacNhan(winChu, "Xác nhận xóa",
+                "Xóa " + baoCao.getMaBaoCao() + " — " + baoCao.getPhieu().getMaPhieu() + "?\n\n"
+                        + "Hồ sơ trong tình huống này chưa có dữ liệu liên quan / chưa ghi sổ. "
+                        + "Chỉ xóa sau khi bạn xác nhận. " + KiemTraUi.QUY_TAC,
+                "Xóa", "Hủy")) {
             baoCaoDAO.xoa(taiKhoan, baoCao);
             hienDanhSach(false, "Đã xóa " + baoCao.getMaBaoCao() + ". Chưa chọn dòng mới.");
         }
     }
 
     // Mở chi tiết chỉ đọc dạng dialog theo KT_RH, không chuyển sang màn hoàn tất kiểm tra.
+    /** Thực hiện hien lien quan cho thành phần hiện tại. */
     private void hienLienQuan() {
         BaoCaoKiemTra baoCao = layBaoCaoChon();
         DuLieuLienQuanKiemTraDialog winLienQuan = new DuLieuLienQuanKiemTraDialog(winChu, baoCao);
@@ -240,17 +250,17 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
     }
 
     // Chỉ đưa phiếu chưa có báo cáo hoàn tất vào danh sách chờ để tránh kiểm tra trùng.
+    /** Thực hiện hien phieu cho cho thành phần hiện tại. */
     private void hienPhieuCho() {
         phieuCho = new ArrayList<PhieuTiepNhan>();
-        DefaultTableModel modelPhieu = KiemTraUi.taoModel(new String[]{
-            "Phiếu tiếp nhận", "Biển số", "Yêu cầu", "Trạng thái"});
+        DefaultTableModel modelPhieu = KiemTraUi
+                .taoModel(new String[] { "Phiếu tiếp nhận", "Biển số", "Yêu cầu", "Trạng thái" });
         for (PhieuTiepNhan phieu : baoCaoDAO.layPhieu(taiKhoan)) {
-            BaoCaoKiemTra baoCao = phieu.isDaXacNhan()
-                    ? baoCaoDAO.timTheoPhieu(taiKhoan, phieu).orElse(null) : null;
+            BaoCaoKiemTra baoCao = phieu.isDaXacNhan() ? baoCaoDAO.timTheoPhieu(taiKhoan, phieu) : null;
             if (baoCao == null || baoCao.getTrangThai() == TrangThaiKiemTra.NHAP) {
                 phieuCho.add(phieu);
-                modelPhieu.addRow(new Object[]{phieu.getMaPhieu(), phieu.getBienSo(), phieu.getYeuCau(),
-                    phieu.isDaXacNhan() ? "Chờ kiểm tra" : "Nháp · Chưa hợp lệ"});
+                modelPhieu.addRow(new Object[] { phieu.getMaPhieu(), phieu.getBienSo(), phieu.getYeuCau(),
+                        phieu.isDaXacNhan() ? "Chờ kiểm tra" : "Nháp · Chưa hợp lệ" });
             }
         }
         tblPhieu = KiemTraUi.taoBang(modelPhieu);
@@ -259,11 +269,12 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         pnlThe.add(KiemTraUi.taoVungCuon(tblPhieu), BorderLayout.CENTER);
         themThanhPhan(pnlNoiDung, pnlThe, 166);
         hienThiTrang("Xe chờ kiểm tra", "Chọn một phiếu tiếp nhận hợp lệ để lập báo cáo kiểm tra.", pnlNoiDung,
-                taoHangNut(new String[]{"Về danh sách", "Lập báo cáo kiểm tra"},
-                    new String[]{"DANH_SACH", "LAP"}, "LAP"));
+                taoHangNut(new String[] { "Về danh sách", "Lập báo cáo kiểm tra" }, new String[] { "DANH_SACH", "LAP" },
+                        "LAP"));
     }
 
     // Kiểm tra phiếu được chọn rồi nạp dữ liệu của chính phiếu đó vào biểu mẫu.
+    /** Thực hiện chon phieu cho thành phần hiện tại. */
     private void chonPhieu() {
         int dong = tblPhieu.getSelectedRow();
         if (dong < 0) {
@@ -272,49 +283,52 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         phieuChon = phieuCho.get(tblPhieu.convertRowIndexToModel(dong));
         if (!phieuChon.isDaXacNhan()) {
             JPanel pnlNoiDung = taoXepDoc();
-            themThanhPhan(pnlNoiDung, taoThongTin("Phiếu đang chọn", phieuChon.getMaPhieu()
-                    + " · Nháp · Chưa xác nhận nội dung tiếp nhận của khách."), 82);
+            themThanhPhan(pnlNoiDung, taoThongTin("Phiếu đang chọn",
+                    phieuChon.getMaPhieu() + " · Nháp · Chưa xác nhận nội dung tiếp nhận của khách."), 82);
             themThanhPhan(pnlNoiDung, taoThongTin("Cách xử lý", "Nhân viên tiếp nhận cần hoàn tất và xác nhận phiếu. "
                     + "Kỹ thuật viên chọn một phiếu hợp lệ đã được phân công để tiếp tục."), 82);
             hienThiTrang("Phiếu tiếp nhận chưa hợp lệ", "Chưa được phép lập báo cáo kiểm tra cho phiếu này.",
-                    pnlNoiDung, taoHangNut(new String[]{"Chọn phiếu khác"}, new String[]{"CHO"}, "CHO"));
+                    pnlNoiDung, taoHangNut(new String[] { "Chọn phiếu khác" }, new String[] { "CHO" }, "CHO"));
+
             return;
         }
-        banNhap = baoCaoDAO.timTheoPhieu(taiKhoan, phieuChon).orElse(null);
-        String[] noiDung = banNhap == null ? new String[]{"", "", "",
-            "Má phanh còn đạt giới hạn; bụi bám, cần vệ sinh.",
-            "Dầu đến kỳ thay, không phát hiện rò rỉ.", "Hoạt động bình thường.", "Không ghi nhận mã lỗi."}
-            : banNhap.getNoiDung();
+        banNhap = baoCaoDAO.timTheoPhieu(taiKhoan, phieuChon);
+        String[] noiDung = banNhap == null
+                ? new String[] { "", "", "", "Má phanh còn đạt giới hạn; bụi bám, cần vệ sinh.",
+                        "Dầu đến kỳ thay, không phát hiện rò rỉ.", "Hoạt động bình thường.", "Không ghi nhận mã lỗi." }
+                : banNhap.getNoiDung();
         for (int i = 0; i < 4; i++) {
             txtKetQua[i] = new JTextField(noiDung[i + 3]);
         }
-        txtKetQua[4] = new JTextField(banNhap == null
-                ? "Bảo dưỡng định kỳ, thay dầu/lọc dầu, vệ sinh phanh." : noiDung[2]);
+        txtKetQua[4] = new JTextField(
+                banNhap == null ? "Bảo dưỡng định kỳ, thay dầu/lọc dầu, vệ sinh phanh." : noiDung[2]);
         dauVetKetQua = layDauVetKetQua();
         hienNhapKetQua();
     }
 
     // Tạo biểu mẫu kết quả theo các hàng hai cột và giữ nội dung khi quay lại.
+    /** Thực hiện hien nhap ket qua cho thành phần hiện tại. */
     private void hienNhapKetQua() {
         JPanel pnlNoiDung = taoXepDoc();
         themThanhPhan(pnlNoiDung, taoThongTinTiepNhan(), 90);
         JPanel pnlThe = KiemTraUi.taoThe("Kết quả kiểm tra");
         JPanel pnlTruong = new JPanel(new GridLayout(3, 2, 12, 8));
         pnlTruong.setOpaque(false);
-        String[] nhan = {"Hệ thống phanh *", "Khoang máy / dầu *", "Điện / điều hòa",
-            "Mã lỗi chẩn đoán nếu có", "Hạng mục đề xuất *"};
+        String[] nhan = { "Hệ thống phanh *", "Khoang máy / dầu *", "Điện / điều hòa", "Mã lỗi chẩn đoán nếu có",
+                "Hạng mục đề xuất *" };
         for (int i = 0; i < txtKetQua.length; i++) {
             pnlTruong.add(KiemTraUi.taoTruong(nhan[i], txtKetQua[i]));
         }
         pnlThe.add(pnlTruong, BorderLayout.CENTER);
         themThanhPhan(pnlNoiDung, pnlThe, 212);
         hienThiTrang("Lập báo cáo kiểm tra xe", phieuChon.getMaPhieu() + " · " + phieuChon.getBienSo(), pnlNoiDung,
-                taoHangNut(new String[]{"Quay lại", "Xem lại báo cáo"},
-                    new String[]{"CHO", "DOI_CHIEU"}, "DOI_CHIEU"));
+                taoHangNut(new String[] { "Quay lại", "Xem lại báo cáo" }, new String[] { "CHO", "DOI_CHIEU" },
+                        "DOI_CHIEU"));
         dangNhapKetQua = true;
     }
 
     // Kiểm tra trường bắt buộc và xây dựng bản báo cáo để đối chiếu trước khi ghi.
+    /** Thực hiện xem lai cho thành phần hiện tại. */
     private void xemLai() {
         String[] noiDung = new String[7];
         for (int i = 0; i < 4; i++) {
@@ -326,18 +340,16 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         if (noiDung[3].isEmpty() || noiDung[4].isEmpty() || noiDung[2].isEmpty()) {
             hienThieuKetQua();
             return;
+
         }
-        banNhap = new BaoCaoKiemTra(banNhap == null ? "" : banNhap.getMaBaoCao(), phieuChon,
-                LocalDate.of(2026, 10, 5), "Tổng hợp", noiDung, TrangThaiKiemTra.NHAP, null);
+        banNhap = new BaoCaoKiemTra(banNhap == null ? "" : banNhap.getMaBaoCao(), phieuChon, LocalDate.of(2026, 10, 5),
+                "Tổng hợp", noiDung, TrangThaiKiemTra.NHAP, null);
         chkDoiChieu.setSelected(false);
         hienKetQua(false, "");
     }
 
-    /**
-     * @param daHoanTat hiển thị kết quả cuối
-     * @param loi thông báo lỗi nếu có
-     */
     // Hiển thị nội dung vừa nhập ở bước đối chiếu, hoàn tất hoặc thử lưu lại.
+    /** Thực hiện hien ket qua cho thành phần hiện tại. */
     private void hienKetQua(boolean daHoanTat, String loi) {
         BaoCaoKiemTra baoCao = daHoanTat ? baoCaoHoanTat : banNhap;
         String[] noiDung = baoCao.getNoiDung();
@@ -348,23 +360,22 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         JPanel pnlPhieu = KiemTraUi.taoThe(daHoanTat ? "Thông tin báo cáo" : "Phiếu liên kết");
         JPanel pnlTruong = new JPanel(new GridLayout(2, 2, 12, 8));
         pnlTruong.setOpaque(false);
-        pnlTruong.add(KiemTraUi.taoTruong("Phiếu tiếp nhận",
-                KiemTraUi.taoNhan(baoCao.getPhieu().getMaPhieu(), false)));
+        pnlTruong.add(KiemTraUi.taoTruong("Phiếu tiếp nhận", KiemTraUi.taoNhan(baoCao.getPhieu().getMaPhieu(), false)));
         pnlTruong.add(KiemTraUi.taoTruong("Biển số", KiemTraUi.taoNhan(baoCao.getPhieu().getBienSo(), false)));
         pnlTruong.add(KiemTraUi.taoTruong("Kỹ thuật viên", KiemTraUi.taoNhan("Chung Ngô Minh Hoàng", false)));
         if (daHoanTat) {
-            pnlTruong.add(KiemTraUi.taoTruong("Hoàn tất", KiemTraUi.taoNhan(baoCao.getThoiDiemHoanTat()
-                    .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), false)));
+            pnlTruong.add(KiemTraUi.taoTruong("Hoàn tất", KiemTraUi.taoNhan(
+                    baoCao.getThoiDiemHoanTat().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), false)));
         }
         pnlPhieu.add(pnlTruong, BorderLayout.CENTER);
         themThanhPhan(pnlNoiDung, pnlPhieu, 130);
-        DefaultTableModel modelKetQua = KiemTraUi.taoModel(new String[]{"Bộ phận", "Kết quả", "Đề xuất"});
+        DefaultTableModel modelKetQua = KiemTraUi.taoModel(new String[] { "Bộ phận", "Kết quả", "Đề xuất" });
         if ("Tổng hợp".equals(baoCao.getBoPhan())) {
-            modelKetQua.addRow(new Object[]{"Phanh trước", noiDung[3], noiDung[2]});
-            modelKetQua.addRow(new Object[]{"Dầu động cơ", noiDung[4], noiDung[2]});
-            modelKetQua.addRow(new Object[]{"Điện / điều hòa", noiDung[5], noiDung[2]});
+            modelKetQua.addRow(new Object[] { "Phanh trước", noiDung[3], noiDung[2] });
+            modelKetQua.addRow(new Object[] { "Dầu động cơ", noiDung[4], noiDung[2] });
+            modelKetQua.addRow(new Object[] { "Điện / điều hòa", noiDung[5], noiDung[2] });
         } else {
-            modelKetQua.addRow(new Object[]{baoCao.getBoPhan(), noiDung[0], noiDung[2]});
+            modelKetQua.addRow(new Object[] { baoCao.getBoPhan(), noiDung[0], noiDung[2] });
         }
         JPanel pnlBang = KiemTraUi.taoThe(daHoanTat ? "Kết luận kiểm tra" : "Kết quả và đề xuất");
         pnlBang.add(KiemTraUi.taoVungCuon(KiemTraUi.taoBang(modelKetQua)), BorderLayout.CENTER);
@@ -376,20 +387,26 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
             pnlDoiChieu.add(chkDoiChieu, BorderLayout.CENTER);
             themThanhPhan(pnlNoiDung, pnlDoiChieu, 68);
         }
-        themThanhPhan(pnlNoiDung, taoThongTin(daHoanTat ? "Kiểm tra đã hoàn tất" : "Sau khi xác nhận", daHoanTat
-                ? "Nhân viên tiếp nhận lập báo giá từ kết quả này. "
-                    + "Khách chưa xác nhận báo giá nên chưa bắt đầu sửa chữa."
-                : "Hệ thống sinh mã báo cáo và cung cấp kết quả chính thức cho nhân viên tiếp nhận."), 72);
+        themThanhPhan(pnlNoiDung,
+                taoThongTin(daHoanTat ? "Kiểm tra đã hoàn tất" : "Sau khi xác nhận",
+                        daHoanTat
+                                ? "Nhân viên tiếp nhận lập báo giá từ kết quả này. "
+                                        + "Khách chưa xác nhận báo giá nên chưa bắt đầu sửa chữa."
+                                : "Hệ thống sinh mã báo cáo và cung cấp kết quả chính thức cho nhân viên tiếp nhận."),
+                72);
         hienThiTrang(daHoanTat ? "Báo cáo kiểm tra hoàn tất" : "Đối chiếu báo cáo kiểm tra",
                 daHoanTat ? baoCao.getMaBaoCao() + " · Kết quả chính thức đã sẵn sàng để lập báo giá."
-                    : "Xem lại kết quả trước khi xác nhận hoàn tất.", pnlNoiDung,
-                daHoanTat ? taoHangNut(new String[]{"Về danh sách", "Xem tiếp nhận", "Lập báo giá"},
-                        new String[]{"DANH_SACH", "TIEP_NHAN", "BAO_GIA"}, "BAO_GIA")
-                    : taoHangNut(new String[]{"Chỉnh sửa", loi.isEmpty() ? "Hoàn tất kiểm tra" : "Thử lưu lại"},
-                        new String[]{"CHINH_SUA", "HOAN_TAT"}, "HOAN_TAT"));
+                        : "Xem lại kết quả trước khi xác nhận hoàn tất.",
+                pnlNoiDung,
+                daHoanTat
+                        ? taoHangNut(new String[] { "Về danh sách", "Xem tiếp nhận", "Lập báo giá" },
+                                new String[] { "DANH_SACH", "TIEP_NHAN", "BAO_GIA" }, "BAO_GIA")
+                        : taoHangNut(new String[] { "Chỉnh sửa", loi.isEmpty() ? "Hoàn tất kiểm tra" : "Thử lưu lại" },
+                                new String[] { "CHINH_SUA", "HOAN_TAT" }, "HOAN_TAT"));
     }
 
     // Chỉ xác nhận hoàn tất sau đối chiếu và giữ nguyên bản nhập nếu DAO từ chối lưu.
+    /** Thực hiện hoan tat cho thành phần hiện tại. */
     private void hoanTat() {
         if (!chkDoiChieu.isSelected()) {
             throw new IllegalArgumentException("Hãy xác nhận kết quả đầy đủ, đúng xe và đúng phiếu tiếp nhận.");
@@ -402,8 +419,8 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         }
     }
 
-    /** @return thẻ thông tin tiếp nhận của phiếu đang được chọn */
     // Hiển thị yêu cầu khách và tình trạng ban đầu thành hai cột chỉ đọc.
+    /** Tạo thong tin tiep nhan cho giao diện. */
     private JPanel taoThongTinTiepNhan() {
         JPanel pnlThe = KiemTraUi.taoThe("Thông tin được chuyển từ tiếp nhận");
         JPanel pnlTruong = new JPanel(new GridLayout(1, 2, 12, 0));
@@ -415,10 +432,13 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
     }
 
     // Hiển thị lỗi thiếu kết quả và giữ các ô người dùng đang nhập để bổ sung.
+    /** Thực hiện hien thieu ket qua cho thành phần hiện tại. */
     private void hienThieuKetQua() {
         JPanel pnlNoiDung = taoXepDoc();
-        themThanhPhan(pnlNoiDung, taoThongTin("Thiếu kết quả bắt buộc",
-                "Hãy bổ sung hệ thống phanh, khoang máy/dầu và hạng mục đề xuất trước khi xem lại báo cáo."), 70);
+        themThanhPhan(pnlNoiDung,
+                taoThongTin("Thiếu kết quả bắt buộc",
+                        "Hãy bổ sung hệ thống phanh, khoang máy/dầu và hạng mục đề xuất trước khi xem lại báo cáo."),
+                70);
         themThanhPhan(pnlNoiDung, taoThongTinTiepNhan(), 90);
         JPanel pnlThe = KiemTraUi.taoThe("Kết quả kiểm tra cần bổ sung");
         JPanel pnlTruong = new JPanel(new GridLayout(2, 2, 12, 8));
@@ -429,13 +449,13 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         pnlTruong.add(KiemTraUi.taoTruong("Điện / điều hòa", txtKetQua[2]));
         pnlThe.add(pnlTruong, BorderLayout.CENTER);
         themThanhPhan(pnlNoiDung, pnlThe, 154);
-        hienThiTrang("Thiếu kết quả bắt buộc", phieuChon.getMaPhieu() + " · " + phieuChon.getBienSo(),
-                pnlNoiDung, taoHangNut(new String[]{"Bổ sung kết quả"}, new String[]{"CHINH_SUA"}, "CHINH_SUA"));
+        hienThiTrang("Thiếu kết quả bắt buộc", phieuChon.getMaPhieu() + " · " + phieuChon.getBienSo(), pnlNoiDung,
+                taoHangNut(new String[] { "Bổ sung kết quả" }, new String[] { "CHINH_SUA" }, "CHINH_SUA"));
         dangNhapKetQua = true;
     }
 
-    /** @return dấu vết các trường kết quả đang nhập */
     // So sánh nội dung kết quả để xác nhận trước khi bỏ thay đổi chưa lưu.
+    /** Đọc dau vet ket qua từ dữ liệu hiện tại. */
     private String layDauVetKetQua() {
         StringBuilder dauVet = new StringBuilder();
         for (JTextField txtTruong : txtKetQua) {
@@ -446,25 +466,21 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         return dauVet.toString();
     }
 
-    /**
-     * @param chu tiêu đề
-     * @param noiDung nội dung
-     * @return thẻ thông tin
-     */
     // Tạo thẻ văn bản để trình bày thông tin hoặc trạng thái nghiệp vụ.
+    /** Tạo thong tin cho giao diện. */
     private JPanel taoThongTin(String chu, String noiDung) {
         JPanel pnlThe = KiemTraUi.taoThe(chu);
         pnlThe.add(KiemTraUi.taoVanBan(noiDung), BorderLayout.CENTER);
         if ("Kiểm tra đã hoàn tất".equals(chu)) {
-            pnlThe.setBackground(new java.awt.Color(0xEDF8F0));
+            pnlThe.setBackground(new Color(0xEDF8F0));
         } else if (chu.startsWith("Thiếu") || chu.startsWith("Không lưu")) {
-            pnlThe.setBackground(new java.awt.Color(0xFFF1F1));
+            pnlThe.setBackground(new Color(0xFFF1F1));
         }
         return pnlThe;
     }
 
-    /** @return panel xếp nội dung theo chiều dọc */
     // Tạo panel dùng BoxLayout để nhóm các phần nội dung và khoảng cách.
+    /** Tạo xep doc cho giao diện. */
     private JPanel taoXepDoc() {
         JPanel pnlDoc = new JPanel();
         pnlDoc.setLayout(new BoxLayout(pnlDoc, BoxLayout.Y_AXIS));
@@ -472,13 +488,9 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         return pnlDoc;
     }
 
-    /**
-     * @param pnlCha panel chứa
-     * @param thanhPhan nội dung
-     * @param cao chiều cao pixel
-     */
     // Thêm thành phần có chiều cao thiết kế vào panel xếp dọc.
-    private void themThanhPhan(JPanel pnlCha, javax.swing.JComponent thanhPhan, int cao) {
+    /** Thực hiện them thanh phan cho thành phần hiện tại. */
+    private void themThanhPhan(JPanel pnlCha, JComponent thanhPhan, int cao) {
         if (pnlCha.getComponentCount() > 0) {
             pnlCha.add(Box.createVerticalStrut(8));
         }
@@ -489,13 +501,8 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         pnlCha.add(thanhPhan);
     }
 
-    /**
-     * @param nhan tên nút
-     * @param lenh mã sự kiện
-     * @param chinh mã nút chính
-     * @return hàng nút
-     */
     // Tạo hàng nút và đăng ký cùng ActionListener của màn hình.
+    /** Tạo hang nut cho giao diện. */
     private JPanel taoHangNut(String[] nhan, String[] lenh, String chinh) {
         JPanel pnlNut = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         pnlNut.setOpaque(false);
@@ -505,13 +512,8 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         return pnlNut;
     }
 
-    /**
-     * @param tieuDe tên màn hình
-     * @param moTa mô tả
-     * @param pnlNoiDung phần giữa
-     * @param pnlNut hàng nút cuối
-     */
     // Thay nội dung trong cùng panel, giữ nguyên MainFrame và tài khoản của leader.
+    /** Thực hiện hien thi trang cho thành phần hiện tại. */
     private void hienThiTrang(String tieuDe, String moTa, JPanel pnlNoiDung, JPanel pnlNut) {
         dangNhapKetQua = false;
         removeAll();
@@ -519,8 +521,8 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         pnlDau.setOpaque(false);
         JLabel lblTieuDe = KiemTraUi.taoNhan(tieuDe, true);
         lblTieuDe.setFont(UiTheme.BRAND_FONT.deriveFont(20.0f));
-        lblTieuDe.setPreferredSize(new Dimension(0,
-                Math.max(28, lblTieuDe.getFontMetrics(lblTieuDe.getFont()).getHeight() + 4)));
+        lblTieuDe.setPreferredSize(
+                new Dimension(0, Math.max(28, lblTieuDe.getFontMetrics(lblTieuDe.getFont()).getHeight() + 4)));
         pnlDau.add(lblTieuDe, BorderLayout.NORTH);
         if (!moTa.isEmpty()) {
             pnlDau.add(KiemTraUi.taoNhan(moTa, false), BorderLayout.SOUTH);
@@ -528,8 +530,8 @@ public final class BaoCaoKiemTraPanel extends JPanel implements ActionListener {
         add(pnlDau, BorderLayout.NORTH);
         JScrollPane scrNoiDung = new JScrollPane(pnlNoiDung);
         scrNoiDung.setBorder(BorderFactory.createEmptyBorder());
-        boolean bieuMau = tieuDe.contains("Lập báo cáo") || tieuDe.contains("Đối chiếu")
-                || tieuDe.contains("hoàn tất") || tieuDe.contains("Thiếu") || tieuDe.contains("Không lưu");
+        boolean bieuMau = tieuDe.contains("Lập báo cáo") || tieuDe.contains("Đối chiếu") || tieuDe.contains("hoàn tất")
+                || tieuDe.contains("Thiếu") || tieuDe.contains("Không lưu");
         pnlNoiDung.setOpaque(bieuMau);
         pnlNoiDung.setBackground(UiTheme.SURFACE);
         scrNoiDung.getViewport().setBackground(bieuMau ? UiTheme.SURFACE : UiTheme.WINDOW);

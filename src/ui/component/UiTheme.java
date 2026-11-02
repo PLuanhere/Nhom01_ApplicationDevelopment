@@ -1,12 +1,12 @@
 package ui.component;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Font;
 import java.awt.FontFormatException;
-import java.awt.Graphics2D;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Insets;
-import java.awt.Component;
 import java.awt.LayoutManager;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
@@ -104,10 +104,7 @@ public final class UiTheme {
         UIManager.put("MenuBar.background", WINDOW);
     }
 
-    /**
-     * Tạo ô vuông cam 14 px được thiết kế trực tiếp trong Figma, không dùng icon Java mặc định.
-     * @return ảnh thương hiệu cho cửa sổ và thanh tiêu đề
-     */
+    /** Tạo ô vuông cam 14 px được thiết kế trực tiếp trong Figma, không dùng icon Java mặc định. */
     public static BufferedImage createWindowIcon() {
         // Đây là hình học đơn giản của thiết kế, không phải ảnh minh họa bên ngoài.
         BufferedImage icon = new BufferedImage(14, 14, BufferedImage.TYPE_INT_ARGB);
@@ -118,11 +115,7 @@ public final class UiTheme {
         return icon;
     }
 
-    /**
-     * Áp dụng nút phẳng dùng chung cho đăng nhập, đăng xuất và thao tác phụ.
-     * @param btn nút cần định dạng
-     * @param primary true cho nút chính nền xanh, false cho nút phụ nền trắng
-     */
+    /** Áp dụng nút phẳng dùng chung cho đăng nhập, đăng xuất và thao tác phụ. */
     public static void styleButton(JButton btn, boolean primary) {
         btn.setFont(SHELL_FONT);
         btn.setBackground(primary ? PRIMARY : SURFACE);
@@ -133,12 +126,7 @@ public final class UiTheme {
         btn.setFocusPainted(true);
     }
 
-    /**
-     * Định dạng nút trong layout và đăng nhập theo Page 3.
-     * @param text nhãn của nút
-     * @param primary true cho nút chính nền xanh
-     * @return nút bo góc, vẫn dùng sự kiện và phím tắt chuẩn Swing
-     */
+    /** Định dạng nút trong layout và đăng nhập theo Page 3. */
     public static JButton createAppButton(String text, boolean primary) {
         JButton btn = new JButton(text) {
             private static final long serialVersionUID = 1L;
@@ -165,13 +153,7 @@ public final class UiTheme {
         return btn;
     }
 
-    /**
-     * Tạo bề mặt bo góc dùng chung cho thẻ đăng nhập và vùng tìm kiếm.
-     * @param layout layout manager bố trí các thành phần con
-     * @param color màu nền
-     * @param radius bán kính góc tính bằng pixel
-     * @return panel đã vẽ nền, không chứa logic nghiệp vụ
-     */
+    /** Tạo bề mặt bo góc dùng chung cho thẻ đăng nhập và vùng tìm kiếm. */
     public static JPanel roundedPanel(LayoutManager layout, Color color, int radius) {
         JPanel pnl = new JPanel(layout) {
             private static final long serialVersionUID = 1L;
@@ -192,14 +174,7 @@ public final class UiTheme {
         return pnl;
     }
 
-    /**
-     * Tạo viền bo góc và khoảng đệm, hỗ trợ hiển thị focus trên ô nhập.
-     * @param color màu viền bình thường
-     * @param radius bán kính góc
-     * @param vertical khoảng đệm trên/dưới
-     * @param horizontal khoảng đệm trái/phải
-     * @return viền dùng cho nút, thẻ và ô nhập
-     */
+    /** Tạo viền bo góc và khoảng đệm, hỗ trợ hiển thị focus trên ô nhập. */
     public static Border roundedBorder(Color color, int radius, int vertical, int horizontal) {
         return new AbstractBorder() {
             private static final long serialVersionUID = 1L;
@@ -222,12 +197,7 @@ public final class UiTheme {
         };
     }
 
-    /**
-     * Đọc ảnh Figma đã đóng gói trong classpath; không truy cập mạng khi chạy ứng dụng.
-     * @param name tên ảnh trong thư mục image cạnh UiTheme
-     * @return ảnh gốc giữ nguyên kích thước
-     * @throws IllegalStateException nếu thiếu ảnh hoặc ảnh không hợp lệ
-     */
+    /** Đọc ảnh Figma đã đóng gói trong classpath; không truy cập mạng khi chạy ứng dụng. */
     public static BufferedImage readImage(String name) {
         try (InputStream stream = UiTheme.class.getResourceAsStream("image/" + name)) {
             if (stream == null) {
@@ -243,24 +213,14 @@ public final class UiTheme {
         }
     }
 
-    /**
-     * Tạo icon từ ảnh Figma ở kích thước gốc.
-     * @param name tên ảnh trong classpath
-     * @return icon dùng cho nhãn hoặc nút
-     */
+    /** Tạo icon từ ảnh Figma ở kích thước gốc. */
     public static ImageIcon icon(String name) {
         ImageIcon icon = new ImageIcon(readImage(name + ".png"));
         icon.setDescription(name);
         return icon;
     }
 
-    /**
-     * Nạp font Noto Sans để các máy thành viên hiển thị cùng kiểu chữ.
-     * @param tenTep tên tài nguyên trong thư mục font cạnh lớp theme
-     * @param kichThuoc cỡ chữ tính bằng pt
-     * @return font ở kích thước yêu cầu
-     * @throws IllegalStateException nếu font không được đóng gói hoặc không đọc được
-     */
+    /** Nạp font Noto Sans để các máy thành viên hiển thị cùng kiểu chữ. */
     private static Font loadFont(String tenTep, float kichThuoc) {
         try (InputStream fontStream = UiTheme.class.getResourceAsStream("font/" + tenTep)) {
             if (fontStream == null) {

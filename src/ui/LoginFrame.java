@@ -1,5 +1,9 @@
 package ui;
 
+import dao.chung.DuLieuGarageDAO;
+import dao.nhansu.TaiKhoanDAO;
+import entity.nhansu.TaiKhoan;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -7,6 +11,8 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.Arrays;
 
 import javax.swing.BorderFactory;
@@ -23,9 +29,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
-import dao.TaiKhoanDAO;
-import dao.DuLieuGarageDAO;
-import entity.TaiKhoan;
 import ui.component.LoginBackgroundPanel;
 import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
@@ -65,16 +68,20 @@ public final class LoginFrame extends JFrame {
     // Các nút thực hiện thao tác của màn hình.
     private final JButton btnDangNhap = UiTheme.createAppButton("Đăng nhập", true);
     // Thông báo hướng dẫn hoặc lỗi đăng nhập.
-    private final JLabel lblThongBao = new JLabel(
-            "Nhập tài khoản nhân viên được quản lý cấp để tiếp tục công việc.");
+    private final JLabel lblThongBao = new JLabel("Nhập tài khoản nhân viên được quản lý cấp để tiếp tục công việc.");
 
     /** Khởi tạo cửa sổ đăng nhập, bố cục và các sự kiện nhập tài khoản. */
-    public LoginFrame() { this(new DuLieuGarageDAO()); }
+    public LoginFrame() {
+        this(new DuLieuGarageDAO());
+    }
 
     /** Khởi tạo cửa sổ đăng nhập, bố cục và các sự kiện nhập tài khoản. */
     public LoginFrame(DuLieuGarageDAO duLieuChung) {
         super("Garage Ô tô Đức Dũng — Đăng nhập");
-        this.duLieuChung = java.util.Objects.requireNonNull(duLieuChung);
+        if (duLieuChung == null) {
+            throw new NullPointerException("Thiếu dữ liệu bắt buộc.");
+        }
+        this.duLieuChung = duLieuChung;
         setUndecorated(true);
         setMinimumSize(new Dimension(960, 600));
         setSize(1280, 800);
@@ -99,10 +106,27 @@ public final class LoginFrame extends JFrame {
         addMouseListener(mouseHandler);
         addMouseMotionListener(mouseHandler);
         txtMatKhau.setEchoChar('•');
-        chkHienMatKhau.addActionListener(event ->
-                txtMatKhau.setEchoChar(chkHienMatKhau.isSelected() ? '\0' : '•'));
-        btnDangNhap.addActionListener(event -> dangNhap());
-        SwingUtilities.invokeLater(() -> txtTenDangNhap.requestFocusInWindow());
+        chkHienMatKhau.addActionListener(new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                txtMatKhau.setEchoChar(chkHienMatKhau.isSelected() ? '\0' : '•');
+            }
+        });
+        btnDangNhap.addActionListener(new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                dangNhap();
+            }
+        });
+        SwingUtilities.invokeLater(new Runnable() {
+            /** Khởi tạo hoặc cập nhật giao diện trên luồng Swing. */
+            @Override
+            public void run() {
+                txtTenDangNhap.requestFocusInWindow();
+            }
+        });
     }
 
     /** Tạo thẻ đăng nhập với ô tài khoản, mật khẩu và nút xác nhận. */
@@ -170,9 +194,13 @@ public final class LoginFrame extends JFrame {
         btnQuenMatKhau.setForeground(UiTheme.APP_PRIMARY);
         btnQuenMatKhau.setContentAreaFilled(false);
         btnQuenMatKhau.setBorder(BorderFactory.createEmptyBorder());
-        btnQuenMatKhau.addActionListener(event -> {
-            lblThongBao.setForeground(UiTheme.APP_MUTED);
-            lblThongBao.setText("Vui lòng liên hệ Quản lý để đặt lại mật khẩu.");
+        btnQuenMatKhau.addActionListener(new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                lblThongBao.setForeground(UiTheme.APP_MUTED);
+                lblThongBao.setText("Vui lòng liên hệ Quản lý để đặt lại mật khẩu.");
+            }
         });
         pnlTuyChon.add(btnQuenMatKhau, BorderLayout.EAST);
         return pnlTuyChon;
@@ -221,6 +249,7 @@ public final class LoginFrame extends JFrame {
     /** Đọc ô tài khoản, kiểm tra thiếu dữ liệu rồi gửi thông tin sang bước xác thực. */
     private void dangNhap() {
         if (!btnDangNhap.isEnabled()) {
+
             return;
         }
 
@@ -229,6 +258,7 @@ public final class LoginFrame extends JFrame {
         if (tenDangNhap.isEmpty() || matKhau.length == 0) {
             Arrays.fill(matKhau, '\0');
             hienThiLoi(tenDangNhap.isEmpty() ? "Vui lòng nhập tên đăng nhập." : "Vui lòng nhập mật khẩu.");
+
             return;
         }
         setDangXuLy(true);
@@ -239,11 +269,17 @@ public final class LoginFrame extends JFrame {
     private void xacThucTaiKhoan(String tenDangNhap, char[] matKhau) {
         try {
             TaiKhoan ketQua = taiKhoanDAO.dangNhap(tenDangNhap, matKhau);
-            if (ketQua != null && ketQua.isPhienHopLe()) { moKhungChinh(ketQua); }
-            else { hienThiLoi("Tên đăng nhập hoặc mật khẩu không đúng."); }
-        } catch (IllegalArgumentException | SecurityException ex) { hienThiLoi(ex.getMessage()); }
-        finally {
-            for (int i = 0; i < matKhau.length; i++) { matKhau[i] = '\0'; }
+            if (ketQua != null && ketQua.isPhienHopLe()) {
+                moKhungChinh(ketQua);
+            } else {
+                hienThiLoi("Tên đăng nhập hoặc mật khẩu không đúng.");
+            }
+        } catch (IllegalArgumentException | SecurityException ex) {
+            hienThiLoi(ex.getMessage());
+        } finally {
+            for (int i = 0; i < matKhau.length; i++) {
+                matKhau[i] = '\0';
+            }
             setDangXuLy(false);
         }
     }
@@ -277,7 +313,13 @@ public final class LoginFrame extends JFrame {
         txtMatKhau.setText("");
         chkHienMatKhau.setSelected(false);
         txtMatKhau.setEchoChar('•');
-        MainFrame winChinh = new MainFrame(taiKhoan, () -> new LoginFrame(duLieuChung).setVisible(true), duLieuChung);
+        MainFrame winChinh = new MainFrame(taiKhoan, new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                new LoginFrame(duLieuChung).setVisible(true);
+            }
+        }, duLieuChung);
         winChinh.setVisible(true);
         dispose();
     }

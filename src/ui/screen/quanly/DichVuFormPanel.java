@@ -1,5 +1,7 @@
 package ui.screen.quanly;
 
+import entity.dichvu.DichVu;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
@@ -18,10 +20,8 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 
-import entity.DichVu;
-
-import ui.component.QuanLyUi;
 import ui.component.QuanLyFormPanel;
+import ui.component.UiChung;
 import ui.component.UiTheme;
 
 /** Biểu mẫu xem, thêm, sửa và xóa dịch vụ theo điều kiện nghiệp vụ. */
@@ -35,15 +35,15 @@ public final class DichVuFormPanel extends QuanLyFormPanel implements ActionList
     private final DichVu dichVu;
 
     // Các ô nhập và lựa chọn trên biểu mẫu.
-    private final JTextField txtMa = QuanLyUi.taoONhap(false);
-    private final JTextField txtTen = QuanLyUi.taoONhap(true);
-    private final JTextField txtDonVi = QuanLyUi.taoONhap(true);
-    private final JTextField txtGia = QuanLyUi.taoONhap(true);
-    private final JTextField txtNhom = QuanLyUi.taoONhap(true);
-    private final JTextField txtThoiGian = QuanLyUi.taoONhap(true);
-    private final JTextField txtDieuKien = QuanLyUi.taoONhap(true);
-    private final JTextField txtMoTa = QuanLyUi.taoONhap(true);
-    private final JComboBox<String> cmbTrangThai = new JComboBox<>(new String[] {"Đang áp dụng", "Tạm dừng"});
+    private final JTextField txtMa = UiChung.taoONhap(false);
+    private final JTextField txtTen = UiChung.taoONhap(true);
+    private final JTextField txtDonVi = UiChung.taoONhap(true);
+    private final JTextField txtGia = UiChung.taoONhap(true);
+    private final JTextField txtNhom = UiChung.taoONhap(true);
+    private final JTextField txtThoiGian = UiChung.taoONhap(true);
+    private final JTextField txtDieuKien = UiChung.taoONhap(true);
+    private final JTextField txtMoTa = UiChung.taoONhap(true);
+    private final JComboBox<String> cmbTrangThai = new JComboBox<>(new String[] { "Đang áp dụng", "Tạm dừng" });
 
     // Các nhãn báo lỗi và mô tả trạng thái biểu mẫu.
     private final JLabel lblLoiTen = taoNhanLoi();
@@ -52,10 +52,10 @@ public final class DichVuFormPanel extends QuanLyFormPanel implements ActionList
     private final JLabel lblThongBao = taoNhanLoi();
 
     // Các nút thực hiện thao tác của màn hình.
-    private final JButton btnSua = QuanLyUi.taoNut("Chỉnh sửa", true);
-    private final JButton btnLuu = QuanLyUi.taoNut("Lưu thông tin dịch vụ", true);
-    private final JButton btnHuy = QuanLyUi.taoNut("Hủy chỉnh sửa", false);
-    private final JButton btnXoa = QuanLyUi.taoNut("Xóa dịch vụ", false);
+    private final JButton btnSua = UiChung.taoNut("Chỉnh sửa", true);
+    private final JButton btnLuu = UiChung.taoNut("Lưu thông tin dịch vụ", true);
+    private final JButton btnHuy = UiChung.taoNut("Hủy chỉnh sửa", false);
+    private final JButton btnXoa = UiChung.taoNut("Xóa dịch vụ", false);
 
     private boolean dangSua;
     private String[] giaTriBanDau;
@@ -65,21 +65,20 @@ public final class DichVuFormPanel extends QuanLyFormPanel implements ActionList
         super();
         this.manHinh = manHinh;
         this.dichVu = dichVu;
-        QuanLyUi.dinhDangO(cmbTrangThai);
-        QuanLyUi.giuChuRo(cmbTrangThai);
+        UiChung.dinhDangO(cmbTrangThai);
+        UiChung.giuChuRo(cmbTrangThai);
         txtGia.setToolTipText("Nhập 300000 hoặc 300.000; giá là số nguyên đồng, ví dụ 300.000.");
-        JButton btnQuayLai = QuanLyUi.taoNut("Danh sách / quay lại", false);
+        JButton btnQuayLai = UiChung.taoNut("Danh sách / quay lại", false);
         btnQuayLai.setActionCommand("quayLai");
         btnQuayLai.addActionListener(this);
         // Tiêu đề và điều hướng quay lại danh sách.
-        add(QuanLyUi.taoDauTrang("Quản lý / Danh mục / Thông tin dịch vụ / bảng giá",
-            "Thông tin dịch vụ / bảng giá", "Điều chỉnh giá và điều kiện không làm thay đổi chứng từ cũ.",
-            btnQuayLai), BorderLayout.NORTH);
+        add(UiChung.taoDauTrang("Quản lý / Danh mục / Thông tin dịch vụ / bảng giá", "Thông tin dịch vụ / bảng giá",
+                "Điều chỉnh giá và điều kiện không làm thay đổi chứng từ cũ.", btnQuayLai), BorderLayout.NORTH);
         // Vùng thông tin có cuộn khi chiều cao cửa sổ không đủ.
-        add(QuanLyUi.taoVungCuon(taoNoiDung()));
+        add(UiChung.taoVungCuon(taoNoiDung()));
         btnXoa.setForeground(MAU_LOI);
         // Thanh phản hồi và các nút thao tác nằm dưới biểu mẫu.
-        add(QuanLyUi.taoChanTrang(lblThongBao, btnXoa, btnHuy, btnSua, btnLuu), BorderLayout.SOUTH);
+        add(UiChung.taoChanTrang(lblThongBao, btnXoa, btnHuy, btnSua, btnLuu), BorderLayout.SOUTH);
         napDuLieu();
         batChinhSua(dichVu == null);
         btnSua.setActionCommand("sua");
@@ -92,34 +91,38 @@ public final class DichVuFormPanel extends QuanLyFormPanel implements ActionList
         btnXoa.addActionListener(this);
         getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke("ESCAPE"), "quayLai");
         getActionMap().put("quayLai", new AbstractAction() {
-                private static final long serialVersionUID = 1L;
-                /** Thực hiện thao tác tương ứng với nút, bộ lọc hoặc phím vừa chọn. */
-                @Override public void actionPerformed(ActionEvent event) { quayLai(); }
-            });
+            private static final long serialVersionUID = 1L;
+
+            /** Thực hiện thao tác tương ứng với nút, bộ lọc hoặc phím vừa chọn. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                quayLai();
+            }
+        });
     }
 
     /** Tạo thẻ chứa các trường thông tin và lưu ý của biểu mẫu. */
     private JPanel taoNoiDung() {
-        JPanel pnl = QuanLyUi.taoThe(null);
+        JPanel pnl = UiChung.taoThe(null);
         pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS));
-        pnl.setBorder(BorderFactory.createCompoundBorder(pnl.getBorder(),
-            BorderFactory.createEmptyBorder(18, 18, 18, 18)));
-        themDong(pnl, QuanLyUi.taoNhan("Thông tin dịch vụ / bảng giá", 18, true, UiTheme.APP_TEXT));
-        themDong(pnl, QuanLyUi.taoNhan("Đơn vị tính và đơn giá là dữ liệu bắt buộc để lập báo giá.",
-            12, false, UiTheme.APP_MUTED));
-        themDong(pnl, QuanLyUi.taoHang(taoTruong("Mã dịch vụ · tự sinh · chỉ đọc", txtMa, null),
-            taoTruong("Tên dịch vụ *", txtTen, lblLoiTen)));
-        themDong(pnl, QuanLyUi.taoHang(taoTruong("Đơn vị tính *", txtDonVi, lblLoiDonVi),
-            taoTruong("Đơn giá áp dụng * · VND", txtGia, lblLoiGia)));
-        themDong(pnl, QuanLyUi.taoHang(taoTruong("Nhóm dịch vụ", txtNhom, null),
-            taoTruong("Thời gian dự kiến", txtThoiGian, null)));
-        themDong(pnl, QuanLyUi.taoHang(taoTruong("Trạng thái dịch vụ", cmbTrangThai, null),
-            taoTruong("Điều kiện áp dụng", txtDieuKien, null)));
+        pnl.setBorder(
+                BorderFactory.createCompoundBorder(pnl.getBorder(), BorderFactory.createEmptyBorder(18, 18, 18, 18)));
+        themDong(pnl, UiChung.taoNhan("Thông tin dịch vụ / bảng giá", 18, true, UiTheme.APP_TEXT));
+        themDong(pnl, UiChung.taoNhan("Đơn vị tính và đơn giá là dữ liệu bắt buộc để lập báo giá.", 12, false,
+                UiTheme.APP_MUTED));
+        themDong(pnl, UiChung.taoHang(taoTruong("Mã dịch vụ · tự sinh · chỉ đọc", txtMa, null),
+                taoTruong("Tên dịch vụ *", txtTen, lblLoiTen)));
+        themDong(pnl, UiChung.taoHang(taoTruong("Đơn vị tính *", txtDonVi, lblLoiDonVi),
+                taoTruong("Đơn giá áp dụng * · VND", txtGia, lblLoiGia)));
+        themDong(pnl, UiChung.taoHang(taoTruong("Nhóm dịch vụ", txtNhom, null),
+                taoTruong("Thời gian dự kiến", txtThoiGian, null)));
+        themDong(pnl, UiChung.taoHang(taoTruong("Trạng thái dịch vụ", cmbTrangThai, null),
+                taoTruong("Điều kiện áp dụng", txtDieuKien, null)));
         themDong(pnl, taoTruong("Mô tả · tùy chọn", txtMoTa, null));
-        themDong(pnl, QuanLyUi.taoLuuY("Đơn giá mới không thay đổi báo giá hoặc hóa đơn đã phát hành. "
-            + "Dịch vụ đã có trong báo giá không được xóa; hãy chuyển sang Tạm dừng."));
-        themDong(pnl, QuanLyUi.taoNhan("Những trường có dấu * là bắt buộc · mã tự sinh là chỉ đọc",
-            11, false, UiTheme.APP_MUTED));
+        themDong(pnl, UiChung.taoLuuY("Đơn giá mới không thay đổi báo giá hoặc hóa đơn đã phát hành. "
+                + "Dịch vụ đã có trong báo giá không được xóa; hãy chuyển sang Tạm dừng."));
+        themDong(pnl, UiChung.taoNhan("Những trường có dấu * là bắt buộc · mã tự sinh là chỉ đọc", 11, false,
+                UiTheme.APP_MUTED));
         return pnl;
     }
 
@@ -132,19 +135,21 @@ public final class DichVuFormPanel extends QuanLyFormPanel implements ActionList
 
     /** Ghép nhãn, ô nhập và vùng báo lỗi nếu cần. */
     private static JPanel taoTruong(String ten, JComponent oNhap, JLabel loi) {
-        JPanel pnl = QuanLyUi.taoTruong(ten, oNhap);
+        JPanel pnl = UiChung.taoTruong(ten, oNhap);
 
         JPanel pnlO = new JPanel(new BorderLayout());
         pnlO.setOpaque(false);
         pnlO.add(oNhap, BorderLayout.NORTH);
         pnl.add(pnlO);
-        if (loi != null) { pnl.add(loi, BorderLayout.SOUTH); }
+        if (loi != null) {
+            pnl.add(loi, BorderLayout.SOUTH);
+        }
         return pnl;
     }
 
     /** Tạo nhãn hiển thị lỗi kiểm tra đầu vào. */
     private static JLabel taoNhanLoi() {
-        JLabel lbl = QuanLyUi.taoNhan(" ", 11, false, MAU_LOI);
+        JLabel lbl = UiChung.taoNhan(" ", 11, false, MAU_LOI);
         lbl.setVisible(false);
         return lbl;
     }
@@ -155,7 +160,7 @@ public final class DichVuFormPanel extends QuanLyFormPanel implements ActionList
         if (dichVu != null) {
             txtTen.setText(dichVu.getTenDichVu());
             txtDonVi.setText(dichVu.getDonViTinh());
-            txtGia.setText(QuanLyUi.so(dichVu.getDonGia()));
+            txtGia.setText(UiChung.so(dichVu.getDonGia()));
             txtNhom.setText(dichVu.getNhomDichVu());
             txtThoiGian.setText(dichVu.getThoiGianDuKien());
             txtDieuKien.setText(dichVu.getDieuKienApDung());
@@ -169,7 +174,8 @@ public final class DichVuFormPanel extends QuanLyFormPanel implements ActionList
     /** Bật hoặc khóa các trường và nút theo chế độ xem hoặc chỉnh sửa. */
     private void batChinhSua(boolean choSua) {
         dangSua = choSua;
-        for (JTextField txt : new JTextField[] {txtTen, txtDonVi, txtGia, txtNhom, txtThoiGian, txtDieuKien, txtMoTa}) {
+        for (JTextField txt : new JTextField[] { txtTen, txtDonVi, txtGia, txtNhom, txtThoiGian, txtDieuKien,
+                txtMoTa }) {
             txt.setEditable(choSua);
             txt.setBackground(choSua ? Color.WHITE : new Color(0xF5F7FB));
         }
@@ -184,39 +190,41 @@ public final class DichVuFormPanel extends QuanLyFormPanel implements ActionList
 
     /** Lấy các giá trị đang nhập để phát hiện thay đổi chưa lưu. */
     private String[] layGiaTri() {
-        return new String[] {
-            txtTen.getText(),
-            txtDonVi.getText(),
-            txtGia.getText(),
-            txtNhom.getText(),
-            txtThoiGian.getText(),
-            txtDieuKien.getText(),
-            txtMoTa.getText(),
-            String.valueOf(cmbTrangThai.getSelectedIndex())};
+        return new String[] { txtTen.getText(), txtDonVi.getText(), txtGia.getText(), txtNhom.getText(),
+                txtThoiGian.getText(), txtDieuKien.getText(), txtMoTa.getText(),
+                String.valueOf(cmbTrangThai.getSelectedIndex()) };
     }
 
     /** So sánh dữ liệu nhập với lúc mở form khi đang ở chế độ chỉnh sửa. */
-    public boolean coThayDoi() { return dangSua && QuanLyUi.daThayDoi(giaTriBanDau, layGiaTri()); }
+    public boolean coThayDoi() {
+        return dangSua && UiChung.daThayDoi(giaTriBanDau, layGiaTri());
+    }
 
     /** Kiểm tra dữ liệu chưa lưu và xác nhận trước khi rời màn hình. */
     public boolean choPhepRoiTrang() {
-        if (!coThayDoi()) { return true; }
-        Object[] luaChon = {"Bỏ thay đổi", "Tiếp tục chỉnh sửa"};
+        if (!coThayDoi()) {
+            return true;
+        }
+        Object[] luaChon = { "Bỏ thay đổi", "Tiếp tục chỉnh sửa" };
         return JOptionPane.showOptionDialog(this, "Thông tin dịch vụ có thay đổi chưa lưu.", "Rời dịch vụ",
-            JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, luaChon, luaChon[1]) == 0;
+                JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, luaChon, luaChon[1]) == 0;
     }
 
     /** Kiểm tra thay đổi chưa lưu rồi quay về danh sách. */
-    private void quayLai() { if (choPhepRoiTrang()) { manHinh.moDanhSach(); } }
+    private void quayLai() {
+        if (choPhepRoiTrang()) {
+            manHinh.moDanhSach();
+        }
+    }
 
     /** Đọc đơn giá nguyên đồng từ nội dung nhập theo định dạng Việt Nam. */
     static long docDonGia(String chu) {
-        return QuanLyUi.docTien(chu, "Đơn giá");
+        return UiChung.docTien(chu, "Đơn giá");
     }
 
     /** Xóa thông báo kiểm tra cũ trước khi nhập lại hoặc lưu dữ liệu. */
     private void xoaLoi() {
-        for (JLabel lbl : new JLabel[] {lblLoiTen, lblLoiDonVi, lblLoiGia}) {
+        for (JLabel lbl : new JLabel[] { lblLoiTen, lblLoiDonVi, lblLoiGia }) {
             lbl.setText(" ");
             lbl.setVisible(false);
         }
@@ -236,37 +244,55 @@ public final class DichVuFormPanel extends QuanLyFormPanel implements ActionList
         if (txtDonVi.getText().isBlank()) {
             lblLoiDonVi.setText("Nhập đơn vị tính.");
             lblLoiDonVi.setVisible(true);
-            if (oLoi == null) { oLoi = txtDonVi; }
+            if (oLoi == null) {
+                oLoi = txtDonVi;
+            }
         }
         long gia = 0;
-        try { gia = docDonGia(txtGia.getText()); }
-        catch (IllegalArgumentException ex) {
+        try {
+            gia = docDonGia(txtGia.getText());
+        } catch (IllegalArgumentException ex) {
             lblLoiGia.setText("Giá không hợp lệ. Ví dụ: 300000 hoặc 300.000.");
             lblLoiGia.setVisible(true);
-            if (oLoi == null) { oLoi = txtGia; }
+            if (oLoi == null) {
+                oLoi = txtGia;
+            }
         }
-        if (oLoi != null) { revalidate(); oLoi.requestFocusInWindow(); return; }
+        if (oLoi != null) {
+            revalidate();
+            oLoi.requestFocusInWindow();
+            return;
+        }
         if (dichVu != null && dichVu.isDangApDung() && cmbTrangThai.getSelectedIndex() == 1
-            && JOptionPane.showConfirmDialog(this, "Tạm dừng dịch vụ " + txtMa.getText()
-            + "? Báo giá đã lập vẫn được giữ nguyên.", "Tạm dừng dịch vụ",
-            JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE) != JOptionPane.OK_OPTION) {
+                && JOptionPane.showConfirmDialog(this,
+                        "Tạm dừng dịch vụ " + txtMa.getText() + "? Báo giá đã lập vẫn được giữ nguyên.",
+                        "Tạm dừng dịch vụ", JOptionPane.OK_CANCEL_OPTION,
+                        JOptionPane.QUESTION_MESSAGE) != JOptionPane.OK_OPTION) {
+
             return;
         }
         try {
-            DichVu moi = new DichVu(txtMa.getText(), txtTen.getText(), txtNhom.getText(), txtDonVi.getText(),
-                gia, txtMoTa.getText(), txtThoiGian.getText(), txtDieuKien.getText(),
-                cmbTrangThai.getSelectedIndex() == 0);
+            DichVu moi = new DichVu(txtMa.getText(), txtTen.getText(), txtNhom.getText(), txtDonVi.getText(), gia,
+                    txtMoTa.getText(), txtThoiGian.getText(), txtDieuKien.getText(),
+                    cmbTrangThai.getSelectedIndex() == 0);
             manHinh.luu(dichVu, moi);
-        } catch (IllegalArgumentException | SecurityException ex) { hienLoi(ex); }
+        } catch (IllegalArgumentException | SecurityException ex) {
+            hienLoi(ex);
+        }
     }
 
     /** Xác nhận xóa dịch vụ và gọi DAO kiểm tra điều kiện trước khi thực hiện. */
     private void xoa() {
-        if (JOptionPane.showConfirmDialog(this, "Xóa dịch vụ " + dichVu.getMaDichVu() + "? "
-            + "Chỉ dịch vụ chưa có trong báo giá mới được xóa.", "Xóa dịch vụ",
-            JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) { return; }
-        try { manHinh.xoa(dichVu); }
-        catch (IllegalArgumentException | SecurityException ex) { hienLoi(ex); }
+        if (JOptionPane.showConfirmDialog(this,
+                "Xóa dịch vụ " + dichVu.getMaDichVu() + "? " + "Chỉ dịch vụ chưa có trong báo giá mới được xóa.",
+                "Xóa dịch vụ", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.OK_OPTION) {
+            return;
+        }
+        try {
+            manHinh.xoa(dichVu);
+        } catch (IllegalArgumentException | SecurityException ex) {
+            hienLoi(ex);
+        }
     }
 
     /** Hiển thị lỗi nhập hoặc lưu để người dùng sửa lại dữ liệu. */
@@ -278,16 +304,21 @@ public final class DichVuFormPanel extends QuanLyFormPanel implements ActionList
     }
 
     /** Thực hiện thao tác tương ứng với nút, bộ lọc hoặc phím vừa chọn. */
-    @Override public void actionPerformed(ActionEvent event) {
+    @Override
+    public void actionPerformed(ActionEvent event) {
         String lenh = event.getActionCommand();
         if ("quayLai".equals(lenh)) {
             quayLai();
         } else if ("sua".equals(lenh)) {
-            batChinhSua(true); txtTen.requestFocusInWindow();
+            batChinhSua(true);
+            txtTen.requestFocusInWindow();
         } else if ("luu".equals(lenh)) {
             luu();
         } else if ("huy".equals(lenh)) {
-            if (choPhepRoiTrang()) { napDuLieu(); batChinhSua(false); }
+            if (choPhepRoiTrang()) {
+                napDuLieu();
+                batChinhSua(false);
+            }
         } else if ("xoa".equals(lenh)) {
             xoa();
         }

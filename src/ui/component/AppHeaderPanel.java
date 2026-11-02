@@ -1,16 +1,17 @@
 package ui.component;
 
+import entity.nhansu.TaiKhoan;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.ActionListener;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-
-import entity.TaiKhoan;
 
 /** Header Page 3 ghép menu hiện có, chỗ dành cho tìm nhanh/thông báo và danh tính đăng nhập. */
 public final class AppHeaderPanel extends JPanel {
@@ -20,22 +21,22 @@ public final class AppHeaderPanel extends JPanel {
     private final JPanel pnlTimKiem;
     private final JButton btnThongBao;
 
-    /**
-     * Tạo header 66 px nằm bên phải sidebar; không tự bổ sung nghiệp vụ tìm kiếm/thông báo.
-     * @param taiKhoan danh tính của phiên hiện tại
-     * @param khiDangXuat thao tác đăng xuất đã có
-     * @param khiThoat thao tác đóng cửa sổ
-     */
-    public AppHeaderPanel(TaiKhoan taiKhoan, Runnable khiDangXuat, Runnable khiThoat) {
+    /** Tạo header 66 px nằm bên phải sidebar; không tự bổ sung nghiệp vụ tìm kiếm/thông báo. */
+    public AppHeaderPanel(TaiKhoan taiKhoan, ActionListener khiDangXuat, ActionListener khiThoat) {
+        this(taiKhoan, khiDangXuat, khiThoat, null);
+    }
+
+    /** Giữ layout header chung và nhận thêm thao tác Báo cáo của Quản lý. */
+    public AppHeaderPanel(TaiKhoan taiKhoan, ActionListener khiDangXuat, ActionListener khiThoat,
+            ActionListener khiBaoCao) {
         super(new BorderLayout(12, 0));
         setBackground(UiTheme.SURFACE);
         setPreferredSize(new Dimension(0, 66));
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UiTheme.APP_BORDER),
+        setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UiTheme.APP_BORDER),
                 BorderFactory.createEmptyBorder(0, 21, 0, 21)));
         JPanel pnlMenu = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 12));
         pnlMenu.setOpaque(false);
-        pnlMenu.add(new AppMenuBar(khiDangXuat, khiThoat));
+        pnlMenu.add(new AppMenuBar(khiDangXuat, khiThoat, khiBaoCao));
         add(pnlMenu, BorderLayout.WEST);
 
         JPanel pnlPhai = new JPanel(new FlowLayout(FlowLayout.RIGHT, 11, 15));
@@ -50,9 +51,9 @@ public final class AppHeaderPanel extends JPanel {
         btnThongBao.setToolTipText("Thông báo chưa được triển khai.");
         pnlPhai.add(btnThongBao);
         UserInfoPanel pnlNguoiDung = new UserInfoPanel(taiKhoan, false);
-        pnlNguoiDung.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 1, 0, 0, UiTheme.APP_BORDER),
-                BorderFactory.createEmptyBorder(0, 12, 0, 0)));
+        pnlNguoiDung.setBorder(
+                BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, UiTheme.APP_BORDER),
+                        BorderFactory.createEmptyBorder(0, 12, 0, 0)));
         pnlPhai.add(pnlNguoiDung);
         add(pnlPhai, BorderLayout.EAST);
     }
@@ -66,7 +67,7 @@ public final class AppHeaderPanel extends JPanel {
         super.doLayout();
     }
 
-    /** @return vùng giữ chỗ của tìm kiếm nhanh, không tạo tìm kiếm giả */
+    /** Tạo vung tim kiem cho giao diện. */
     private JPanel taoVungTimKiem() {
         JPanel pnlTim = UiTheme.roundedPanel(new BorderLayout(7, 0), new Color(0xF6F8FA), 6);
         pnlTim.setPreferredSize(new Dimension(216, 35));
