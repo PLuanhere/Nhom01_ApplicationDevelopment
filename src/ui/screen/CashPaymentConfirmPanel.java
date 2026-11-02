@@ -11,6 +11,7 @@ import java.awt.Insets;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.ParseException;
+import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -54,7 +55,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
 
     /** Tạo màn hình xem trước không cần DAO hay tài khoản thực. */
     public CashPaymentConfirmPanel() {
-        this(null, null, null, () -> {}, () -> {});
+        this(null, null, null, () -> {}, maHoaDon -> {});
     }
 
     /**
@@ -64,15 +65,15 @@ public final class CashPaymentConfirmPanel extends JPanel {
      * @param phieu     phiếu cần thu tiền; null dùng dữ liệu mẫu
      * @param taiKhoan  tài khoản đang đăng nhập
      * @param onBack    callback quay về danh sách / màn hình trước
-     * @param onConfirm callback sau khi xác nhận thu tiền thành công
+     * @param onConfirm callback sau khi xác nhận thu tiền thành công, nhận mã hóa đơn
      */
     public CashPaymentConfirmPanel(ThuNganDAO dao, PhieuChoThu phieu,
-            TaiKhoan taiKhoan, Runnable onBack, Runnable onConfirm) {
+            TaiKhoan taiKhoan, Runnable onBack, Consumer<String> onConfirm) {
         this.dao      = dao   != null ? dao   : new ThuNganDAO();
         this.phieu    = phieu != null ? phieu : placeholderPhieu();
         this.taiKhoan = taiKhoan;
         Runnable safeBack    = onBack    != null ? onBack    : () -> {};
-        Runnable safeConfirm = onConfirm != null ? onConfirm : () -> {};
+        Consumer<String> safeConfirm = onConfirm != null ? onConfirm : maHoaDon -> {};
 
         // ── Khởi tạo field trước khi dùng trong createCard ──
         NumberFormatter formatter = new NumberFormatter(new DecimalFormat("#,##0"));
@@ -132,7 +133,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
 
     // ── Vùng cuộn trung tâm ──────────────────────────────────────────────────
 
-    private JScrollPane createScrollCenter(Runnable onConfirm) {
+    private JScrollPane createScrollCenter(Consumer<String> onConfirm) {
         // Card dùng BorderLayout: NORTH chứa tất cả nội dung dồn lên trên
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(UiTheme.SURFACE);
@@ -242,7 +243,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
 
     // ── Hàng nút xác nhận ────────────────────────────────────────────────────
 
-    private JPanel createConfirmRow(Runnable onConfirm) {
+    private JPanel createConfirmRow(Consumer<String> onConfirm) {
         JPanel row = new JPanel(new BorderLayout(12, 0));
         row.setOpaque(false);
         row.add(lbl("Xác nhận sau khi nhận tiền; tạo hóa đơn và chuyển hồ sơ cho Tiếp nhận bàn giao.",
@@ -271,7 +272,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
         }
     }
 
-    private void confirmPayment(Runnable onConfirm) {
+    private void confirmPayment(Consumer<String> onConfirm) {
         try {
             receivedField.commitEdit();
             long nhan = ((Number) receivedField.getValue()).longValue();
@@ -296,7 +297,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
             message.setForeground(SUCCESS);
             message.setText("Đã lưu hóa đơn " + maHoaDon
                     + ". Chuyển hồ sơ cho Tiếp nhận bàn giao.");
-            onConfirm.run();
+            onConfirm.accept(maHoaDon);
         } catch (IllegalStateException ex) {
             message.setForeground(ERROR);
             message.setText(ex.getMessage());

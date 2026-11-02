@@ -710,7 +710,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             case "Hoá đơn đã thanh toán" -> {
                 setScreen(new ui.screen.PaidInvoicesPanel(
                         thuNganDAO,
-                        () -> setStatus("Xem / in hóa đơn · Chưa tích hợp")));
+                        this::moChiTietHoaDon));
                 setStatus("Hoá đơn đã thanh toán");
             }
             default -> setStatus(muc + ": chức năng chưa triển khai.");
@@ -763,7 +763,7 @@ public final class MainFrame extends JFrame implements ActionListener {
                 phieu,
                 taiKhoanDangNhap,
                 () -> dieuHuongThuNgan("Trung tâm thanh toán"),
-                () -> dieuHuongThuNgan("Trung tâm thanh toán")));
+                maHoaDon -> moChiTietHoaDon(maHoaDon)));
         setStatus("Thanh toán tiền mặt · " + phieu.getMaPhieu());
     }
 
@@ -785,7 +785,7 @@ public final class MainFrame extends JFrame implements ActionListener {
                 phieu,
                 taiKhoanDangNhap,
                 () -> dieuHuongThuNgan("Trung tâm thanh toán"),
-                () -> dieuHuongThuNgan("Trung tâm thanh toán")));
+                maHoaDon -> moChiTietHoaDon(maHoaDon)));
         setStatus("Thanh toán chuyển khoản / QR · " + phieu.getMaPhieu());
     }
 
@@ -811,10 +811,29 @@ public final class MainFrame extends JFrame implements ActionListener {
                 phieu,
                 taiKhoanDangNhap,
                 () -> {
-                    System.out.println("[DEBUG] Callback sau xác nhận thanh toán");
+                    System.out.println("[DEBUG] Callback quay về");
                     dieuHuongThuNgan("Trung tâm thanh toán");
                 },
-                () -> dieuHuongThuNgan("Trung tâm thanh toán")));
+                maHoaDon -> {
+                    System.out.println("[DEBUG] Callback sau xác nhận thanh toán: " + maHoaDon);
+                    moChiTietHoaDon(maHoaDon);
+                }));
         setStatus("Thanh toán tiền mặt · " + phieu.getMaPhieu());
+    }
+    
+    /**
+     * Mở màn hình chi tiết hóa đơn và in lại.
+     */
+    private void moChiTietHoaDon(String maHoaDon) {
+        pnlDieuHuongThuNgan.chonMuc("Hoá đơn đã thanh toán");
+        mucThuNganDangMo = "Hoá đơn đã thanh toán";
+        
+        dao.DoiChieuChiPhiDAO doiChieuDAO = new dao.DoiChieuChiPhiDAO();
+        setScreen(new ui.screen.PaidInvoiceDetailPanel(
+                thuNganDAO,
+                doiChieuDAO,
+                maHoaDon,
+                () -> dieuHuongThuNgan("Hoá đơn đã thanh toán")));
+        setStatus("Chi tiết hóa đơn · " + maHoaDon);
     }
 }

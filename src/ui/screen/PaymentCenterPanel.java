@@ -2,9 +2,12 @@ package ui.screen;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.List;
@@ -139,16 +142,21 @@ public final class PaymentCenterPanel extends JPanel {
         JPanel cols = new JPanel(new GridLayout(1, 2, 12, 0));
         cols.setOpaque(false);
 
-        // Cột trái
-        JPanel left = new JPanel();
-        left.setOpaque(false);
-        left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
-        left.add(createCardPanel("Phiếu sửa chữa chờ thanh toán",
+        // Cột trái - Nhét 2 card vào 1 panel để kề nhau
+        JPanel leftWrapper = new JPanel(new BorderLayout());
+        leftWrapper.setOpaque(false);
+        
+        JPanel leftCards = new JPanel();
+        leftCards.setOpaque(false);
+        leftCards.setLayout(new BoxLayout(leftCards, BoxLayout.Y_AXIS));
+        leftCards.add(createCardPanel("Phiếu sửa chữa chờ thanh toán",
                 "Đối chiếu chi phí trước khi phát hành",
                 createPendingList(dao.layPhieuChoThu(), nav)));
-        left.add(Box.createVerticalStrut(12));
-        left.add(createCardPanel("Chứng từ vừa hoàn tất", "",
+        leftCards.add(Box.createVerticalStrut(12));
+        leftCards.add(createCardPanel("Chứng từ vừa hoàn tất", "",
                 createCompletedList(dao.layHoaDonDaThu(), nav)));
+        
+        leftWrapper.add(leftCards, BorderLayout.NORTH);
 
         // Cột phải — dùng BorderLayout để card không bị kéo giãn theo chiều dọc
         JPanel right = new JPanel(new BorderLayout());
@@ -157,7 +165,7 @@ public final class PaymentCenterPanel extends JPanel {
         shortcutCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, shortcutCard.getPreferredSize().height));
         right.add(shortcutCard, BorderLayout.NORTH);
 
-        cols.add(left);
+        cols.add(leftWrapper);
         cols.add(right);
         return cols;
     }
@@ -272,6 +280,9 @@ public final class PaymentCenterPanel extends JPanel {
     }
 
     private JPanel createCardPanel(String title, String subtitle, JPanel content) {
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(UiTheme.SURFACE);
         p.setBorder(BorderFactory.createLineBorder(GRID));
@@ -290,15 +301,21 @@ public final class PaymentCenterPanel extends JPanel {
 
         content.setBorder(BorderFactory.createEmptyBorder(10, 11, 10, 11));
         p.add(content, BorderLayout.CENTER);
-        p.setAlignmentX(LEFT_ALIGNMENT);
-        return p;
+        
+        wrapper.add(p, BorderLayout.NORTH);
+        wrapper.setAlignmentX(LEFT_ALIGNMENT);
+        return wrapper;
     }
 
     private JPanel receiptRow(String title, String detail,
             String status, Color statusColor, String btnText, Runnable action) {
         JPanel row = new JPanel(new BorderLayout(8, 0));
-        row.setOpaque(false);
+        row.setOpaque(true);
+        row.setBackground(Color.WHITE);
         row.setBorder(BorderFactory.createEmptyBorder(7, 0, 7, 0));
+        
+        // Thêm cursor pointer
+        row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         // Thanh màu bên trái
         JPanel marker = new JPanel();
@@ -314,7 +331,7 @@ public final class PaymentCenterPanel extends JPanel {
         text.add(lbl(detail, UiTheme.CAPTION_FONT, MUTED));
         row.add(text, BorderLayout.CENTER);
 
-        // Badge góc phải trên, nút góc phải dưới
+        // Badge góc phải - KHÔNG CÓ NÚT
         JPanel end = new JPanel(new BorderLayout());
         end.setOpaque(false);
 
@@ -326,13 +343,29 @@ public final class PaymentCenterPanel extends JPanel {
         badge.setBorder(BorderFactory.createEmptyBorder(3, 7, 3, 7));
         badge.setHorizontalAlignment(JLabel.CENTER);
         end.add(badge, BorderLayout.NORTH);
-
-        JButton btn = actionBtn(btnText, false, action);
-        btn.setFont(UiTheme.CAPTION_FONT);
-        btn.setPreferredSize(new Dimension(120, 27));
-        btn.setMaximumSize(new Dimension(140, 27));
-        end.add(btn, BorderLayout.SOUTH);
+        
         row.add(end, BorderLayout.EAST);
+        
+        // Thêm MouseListener cho toàn bộ card
+        row.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (action != null) {
+                    action.run();
+                }
+            }
+            
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                row.setBackground(new Color(0xF5F8FC)); // Màu xanh nhạt khi hover
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                row.setBackground(Color.WHITE);
+            }
+        });
+        
         return row;
     }
 
