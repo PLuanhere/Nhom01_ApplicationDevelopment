@@ -20,6 +20,7 @@ import java.beans.PropertyChangeListener;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -55,41 +56,25 @@ public final class CashPaymentConfirmPanel extends JPanel {
 
     /** Tạo màn hình xem trước không cần DAO hay tài khoản thực. */
     public CashPaymentConfirmPanel() {
-        this(null, null, null, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-
-            }
-        }, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-
-            }
-        });
+        this(null, null, null, () -> {}, maHoaDon -> {});
     }
 
-    /** Tạo màn hình thanh toán tiền mặt đầy đủ. */
-    public CashPaymentConfirmPanel(HoaDonDAO dao, PhieuChoThu phieu, TaiKhoan taiKhoan, ActionListener onBack,
-            ActionListener onConfirm) {
+    /** 
+     * Tạo màn hình thanh toán tiền mặt đầy đủ.
+     * 
+     * @param dao       nguồn dữ liệu hóa đơn; null dùng DAO mặc định
+     * @param phieu     phiếu cần thu tiền; null dùng dữ liệu mẫu
+     * @param taiKhoan  tài khoản đang đăng nhập
+     * @param onBack    callback quay về danh sách / màn hình trước
+     * @param onConfirm callback sau khi xác nhận thu tiền thành công, nhận mã hóa đơn
+     */
+    public CashPaymentConfirmPanel(HoaDonDAO dao, PhieuChoThu phieu, TaiKhoan taiKhoan, Runnable onBack,
+            Consumer<String> onConfirm) {
         this.dao = dao != null ? dao : new HoaDonDAO();
         this.phieu = phieu != null ? phieu : placeholderPhieu();
         this.taiKhoan = taiKhoan;
-        ActionListener safeBack = onBack != null ? onBack : new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-
-            }
-        };
-        ActionListener safeConfirm = onConfirm != null ? onConfirm : new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-
-            }
-        };
+        Runnable safeBack = onBack != null ? onBack : () -> {};
+        Consumer<String> safeConfirm = onConfirm != null ? onConfirm : maHoaDon -> {};
 
         // ── Khởi tạo field trước khi dùng trong createCard ──
         NumberFormatter formatter = new NumberFormatter(
@@ -127,7 +112,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
     // ── Header ───────────────────────────────────────────────────────────────
 
     /** Tạo header cho giao diện. */
-    private JPanel createHeader(ActionListener onBack) {
+    private JPanel createHeader(Runnable onBack) {
         JPanel pnl = new JPanel(new BorderLayout(12, 0));
         pnl.setOpaque(false);
         pnl.setBorder(BorderFactory.createEmptyBorder(22, 26, 14, 26));
@@ -143,13 +128,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
 
         JButton btnBack = btn("Danh sách / quay lại", false);
         btnBack.setPreferredSize(new Dimension(180, 34));
-        btnBack.addActionListener(new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                onBack.actionPerformed(new ActionEvent(onBack, ActionEvent.ACTION_PERFORMED, "thaoTac"));
-            }
-        });
+        btnBack.addActionListener(e -> onBack.run());
         JPanel pnlBack = new JPanel(new BorderLayout());
         pnlBack.setOpaque(false);
         pnlBack.add(btnBack, BorderLayout.SOUTH);
@@ -160,7 +139,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
     // ── Vùng cuộn trung tâm ──────────────────────────────────────────────────
 
     /** Tạo scroll center cho giao diện. */
-    private JScrollPane createScrollCenter(ActionListener onConfirm) {
+    private JScrollPane createScrollCenter(Consumer<String> onConfirm) {
         // Card dùng BorderLayout: NORTH chứa tất cả nội dung dồn lên trên
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(UiTheme.SURFACE);
@@ -272,7 +251,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
     // ── Hàng nút xác nhận ────────────────────────────────────────────────────
 
     /** Tạo confirm row cho giao diện. */
-    private JPanel createConfirmRow(ActionListener onConfirm) {
+    private JPanel createConfirmRow(Consumer<String> onConfirm) {
         JPanel row = new JPanel(new BorderLayout(12, 0));
         row.setOpaque(false);
         row.add(lbl("Xác nhận sau khi nhận tiền; tạo hóa đơn và chuyển hồ sơ cho Tiếp nhận bàn giao.",
@@ -307,7 +286,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
     }
 
     /** Thực hiện confirm payment cho thành phần hiện tại. */
-    private void confirmPayment(ActionListener onConfirm) {
+    private void confirmPayment(Consumer<String> onConfirm) {
         try {
             long nhan = UiChung.docTien(receivedField.getText(), "Số tiền nhận");
             long tong = phieu.getTongTien();
@@ -328,7 +307,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
             String maHoaDon = dao.xacNhanThanhToanTienMat(taiKhoan, phieu.getMaPhieu(), nhan);
             message.setForeground(SUCCESS);
             message.setText("Đã lưu hóa đơn " + maHoaDon + ". Chuyển hồ sơ cho Tiếp nhận bàn giao.");
-            onConfirm.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, maHoaDon));
+            onConfirm.accept(maHoaDon);
         } catch (IllegalStateException ex) {
             message.setForeground(ERROR);
             message.setText(ex.getMessage());
