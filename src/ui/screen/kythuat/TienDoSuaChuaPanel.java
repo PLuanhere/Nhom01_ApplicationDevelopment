@@ -7,9 +7,9 @@ import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
-import entity.HangMucSuaChua;
-import entity.PhieuSuaChua;
-import entity.TrangThaiSuaChua;
+import entity.suachua.HangMucSuaChua;
+import entity.suachua.PhieuSuaChua;
+import entity.suachua.TrangThaiSuaChua;
 import static ui.component.GiaoDienKyThuat.*;
 
 // Hiển thị tiến độ và kết quả thực hiện của từng hạng mục.
