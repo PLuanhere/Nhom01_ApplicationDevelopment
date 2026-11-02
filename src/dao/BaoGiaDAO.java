@@ -44,10 +44,13 @@ public final class BaoGiaDAO {
             if (ct == null) continue;
             if ("Phụ tùng".equals(ct.getLoai())) {
                 entity.PhuTung pt = danhMucPhuTung.docPhuTung(ct.getMaPhuTung());
+                if (!pt.isHoatDong()) {
+                    throw new IllegalArgumentException("Phụ tùng đã ngừng hoạt động, không lập báo giá mới.");
+                }
                 if (!pt.getTenPhuTung().equals(ct.getTenHangMuc()) || !pt.getDonViTinh().equals(ct.getDonVi())) {
                     throw new IllegalArgumentException("Tên/đơn vị phụ tùng không khớp danh mục.");
                 }
-                pt.kiemTraSoLuong(ct.getSoLuong());
+                pt.kiemTraSoLuong(ct.getSoLuong().doubleValue());
             } else if (!"Dịch vụ".equals(ct.getLoai()) || !ct.getMaPhuTung().isEmpty()) {
                 throw new IllegalArgumentException("Loại hạng mục không hợp lệ hoặc dịch vụ chứa mã phụ tùng.");
             }

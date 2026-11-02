@@ -71,7 +71,7 @@ public final class HangMucBaoGiaDialog extends JDialog {
                 }
                 PhuTung pt = "Phụ tùng".equals(cboLoai.getSelectedItem()) ? (PhuTung) cboPhuTung.getSelectedItem() : null;
                 if (!danhMuc.isEmpty() && "Phụ tùng".equals(cboLoai.getSelectedItem()) && pt == null) throw new IllegalArgumentException("Cần chọn phụ tùng trong danh mục.");
-                if (pt != null) pt.kiemTraSoLuong(new java.math.BigDecimal(so));
+                if (pt != null) pt.kiemTraSoLuong(Double.parseDouble(so));
                 ChiTietBaoGia moi = new ChiTietBaoGia(ten, (String) cboLoai.getSelectedItem(), donVi, so, gia, pt == null ? "" : pt.getMaPhuTung());
                 khiLuu.accept(moi); dispose();
             } catch (IllegalArgumentException error) { lblLoi.setForeground(UiTheme.ERROR); lblLoi.setText(error.getMessage()); }
