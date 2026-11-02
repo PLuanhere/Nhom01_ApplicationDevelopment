@@ -2,8 +2,8 @@ package ui.screen.kythuat;
 
 import javax.swing.JButton;
 import javax.swing.JPanel;
-import entity.PhieuSuaChua;
-import entity.TrangThaiSuaChua;
+import entity.suachua.PhieuSuaChua;
+import entity.suachua.TrangThaiSuaChua;
 import static ui.component.GiaoDienKyThuat.*;
 
 // Hiển thị nội dung phát sinh và biểu mẫu gửi đề xuất.
