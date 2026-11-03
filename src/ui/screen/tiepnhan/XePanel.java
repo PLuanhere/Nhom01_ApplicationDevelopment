@@ -156,7 +156,9 @@ public final class XePanel extends JPanel {
             }
         });
         congCu.add(txtTim);
-        congCu.add(nut("Làm mới", false, new ActionListener() {
+        JPanel nutLoc = nen(new BorderLayout());
+        JPanel thanhNutLoc = nen(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        thanhNutLoc.add(caoBangOtim(nut("Làm mới", false, new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent event) {
@@ -165,7 +167,9 @@ public final class XePanel extends JPanel {
                 taiDanhSach();
 
             }
-        }), BorderLayout.EAST);
+        })));
+        nutLoc.add(thanhNutLoc, BorderLayout.SOUTH);
+        congCu.add(nutLoc, BorderLayout.EAST);
         dau.add(congCu);
         pnl.add(dau, BorderLayout.NORTH);
         JPanel noiDung = khung(new BorderLayout(0, 12));
@@ -625,6 +629,13 @@ public final class XePanel extends JPanel {
         lbl.setFont(dam ? UiTheme.APP_BOLD_FONT : UiTheme.APP_FONT);
         lbl.setForeground(dam ? UiTheme.APP_TEXT : UiTheme.APP_MUTED);
         return lbl;
+    }
+
+    /** Đồng bộ chiều cao nút lọc với ô tìm kiếm có nhãn viền. */
+    private static <T extends JComponent> T caoBangOtim(T control) {
+        Dimension kichThuoc = control.getPreferredSize();
+        control.setPreferredSize(new Dimension(kichThuoc.width, 36));
+        return control;
     }
 
     /** Thực hiện nut cho thành phần hiện tại. */
