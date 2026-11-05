@@ -185,7 +185,8 @@ public final class BaoGiaPanel extends JPanel {
             }
         });
         loc.add(txtTim);
-        JPanel nut = nen(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel nut = nen(new BorderLayout());
+        JPanel thanhNut = nen(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         cboTrangThai.addActionListener(new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
@@ -193,15 +194,15 @@ public final class BaoGiaPanel extends JPanel {
                 locDanhSach();
             }
         });
-        nut.add(cboTrangThai);
-        nut.add(nut("Tìm", false, new ActionListener() {
+        thanhNut.add(caoBangOtim(cboTrangThai));
+        thanhNut.add(caoBangOtim(nut("Tìm", false, new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent event) {
                 BaoGiaPanel.this.locDanhSach();
             }
-        }));
-        nut.add(nut("Làm mới", false, new ActionListener() {
+        })));
+        thanhNut.add(caoBangOtim(nut("Làm mới", false, new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent event) {
@@ -211,7 +212,8 @@ public final class BaoGiaPanel extends JPanel {
                 locDanhSach();
 
             }
-        }));
+        })));
+        nut.add(thanhNut, BorderLayout.SOUTH);
         loc.add(nut, BorderLayout.EAST);
         dau.add(loc);
         pnl.add(dau, BorderLayout.NORTH);
@@ -817,6 +819,13 @@ public final class BaoGiaPanel extends JPanel {
         lbl.setFont(dam ? UiTheme.APP_BOLD_FONT : UiTheme.APP_FONT);
         lbl.setForeground(dam ? UiTheme.APP_TEXT : UiTheme.APP_MUTED);
         return lbl;
+    }
+
+    /** Đồng bộ chiều cao điều khiển lọc với ô tìm kiếm có nhãn viền. */
+    private static <T extends Component> T caoBangOtim(T control) {
+        Dimension kichThuoc = control.getPreferredSize();
+        control.setPreferredSize(new Dimension(kichThuoc.width, 36));
+        return control;
     }
 
     /** Thực hiện nut cho thành phần hiện tại. */

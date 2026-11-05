@@ -223,7 +223,8 @@ public final class PhieuTiepNhanPanel extends JPanel {
             }
         });
         loc.add(txtLoc);
-        JPanel tacVu = nen(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel tacVu = nen(new BorderLayout());
+        JPanel thanhTacVu = nen(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         cboTrangThai.addActionListener(new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
@@ -231,15 +232,15 @@ public final class PhieuTiepNhanPanel extends JPanel {
                 locDanhSach();
             }
         });
-        tacVu.add(cboTrangThai);
-        tacVu.add(nut("Tìm", false, new ActionListener() {
+        thanhTacVu.add(caoBangOtim(cboTrangThai));
+        thanhTacVu.add(caoBangOtim(nut("Tìm", false, new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent event) {
                 PhieuTiepNhanPanel.this.locDanhSach();
             }
-        }));
-        tacVu.add(nut("Làm mới", false, new ActionListener() {
+        })));
+        thanhTacVu.add(caoBangOtim(nut("Làm mới", false, new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent event) {
@@ -249,7 +250,8 @@ public final class PhieuTiepNhanPanel extends JPanel {
                 locDanhSach();
 
             }
-        }));
+        })));
+        tacVu.add(thanhTacVu, BorderLayout.SOUTH);
         loc.add(tacVu, BorderLayout.EAST);
         dau.add(loc);
         pnl.add(dau, BorderLayout.NORTH);
@@ -842,6 +844,13 @@ public final class PhieuTiepNhanPanel extends JPanel {
         lbl.setFont(dam ? UiTheme.APP_BOLD_FONT : UiTheme.APP_FONT);
         lbl.setForeground(dam ? UiTheme.APP_TEXT : UiTheme.APP_MUTED);
         return lbl;
+    }
+
+    /** Đồng bộ chiều cao điều khiển lọc với ô tìm kiếm có nhãn viền. */
+    private static <T extends JComponent> T caoBangOtim(T control) {
+        Dimension kichThuoc = control.getPreferredSize();
+        control.setPreferredSize(new Dimension(kichThuoc.width, 36));
+        return control;
     }
 
     /** Thực hiện nut cho thành phần hiện tại. */

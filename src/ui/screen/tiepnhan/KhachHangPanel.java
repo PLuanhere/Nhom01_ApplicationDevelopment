@@ -143,20 +143,22 @@ public final class KhachHangPanel extends JPanel {
             }
         });
         congCu.add(txtTimKiem);
-        JPanel nutLoc = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel nutLoc = new JPanel(new BorderLayout());
         nutLoc.setOpaque(false);
+        JPanel thanhNutLoc = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        thanhNutLoc.setOpaque(false);
         JComboBox<String> trangThai = new JComboBox<>(new String[] { "Tất cả trạng thái" });
         trangThai.setEnabled(false);
         trangThai.setToolTipText("Hồ sơ chưa có trạng thái nghiệp vụ được quy định.");
-        nutLoc.add(trangThai);
-        nutLoc.add(nut("Tìm kiếm", false, new ActionListener() {
+        thanhNutLoc.add(caoBangOtim(trangThai));
+        thanhNutLoc.add(caoBangOtim(nut("Tìm kiếm", false, new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent event) {
                 KhachHangPanel.this.taiDanhSach();
             }
-        }));
-        nutLoc.add(nut("Làm mới", false, new ActionListener() {
+        })));
+        thanhNutLoc.add(caoBangOtim(nut("Làm mới", false, new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent event) {
@@ -165,7 +167,8 @@ public final class KhachHangPanel extends JPanel {
                 taiDanhSach();
 
             }
-        }));
+        })));
+        nutLoc.add(thanhNutLoc, BorderLayout.SOUTH);
         congCu.add(nutLoc, BorderLayout.EAST);
         dau.add(congCu, BorderLayout.CENTER);
         pnl.add(dau, BorderLayout.NORTH);
@@ -454,6 +457,13 @@ public final class KhachHangPanel extends JPanel {
         nut.add(thaoTac);
         pnl.add(nut, BorderLayout.EAST);
         return pnl;
+    }
+
+    /** Đồng bộ chiều cao điều khiển lọc với ô tìm kiếm có nhãn viền. */
+    private static <T extends Component> T caoBangOtim(T control) {
+        Dimension kichThuoc = control.getPreferredSize();
+        control.setPreferredSize(new Dimension(kichThuoc.width, 36));
+        return control;
     }
 
     /** Thực hiện nut cho thành phần hiện tại. */
