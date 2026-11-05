@@ -1,15 +1,15 @@
 package ui.screen.tiepnhan;
 
-import dao.chung.DuLieuGarageDAO;
-import dao.suachua.PhieuSuaChuaDAO;
-import entity.baogia.BaoGia;
-import entity.baogia.ChiTietBaoGia;
-import entity.nhansu.KyThuatVienPhanCong;
-import entity.nhansu.TaiKhoan;
-import entity.nhansu.VaiTro;
-import entity.suachua.HangMucSuaChua;
-import entity.suachua.PhieuSuaChua;
-import entity.tiepnhan.PhieuTiepNhan;
+import dao.DuLieuGarageDAO;
+import dao.PhieuSuaChuaDAO;
+import entity.BaoGia;
+import entity.BaoGia.ChiTietBaoGia;
+import dao.NhanVienDAO.KyThuatVienPhanCong;
+import entity.TaiKhoan;
+import entity.TaiKhoan.VaiTro;
+import entity.PhieuSuaChua.ChiTietSuaChua;
+import entity.PhieuSuaChua;
+import entity.PhieuTiepNhan;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -391,7 +391,7 @@ public final class LenhSuaChuaTiepNhanPanel extends JPanel {
                 Object nguoi = null;
                 String trangThai = "Chưa bắt đầu";
                 if (chiDoc) {
-                    HangMucSuaChua hm = phieu.getDanhSachHangMuc().get(i);
+                    ChiTietSuaChua hm = phieu.getDanhSachHangMuc().get(i);
                     nguoi = tenKyThuat(hm.getTaiKhoanThucHien());
                     trangThai = hm.getTrangThai().getTenHienThi();
                 }

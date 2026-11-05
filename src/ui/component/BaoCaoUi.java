@@ -1,9 +1,9 @@
 package ui.component;
 
-import dao.baocao.BaoCaoDAO;
-import entity.baocao.BaoCao;
-import entity.hoadon.HoaDon;
-import entity.nhansu.TaiKhoan;
+import dao.BaoCaoDAO;
+import entity.BaoCao;
+import entity.HoaDon;
+import entity.TaiKhoan;
 
 import java.awt.BorderLayout;
 import java.awt.Component;

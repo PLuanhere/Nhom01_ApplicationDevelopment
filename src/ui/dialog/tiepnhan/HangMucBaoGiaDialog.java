@@ -1,8 +1,8 @@
 package ui.dialog.tiepnhan;
 
-import entity.baogia.ChiTietBaoGia;
-import entity.dichvu.DichVu;
-import entity.phutung.PhuTung;
+import entity.BaoGia.ChiTietBaoGia;
+import entity.DichVu;
+import entity.PhuTung;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;

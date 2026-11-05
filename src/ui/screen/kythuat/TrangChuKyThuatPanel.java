@@ -1,11 +1,11 @@
 package ui.screen.kythuat;
 
-import entity.baocao.TongQuanKyThuat;
-import entity.kiemtra.BaoCaoKiemTra;
-import entity.kiemtra.TrangThaiKiemTra;
-import entity.suachua.PhieuSuaChua;
-import entity.suachua.TrangThaiSuaChua;
-import entity.tiepnhan.PhieuTiepNhan;
+import dao.TrangChuKyThuatDAO.TongQuanKyThuat;
+import entity.PhieuTiepNhan.BaoCaoKiemTra;
+import entity.PhieuTiepNhan.TrangThaiKiemTra;
+import entity.PhieuSuaChua;
+import entity.PhieuSuaChua.TrangThaiSuaChua;
+import entity.PhieuTiepNhan;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridLayout;

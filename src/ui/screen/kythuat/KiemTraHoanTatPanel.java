@@ -5,9 +5,9 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
-import entity.suachua.HangMucSuaChua;
-import entity.suachua.PhieuSuaChua;
-import entity.suachua.TrangThaiSuaChua;
+import entity.PhieuSuaChua.ChiTietSuaChua;
+import entity.PhieuSuaChua;
+import entity.PhieuSuaChua.TrangThaiSuaChua;
 import ui.component.PhuTungUi;
 import static ui.component.GiaoDienKyThuat.*;
 
@@ -28,7 +28,7 @@ final class KiemTraHoanTatPanel extends TrangKyThuatPanel {
         themThanhPhan(pnlTrang, taoThanhBuoc("Hạng mục", "Kiểm tra cuối", "Báo hoàn tất"));
         JPanel pnlCot = taoCot();
         int daXong = 0;
-        for (HangMucSuaChua hangMuc : lenh.getDanhSachHangMuc()) {
+        for (ChiTietSuaChua hangMuc : lenh.getDanhSachHangMuc()) {
             if (hangMuc.getTrangThai() == TrangThaiSuaChua.HOAN_THANH) {
                 daXong++;
             }
@@ -54,7 +54,7 @@ final class KiemTraHoanTatPanel extends TrangKyThuatPanel {
             }
         };
         for (int viTri = 0; viTri < lenh.getDanhSachHangMuc().size(); viTri++) {
-            HangMucSuaChua hangMuc = lenh.getDanhSachHangMuc().get(viTri);
+            ChiTietSuaChua hangMuc = lenh.getDanhSachHangMuc().get(viTri);
             khongGian.modelNhap.addRow(new Object[] {hangMuc.getTenHangMuc(), hangMuc.getKetQua(),
                     khongGian.docThucDungAnToan(viTri), lenh.getTrangThai() == TrangThaiSuaChua.HOAN_THANH});
         }
@@ -83,7 +83,7 @@ final class KiemTraHoanTatPanel extends TrangKyThuatPanel {
         themThanhPhan(pnlCot, taoHang(taoTruong("Kết quả kiểm tra cuối *", khongGian.txtKetLuan),
                 taoTruong("Phát sinh chưa duyệt? · chỉ đọc", khongGian.taoONhap(
                         lenh.getPhatSinh() != null && lenh.getPhatSinh().getTrangThai()
-                                == entity.suachua.TrangThaiPhatSinh.CHO_DUYET ? "Có → buộc xử lý" : "Không có", true))));
+                                == entity.PhieuSuaChua.TrangThaiPhatSinh.CHO_DUYET ? "Có → buộc xử lý" : "Không có", true))));
         khongGian.btnHoanTat = taoNut("Hoàn tất khi đủ điều kiện", "HOAN_TAT_LENH", true, khongGian);
         khongGian.btnHoanTat.setEnabled(false);
         khongGian.modelNhap.addTableModelListener(new javax.swing.event.TableModelListener() {

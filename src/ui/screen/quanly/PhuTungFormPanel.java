@@ -1,6 +1,6 @@
 package ui.screen.quanly;
 
-import entity.phutung.PhuTung;
+import entity.PhuTung;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

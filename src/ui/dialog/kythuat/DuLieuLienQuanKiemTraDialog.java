@@ -1,6 +1,6 @@
 package ui.dialog.kythuat;
 
-import entity.kiemtra.BaoCaoKiemTra;
+import entity.PhieuTiepNhan.BaoCaoKiemTra;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;

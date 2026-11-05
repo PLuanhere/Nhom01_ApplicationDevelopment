@@ -1,12 +1,12 @@
 package ui.screen.quanly;
 
-import dao.baocao.BaoCaoDAO;
-import entity.baocao.BaoCao;
-import entity.baogia.BaoGia;
-import entity.nhansu.TaiKhoan;
-import entity.phutung.PhuTung;
-import entity.suachua.PhieuSuaChua;
-import entity.suachua.TrangThaiSuaChua;
+import dao.BaoCaoDAO;
+import entity.BaoCao;
+import entity.BaoGia;
+import entity.TaiKhoan;
+import entity.PhuTung;
+import entity.PhieuSuaChua;
+import entity.PhieuSuaChua.TrangThaiSuaChua;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;

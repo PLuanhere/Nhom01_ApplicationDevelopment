@@ -1,8 +1,8 @@
 package ui.screen.quanly;
 
-import dao.dichvu.DichVuDAO;
-import entity.dichvu.DichVu;
-import entity.nhansu.TaiKhoan;
+import dao.DichVuDAO;
+import entity.DichVu;
+import entity.TaiKhoan;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

@@ -1,6 +1,6 @@
 package ui.dialog.kythuat;
 
-import entity.baocao.ThongKeNgayKyThuat;
+import dao.TrangChuKyThuatDAO.ThongKeNgayKyThuat;
 
 import java.awt.BorderLayout;
 import java.awt.Component;

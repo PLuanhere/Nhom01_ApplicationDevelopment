@@ -20,10 +20,10 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
-import dao.hoadon.HoaDonDAO;
-import entity.baogia.ChiTietBaoGia;
-import entity.hoadon.HoaDon;
-import entity.nhansu.TaiKhoan;
+import dao.HoaDonDAO;
+import entity.BaoGia.ChiTietBaoGia;
+import entity.HoaDon;
+import entity.TaiKhoan;
 import ui.component.BaoCaoUi;
 import ui.component.UiChung;
 import ui.component.UiTheme;

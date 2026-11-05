@@ -7,9 +7,9 @@ import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
-import entity.suachua.HangMucSuaChua;
-import entity.suachua.PhieuSuaChua;
-import entity.suachua.TrangThaiSuaChua;
+import entity.PhieuSuaChua.ChiTietSuaChua;
+import entity.PhieuSuaChua;
+import entity.PhieuSuaChua.TrangThaiSuaChua;
 import static ui.component.GiaoDienKyThuat.*;
 
 // Hiển thị tiến độ và kết quả thực hiện của từng hạng mục.
@@ -34,13 +34,13 @@ final class TienDoSuaChuaPanel extends TrangKyThuatPanel {
         DefaultTableModel model = taoModel("Hạng mục được duyệt", "Tiến độ",
                 "Kết quả / ghi chú", "Phụ tùng thực dùng");
         for (int viTri = 0; viTri < lenh.getDanhSachHangMuc().size(); viTri++) {
-            HangMucSuaChua hangMuc = lenh.getDanhSachHangMuc().get(viTri);
+            ChiTietSuaChua hangMuc = lenh.getDanhSachHangMuc().get(viTri);
             model.addRow(new Object[] {hangMuc.getTenHangMuc(), hangMuc.getTrangThai(),
                     hangMuc.getKetQua(), khongGian.docThucDungAnToan(viTri)});
         }
         JTable tblBang = taoBang(model);
         khongGian.viTriHangMuc = Math.min(khongGian.viTriHangMuc, lenh.getDanhSachHangMuc().size() - 1);
-        HangMucSuaChua hangMuc = lenh.getDanhSachHangMuc().get(khongGian.viTriHangMuc);
+        ChiTietSuaChua hangMuc = lenh.getDanhSachHangMuc().get(khongGian.viTriHangMuc);
         khongGian.txtKetQua = khongGian.taoONhap(hangMuc.getKetQua());
         khongGian.txtKetQua.setEditable(lenh.getTrangThai() != TrangThaiSuaChua.HOAN_THANH);
         khongGian.cmbTienDo = new JComboBox<TrangThaiSuaChua>(TrangThaiSuaChua.values());

@@ -1,10 +1,10 @@
 package ui.screen.quanly;
 
-import dao.nhansu.NhanVienDAO;
-import dao.nhansu.TaiKhoanDAO;
-import entity.nhansu.NhanVien;
-import entity.nhansu.TaiKhoan;
-import entity.nhansu.VaiTro;
+import dao.NhanVienDAO;
+import dao.TaiKhoanDAO;
+import entity.NhanVien;
+import entity.TaiKhoan;
+import entity.TaiKhoan.VaiTro;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

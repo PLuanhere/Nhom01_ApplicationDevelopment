@@ -1,8 +1,8 @@
 package ui;
 
-import dao.chung.DuLieuGarageDAO;
-import dao.nhansu.TaiKhoanDAO;
-import entity.nhansu.TaiKhoan;
+import dao.DuLieuGarageDAO;
+import dao.TaiKhoanDAO;
+import entity.TaiKhoan;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

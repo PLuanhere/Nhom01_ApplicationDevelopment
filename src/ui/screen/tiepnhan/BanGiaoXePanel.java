@@ -1,16 +1,16 @@
 package ui.screen.tiepnhan;
 
-import dao.bangiao.BanGiaoXeDAO;
-import dao.chung.DuLieuGarageDAO;
-import entity.bangiao.BanGiaoXe;
-import entity.bangiao.CanCuBanGiao;
-import entity.bangiao.TrangThaiBanGiao;
-import entity.baogia.BaoGia;
-import entity.nhansu.TaiKhoan;
-import entity.nhansu.VaiTro;
-import entity.suachua.HangMucSuaChua;
-import entity.suachua.PhieuSuaChua;
-import entity.tiepnhan.PhieuTiepNhan;
+import dao.BanGiaoXeDAO;
+import dao.DuLieuGarageDAO;
+import entity.BanGiaoXe;
+import entity.BanGiaoXe.CanCuBanGiao;
+import entity.BanGiaoXe.TrangThaiBanGiao;
+import entity.BaoGia;
+import entity.TaiKhoan;
+import entity.TaiKhoan.VaiTro;
+import entity.PhieuSuaChua.ChiTietSuaChua;
+import entity.PhieuSuaChua;
+import entity.PhieuTiepNhan;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -406,7 +406,7 @@ public final class BanGiaoXePanel extends JPanel {
                 + (phieu == null || phieu.getTaiSan().isBlank() ? "Không ghi nhận" : phieu.getTaiSan()));
         txtThongTin.setCaretPosition(0);
         modelKetQua.setRowCount(0);
-        for (HangMucSuaChua hm : lenhDangMo.getDanhSachHangMuc()) {
+        for (ChiTietSuaChua hm : lenhDangMo.getDanhSachHangMuc()) {
             modelKetQua.addRow(new Object[] { hm.getTenHangMuc(), hm.getTaiKhoanThucHien(), hm.getKetQua() });
         }
         txtNguoiGiao.setText(chiDoc ? giao.getNguoiGiao() : phien.getTenDangNhap());

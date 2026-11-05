@@ -3,8 +3,8 @@ package ui.screen.thungan;
 import java.awt.BorderLayout;
 import java.awt.event.ActionListener;
 import javax.swing.JPanel;
-import dao.hoadon.HoaDonDAO;
-import entity.nhansu.TaiKhoan;
+import dao.HoaDonDAO;
+import entity.TaiKhoan;
 
 /** Màn hóa đơn đã thu dùng lại bộ tìm/lọc và xem chứng từ của nguồn chung. */
 public final class PaidInvoicesPanel extends JPanel {
