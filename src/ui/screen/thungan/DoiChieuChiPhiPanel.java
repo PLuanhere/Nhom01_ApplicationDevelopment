@@ -22,10 +22,10 @@ import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
-import dao.hoadon.DoiChieuChiPhiDAO;
-import dao.hoadon.DoiChieuChiPhiDAO.DongChiPhi;
-import dao.hoadon.DoiChieuChiPhiDAO.KetQuaDoiChieu;
-import entity.hoadon.HinhThucThanhToan;
+import dao.DoiChieuChiPhiDAO;
+import dao.DoiChieuChiPhiDAO.DongChiPhi;
+import dao.DoiChieuChiPhiDAO.KetQuaDoiChieu;
+import entity.HoaDon.HinhThucThanhToan;
 import ui.component.UiTheme;
 import ui.component.UiChung;
 

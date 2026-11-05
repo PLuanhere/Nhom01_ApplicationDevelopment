@@ -1,15 +1,15 @@
 package ui.screen.kythuat;
 
-import dao.chung.DuLieuGarageDAO;
-import dao.kiemtra.BaoCaoKiemTraDAO;
-import dao.phutung.PhuTungSuDungDAO;
-import dao.suachua.KyThuatDAO;
-import dao.suachua.PhieuSuaChuaDAO;
-import entity.nhansu.TaiKhoan;
-import entity.phutung.PhuTung;
-import entity.suachua.HangMucSuaChua;
-import entity.suachua.PhieuSuaChua;
-import entity.suachua.TrangThaiSuaChua;
+import dao.DuLieuGarageDAO;
+import dao.BaoCaoKiemTraDAO;
+import dao.PhuTungSuDungDAO;
+import dao.KyThuatDAO;
+import dao.PhieuSuaChuaDAO;
+import entity.TaiKhoan;
+import entity.PhuTung;
+import entity.PhieuSuaChua.ChiTietSuaChua;
+import entity.PhieuSuaChua;
+import entity.PhieuSuaChua.TrangThaiSuaChua;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -73,7 +73,7 @@ public final class PhuTungSuDungPanel extends TrangKyThuatPanel {
                 taoGiaTri("Biển số", lenh.getBienSo()),
                 taoGiaTri("Người ghi nhận", khongGian.taiKhoan.getTenDangNhap())));
         khongGian.cmbHangMuc = new JComboBox<String>();
-        for (HangMucSuaChua hangMuc : lenh.getDanhSachHangMuc()) {
+        for (ChiTietSuaChua hangMuc : lenh.getDanhSachHangMuc()) {
             khongGian.cmbHangMuc.addItem(hangMuc.getTenHangMuc());
         }
         khongGian.cmbPhuTung = new JComboBox<PhuTung>();

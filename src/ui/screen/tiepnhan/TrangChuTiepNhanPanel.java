@@ -1,9 +1,9 @@
 package ui.screen.tiepnhan;
 
-import dao.baocao.TrangChuTiepNhanDAO;
-import entity.nhansu.TaiKhoan;
-import entity.suachua.PhieuSuaChua;
-import entity.tiepnhan.PhieuTiepNhan;
+import dao.TrangChuTiepNhanDAO;
+import entity.TaiKhoan;
+import entity.PhieuSuaChua;
+import entity.PhieuTiepNhan;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

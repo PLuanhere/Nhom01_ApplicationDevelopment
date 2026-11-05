@@ -1,9 +1,9 @@
 package ui.screen.tiepnhan;
 
-import dao.khachhang.KhachHangDAO;
-import dao.khachhang.XeDAO;
-import entity.khachhang.KhachHang;
-import entity.nhansu.TaiKhoan;
+import dao.KhachHangDAO;
+import dao.XeDAO;
+import entity.KhachHang;
+import entity.TaiKhoan;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;

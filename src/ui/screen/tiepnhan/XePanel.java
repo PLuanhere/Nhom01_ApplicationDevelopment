@@ -1,16 +1,16 @@
 package ui.screen.tiepnhan;
 
-import dao.baocao.TrangChuTiepNhanDAO;
-import dao.khachhang.KhachHangDAO;
-import dao.khachhang.XeDAO;
-import dao.tiepnhan.PhieuTiepNhanDAO;
-import entity.khachhang.KhachHang;
-import entity.khachhang.Xe;
-import entity.nhansu.TaiKhoan;
-import entity.phutung.PhuTungSuDung;
-import entity.suachua.HangMucSuaChua;
-import entity.suachua.PhieuSuaChua;
-import entity.tiepnhan.PhieuTiepNhan;
+import dao.TrangChuTiepNhanDAO;
+import dao.KhachHangDAO;
+import dao.XeDAO;
+import dao.PhieuTiepNhanDAO;
+import entity.KhachHang;
+import entity.Xe;
+import entity.TaiKhoan;
+import dao.PhuTungSuDungDAO.PhuTungSuDung;
+import entity.PhieuSuaChua.ChiTietSuaChua;
+import entity.PhieuSuaChua;
+import entity.PhieuTiepNhan;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -417,7 +417,7 @@ public final class XePanel extends JPanel {
                                         .append(dong.getPhuTung().getDonViTinh());
                             }
                             StringBuilder congViec = new StringBuilder();
-                            for (HangMucSuaChua hm : lenh.getDanhSachHangMuc()) {
+                            for (ChiTietSuaChua hm : lenh.getDanhSachHangMuc()) {
                                 if (congViec.length() > 0) {
                                     congViec.append("; ");
                                 }

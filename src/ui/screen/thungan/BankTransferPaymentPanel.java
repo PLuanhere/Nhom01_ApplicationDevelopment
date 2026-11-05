@@ -19,10 +19,10 @@ import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import dao.hoadon.HoaDonDAO;
-import entity.hoadon.PhieuChoThu;
-import entity.nhansu.TaiKhoan;
-import entity.nhansu.VaiTro;
+import dao.HoaDonDAO;
+import dao.HoaDonDAO.PhieuChoThu;
+import entity.TaiKhoan;
+import entity.TaiKhoan.VaiTro;
 import ui.component.UiChung;
 
 /** Bank transfer / QR payment content; the application shell is supplied by the parent. */

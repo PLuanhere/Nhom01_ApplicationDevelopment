@@ -1,8 +1,8 @@
 package ui.dialog.quanly;
 
-import dao.nhansu.NhanVienDAO;
-import dao.nhansu.TaiKhoanDAO;
-import entity.nhansu.TaiKhoan;
+import dao.NhanVienDAO;
+import dao.TaiKhoanDAO;
+import entity.TaiKhoan;
 
 import java.awt.Color;
 import java.awt.Dimension;

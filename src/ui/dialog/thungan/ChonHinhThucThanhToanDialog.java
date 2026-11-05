@@ -17,7 +17,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 
-import entity.hoadon.HinhThucThanhToan;
+import entity.HoaDon.HinhThucThanhToan;
 
 /**
  * Hộp thoại chọn hình thức thanh toán trước khi lập hóa đơn.

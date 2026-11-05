@@ -1,13 +1,13 @@
 package ui.screen.kythuat;
 
-import dao.kiemtra.BaoCaoKiemTraDAO;
-import dao.phutung.PhuTungSuDungDAO;
-import dao.suachua.KyThuatDAO;
-import dao.suachua.PhieuSuaChuaDAO;
-import entity.kiemtra.BaoCaoKiemTra;
-import entity.kiemtra.TrangThaiKiemTra;
-import entity.nhansu.TaiKhoan;
-import entity.tiepnhan.PhieuTiepNhan;
+import dao.BaoCaoKiemTraDAO;
+import dao.PhuTungSuDungDAO;
+import dao.KyThuatDAO;
+import dao.PhieuSuaChuaDAO;
+import entity.PhieuTiepNhan.BaoCaoKiemTra;
+import entity.PhieuTiepNhan.TrangThaiKiemTra;
+import entity.TaiKhoan;
+import entity.PhieuTiepNhan;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

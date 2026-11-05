@@ -1,10 +1,10 @@
 package ui.dialog.kythuat;
 
-import dao.kiemtra.BaoCaoKiemTraDAO;
-import entity.kiemtra.BaoCaoKiemTra;
-import entity.kiemtra.TrangThaiKiemTra;
-import entity.nhansu.TaiKhoan;
-import entity.tiepnhan.PhieuTiepNhan;
+import dao.BaoCaoKiemTraDAO;
+import entity.PhieuTiepNhan.BaoCaoKiemTra;
+import entity.PhieuTiepNhan.TrangThaiKiemTra;
+import entity.TaiKhoan;
+import entity.PhieuTiepNhan;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;

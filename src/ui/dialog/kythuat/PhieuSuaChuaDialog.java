@@ -1,9 +1,9 @@
 package ui.dialog.kythuat;
 
-import dao.suachua.PhieuSuaChuaDAO;
-import entity.baogia.BaoGia;
-import entity.nhansu.TaiKhoan;
-import entity.suachua.PhieuSuaChua;
+import dao.PhieuSuaChuaDAO;
+import entity.BaoGia;
+import entity.TaiKhoan;
+import entity.PhieuSuaChua;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;

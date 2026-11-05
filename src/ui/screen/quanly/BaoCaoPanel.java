@@ -1,8 +1,8 @@
 package ui.screen.quanly;
 
-import dao.baocao.BaoCaoDAO;
-import entity.baocao.BaoCao;
-import entity.nhansu.TaiKhoan;
+import dao.BaoCaoDAO;
+import entity.BaoCao;
+import entity.TaiKhoan;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;

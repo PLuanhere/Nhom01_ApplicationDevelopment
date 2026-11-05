@@ -1,10 +1,10 @@
 package ui.screen.thungan;
 
-import dao.hoadon.HoaDonDAO;
-import entity.hoadon.HoaDon;
-import entity.hoadon.PhieuChoThu;
-import entity.nhansu.TaiKhoan;
-import entity.nhansu.VaiTro;
+import dao.HoaDonDAO;
+import entity.HoaDon;
+import dao.HoaDonDAO.PhieuChoThu;
+import entity.TaiKhoan;
+import entity.TaiKhoan.VaiTro;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

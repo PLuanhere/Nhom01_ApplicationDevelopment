@@ -1,10 +1,10 @@
 package ui.dialog.kythuat;
 
-import dao.phutung.PhuTungSuDungDAO;
-import entity.nhansu.TaiKhoan;
-import entity.phutung.LuongPhuTung;
-import entity.phutung.PhuTung;
-import entity.phutung.PhuTungSuDung;
+import dao.PhuTungSuDungDAO;
+import entity.TaiKhoan;
+import dao.PhuTungSuDungDAO.LuongPhuTung;
+import entity.PhuTung;
+import dao.PhuTungSuDungDAO.PhuTungSuDung;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;

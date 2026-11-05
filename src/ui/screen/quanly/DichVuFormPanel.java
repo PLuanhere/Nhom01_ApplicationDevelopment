@@ -1,6 +1,6 @@
 package ui.screen.quanly;
 
-import entity.dichvu.DichVu;
+import entity.DichVu;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

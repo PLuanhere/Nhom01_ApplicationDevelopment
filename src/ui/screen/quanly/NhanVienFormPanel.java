@@ -1,8 +1,8 @@
 package ui.screen.quanly;
 
-import entity.nhansu.BoPhanNhanVien;
-import entity.nhansu.NhanVien;
-import entity.nhansu.TrangThaiNhanVien;
+import entity.NhanVien.BoPhanNhanVien;
+import entity.NhanVien;
+import entity.NhanVien.TrangThaiNhanVien;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

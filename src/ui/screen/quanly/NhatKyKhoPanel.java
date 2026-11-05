@@ -1,8 +1,8 @@
 package ui.screen.quanly;
 
-import dao.phutung.PhuTungDAO;
-import entity.nhansu.TaiKhoan;
-import entity.phutung.BienDongKho;
+import dao.PhuTungDAO;
+import entity.TaiKhoan;
+import dao.PhuTungDAO.BienDongKho;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

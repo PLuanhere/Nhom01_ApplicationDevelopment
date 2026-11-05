@@ -1,17 +1,17 @@
 package ui.screen.tiepnhan;
 
-import dao.baocao.TrangChuTiepNhanDAO;
-import dao.chung.DuLieuGarageDAO;
-import dao.khachhang.KhachHangDAO;
-import dao.khachhang.XeDAO;
-import dao.tiepnhan.PhieuTiepNhanDAO;
-import entity.khachhang.KhachHang;
-import entity.khachhang.Xe;
-import entity.nhansu.KyThuatVienPhanCong;
-import entity.nhansu.TaiKhoan;
-import entity.nhansu.VaiTro;
-import entity.tiepnhan.PhieuTiepNhan;
-import entity.tiepnhan.TrangThaiTiepNhan;
+import dao.TrangChuTiepNhanDAO;
+import dao.DuLieuGarageDAO;
+import dao.KhachHangDAO;
+import dao.XeDAO;
+import dao.PhieuTiepNhanDAO;
+import entity.KhachHang;
+import entity.Xe;
+import dao.NhanVienDAO.KyThuatVienPhanCong;
+import entity.TaiKhoan;
+import entity.TaiKhoan.VaiTro;
+import entity.PhieuTiepNhan;
+import entity.PhieuTiepNhan.TrangThaiTiepNhan;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;

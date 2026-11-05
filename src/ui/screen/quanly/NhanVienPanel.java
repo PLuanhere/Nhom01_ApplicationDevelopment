@@ -1,9 +1,9 @@
 package ui.screen.quanly;
 
-import dao.nhansu.NhanVienDAO;
-import entity.nhansu.NhanVien;
-import entity.nhansu.TaiKhoan;
-import entity.nhansu.TrangThaiNhanVien;
+import dao.NhanVienDAO;
+import entity.NhanVien;
+import entity.TaiKhoan;
+import entity.NhanVien.TrangThaiNhanVien;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
