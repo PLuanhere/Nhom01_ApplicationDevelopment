@@ -7,6 +7,8 @@ import entity.BaoGia.ChiTietBaoGia;
 import dao.HoaDonDAO.PhieuChoThu;
 import entity.TaiKhoan;
 import entity.TaiKhoan.VaiTro;
+import entity.HoaDon;
+import entity.ChiTietHoaDon;
 
 /** Đọc chi phí của đúng phiếu chờ thu từ nguồn hóa đơn dùng chung. */
 public final class DoiChieuChiPhiDAO {
@@ -129,14 +131,16 @@ public final class DoiChieuChiPhiDAO {
             bienSo = bien;
             trangThaiThanhToan = trangThai;
             danhSachChiPhi = new ArrayList<>(dong);
-            long tong = 0;
+            List<ChiTietHoaDon> chiTiet = new ArrayList<>();
+            int viTri = 0;
             for (DongChiPhi ct : dong) {
-                if (ct == null || Long.MAX_VALUE - tong < ct.getThanhTien()) {
-                    throw new IllegalArgumentException("Tổng chi phí vượt giới hạn.");
+                if (ct == null) {
+                    throw new IllegalArgumentException("Chi phí không được null.");
                 }
-                tong += ct.getThanhTien();
+                chiTiet.add(new ChiTietHoaDon("DOI-CHIEU", viTri++, ct.getHangMuc(), "Đối chiếu", "dòng", 1,
+                        ct.getThanhTien()));
             }
-            tongThucTe = tong;
+            tongThucTe = HoaDon.tinhTongChiTiet(chiTiet);
         }
 
         /** Trả mã phiếu đang đối chiếu. */

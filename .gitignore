@@ -5,6 +5,7 @@
 *.class
 
 # Local configuration and credentials
+/src/connectDB/ConnectDB.java
 /config/*.properties
 !/config/*.properties.example
 .env
