@@ -839,3 +839,125 @@ SELECT MaPhuTung, TenPhuTung, SoLuongTon, MucToiThieu
 FROM dbo.PhuTung
 ORDER BY MaPhuTung;
 GO
+
+
+
+
+
+
+
+-- ================================================================
+-- BỔ SUNG DỮ LIỆU THU NGÂN - 3 PHIẾU CHỜ THU
+-- ================================================================
+
+USE QuanLiGarage;
+GO
+
+-- Thêm nhân viên
+INSERT dbo.NhanVien
+    (MaNhanVien, HoTen, NgaySinh, SoDienThoai, GioiTinh, DiaChi, SoNamKinhNghiem, BoPhan, TrangThai)
+VALUES
+    ('NV008', N'Lê Thị Thu Hà', '1997-05-12', '0908765432', N'Nữ', N'Q10, TP.HCM', 2, 'THU_NGAN', 'DANG_LAM'),
+    ('NV009', N'Phạm Văn Tùng', '1999-09-25', '0912345678', N'Nam', N'Q5, TP.HCM', 1, 'TIEP_NHAN', 'DANG_LAM'),
+    ('NV010', N'Trần Văn Khoa', '1995-03-18', '0909876543', N'Nam', N'Bình Tân, TP.HCM', 5, 'KY_THUAT', 'DANG_LAM');
+
+INSERT dbo.TaiKhoan (MaNhanVien, MatKhau, VaiTro, HoatDong, NgayTao)
+VALUES
+    ('NV008', N'123', 'THU_NGAN', 1, SYSDATETIME()),
+    ('NV009', N'123', 'NHAN_VIEN_TIEP_NHAN', 1, SYSDATETIME()),
+    ('NV010', N'123', 'NHAN_VIEN_KY_THUAT', 1, SYSDATETIME());
+
+-- Thêm khách hàng
+INSERT dbo.KhachHang VALUES('KH003', N'Lê Văn Cường', '0903111222', N'Q7, TP.HCM', N'cuong.le@email.com', N'Khách quen');
+INSERT dbo.KhachHang VALUES('KH004', N'Phạm Thị Dung', '0904222333', N'Q2, TP.HCM', N'dung.pham@email.com', N'');
+INSERT dbo.KhachHang VALUES('KH005', N'Ngô Minh Tuấn', '0905333444', N'Gò Vấp', N'tuan.ngo@email.com', N'VIP');
+INSERT dbo.KhachHang VALUES('KH006', N'Hoàng Thị Mai', '0906444555', N'Tân Phú', N'mai@email.com', N'');
+INSERT dbo.KhachHang VALUES('KH007', N'Võ Văn Nam', '0907555666', N'Q12', N'nam@email.com', N'');
+
+-- Thêm xe
+INSERT dbo.Xe VALUES('XE003', '51C-11111', 'KH003', N'Mazda', N'CX-5', 2020, N'Đỏ', 'MZ001', 'MAY003');
+INSERT dbo.Xe VALUES('XE004', '51D-22222', 'KH004', N'Hyundai', N'Accent', 2021, N'Bạc', 'HY001', 'MAY004');
+INSERT dbo.Xe VALUES('XE005', '51E-33333', 'KH005', N'KIA', N'Seltos', 2022, N'Trắng', 'KI001', 'MAY005');
+INSERT dbo.Xe VALUES('XE006', '51F-44444', 'KH006', N'Honda', N'CR-V', 2019, N'Đen', 'HD001', 'MAY006');
+INSERT dbo.Xe VALUES('XE007', '51G-55555', 'KH007', N'Toyota', N'Camry', 2023, N'Xanh', 'TY002', 'MAY007');
+
+-- Thêm dịch vụ
+INSERT dbo.DichVu VALUES('DV004', N'Thay má phanh', N'Phanh', N'Công', 300000, N'Thay má phanh', N'90p', N'Xe du lịch', 1);
+INSERT dbo.DichVu VALUES('DV005', N'Thay lốp', N'Lốp', N'Cái', 50000, N'Thay lốp', N'30p', N'Tất cả', 1);
+INSERT dbo.DichVu VALUES('DV006', N'Bảo dưỡng', N'BD', N'Gói', 500000, N'BD định kỳ', N'120p', N'Xe du lịch', 1);
+INSERT dbo.DichVu VALUES('DV007', N'Thay ắc quy', N'Điện', N'Công', 100000, N'Thay ắc quy', N'20p', N'Tất cả', 1);
+
+-- Thêm phụ tùng
+INSERT dbo.PhuTung
+    (MaPhuTung, TenPhuTung, LoaiPhuTung, DonViTinh, GiaNhap, GiaBan, MucToiThieu, SoLuongTon, HoatDong)
+VALUES
+    ('PT004', N'Lốp Michelin', N'Lốp', N'cái', 1200000, 1500000, 4, 12, 1),
+    ('PT005', N'Ắc quy 12V 60Ah', N'Điện', N'cái', 1000000, 1300000, 2, 8, 1),
+    ('PT006', N'Gạt mưa', N'Phụ kiện', N'bộ', 150000, 250000, 4, 10, 1),
+    ('PT007', N'Đèn LED H4', N'Đèn', N'cái', 200000, 350000, 6, 15, 1),
+    ('PT008', N'Má phanh Toyota', N'Phanh', N'bộ', 600000, 900000, 2, 6, 1),
+    ('PT009', N'Dầu phanh DOT4', N'Dầu', N'lít', 80000, 120000, 5, 20, 1),
+    ('PT010', N'Lọc gió', N'Lọc', N'cái', 100000, 180000, 5, 12, 1);
+
+PRINT N'Đã thêm nhân viên, khách hàng, xe, dịch vụ, phụ tùng';
+GO
+
+-- 3 PHIẾU HOÀN THÀNH CHƯA CÓ HÓA ĐƠN: HIỂN THỊ Ở TRUNG TÂM THANH TOÁN
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+BEGIN TRY
+BEGIN TRANSACTION;
+DECLARE @D DATE=CONVERT(DATE,SYSDATETIME());
+DECLARE @T1 DATETIME2(3)=DATEADD(HOUR,8,CONVERT(DATETIME2(3),@D));
+DECLARE @T2 DATETIME2(3)=DATEADD(HOUR,10,CONVERT(DATETIME2(3),@D));
+DECLARE @T3 DATETIME2(3)=DATEADD(HOUR,13,CONVERT(DATETIME2(3),@D));
+INSERT dbo.PhieuTiepNhan(MaPhieu,MaThaoTac,MaXe,MaKH,BienSo,TenKhach,SoDienThoai,TenXe,SoKm,ThoiGianNhan,TinhTrang,TaiSan,YeuCau,NguoiTiepNhan,DaXacNhan,ThoiGianXacNhan,TaiKhoanKyThuat,NguoiPhanCong,ThoiDiemPhanCong) VALUES
+('TN-2026-0003','MAU-TN-2026-0003','XE003','KH003','51C-11111',N'Lê Văn Cường','0903111222',N'Mazda CX-5',35000,@T1,N'Phanh kêu',N'01 chìa khóa',N'Thay má phanh','NV009',1,DATEADD(MINUTE,5,@T1),'NV010','NV009',DATEADD(MINUTE,10,@T1)),
+('TN-2026-0004','MAU-TN-2026-0004','XE004','KH004','51D-22222',N'Phạm Thị Dung','0904222333',N'Hyundai Accent',48000,@T2,N'Lốp trước mòn',N'01 chìa khóa',N'Thay hai lốp trước','NV009',1,DATEADD(MINUTE,5,@T2),'NV010','NV009',DATEADD(MINUTE,10,@T2)),
+('TN-2026-0005','MAU-TN-2026-0005','XE005','KH005','51E-33333',N'Ngô Minh Tuấn','0905333444',N'KIA Seltos',15000,@T3,N'Đến kỳ bảo dưỡng',N'01 chìa khóa',N'Bảo dưỡng định kỳ','NV009',1,DATEADD(MINUTE,5,@T3),'NV010','NV009',DATEADD(MINUTE,10,@T3));
+INSERT dbo.BaoCaoKiemTra(MaBaoCao,MaPhieuTiepNhan,NgayKiemTra,BoPhan,NoiDung0,NoiDung1,NoiDung2,NoiDung3,NoiDung4,NoiDung5,NoiDung6,DeXuat0,DeXuat1,DeXuat2,TrangThai,ThoiDiemHoanTat) VALUES
+('KT-2026-0003','TN-2026-0003',@D,N'Phanh',N'Má phanh mòn',N'Dầu phanh thấp',N'',N'',N'',N'',N'',N'Thay má phanh',N'Bổ sung dầu',N'','HOAN_TAT',DATEADD(MINUTE,30,@T1)),
+('KT-2026-0004','TN-2026-0004',@D,N'Lốp',N'Hai lốp trước mòn',N'',N'',N'',N'',N'',N'',N'Thay hai lốp',N'',N'','HOAN_TAT',DATEADD(MINUTE,30,@T2)),
+('KT-2026-0005','TN-2026-0005',@D,N'Tổng hợp',N'Dầu cần thay',N'Lọc gió bẩn',N'',N'',N'',N'',N'',N'Bảo dưỡng',N'Thay lọc gió',N'','HOAN_TAT',DATEADD(MINUTE,30,@T3));
+INSERT dbo.NhomBaoGia VALUES('BG-2026-0002','KT-2026-0003'),('BG-2026-0003','KT-2026-0004'),('BG-2026-0004','KT-2026-0005');
+INSERT dbo.BaoGia(MaBaoGia,MaBaoGiaGoc,PhienBan,BienSo,NgayHen,NgayLap,NguoiLap,TrangThai,NgayGui,NguoiGui,ThoiDiemPhanHoi,ThoiDiemGhiNhan,NguoiGhiNhan,KenhPhanHoi,GhiChuPhanHoi,MaThaoTac) VALUES
+('BG-2026-0002','BG-2026-0002',1,'51C-11111',DATEADD(HOUR,4,@T1),DATEADD(MINUTE,35,@T1),'NV009','DA_DONG_Y',DATEADD(MINUTE,40,@T1),'NV009',DATEADD(MINUTE,45,@T1),DATEADD(MINUTE,46,@T1),'NV009',N'Trực tiếp',N'Đồng ý','MAU-BG-2026-0002'),
+('BG-2026-0003','BG-2026-0003',1,'51D-22222',DATEADD(HOUR,4,@T2),DATEADD(MINUTE,35,@T2),'NV009','DA_DONG_Y',DATEADD(MINUTE,40,@T2),'NV009',DATEADD(MINUTE,45,@T2),DATEADD(MINUTE,46,@T2),'NV009',N'Điện thoại',N'Đồng ý','MAU-BG-2026-0003'),
+('BG-2026-0004','BG-2026-0004',1,'51E-33333',DATEADD(HOUR,4,@T3),DATEADD(MINUTE,35,@T3),'NV009','DA_DONG_Y',DATEADD(MINUTE,40,@T3),'NV009',DATEADD(MINUTE,45,@T3),DATEADD(MINUTE,46,@T3),'NV009',N'Trực tiếp',N'Đồng ý','MAU-BG-2026-0004');
+INSERT dbo.ChiTietBaoGia(MaBaoGia,ViTri,MaDichVu,MaPhuTung,TenHangMuc,Loai,DonVi,SoLuong,DonGia) VALUES
+('BG-2026-0002',0,'DV004',NULL,N'Thay má phanh',N'Dịch vụ',N'Công',1,300000),('BG-2026-0002',1,NULL,'PT008',N'Má phanh Toyota',N'Phụ tùng',N'bộ',1,900000),('BG-2026-0002',2,NULL,'PT009',N'Dầu phanh DOT4',N'Phụ tùng',N'lít',1,120000),
+('BG-2026-0003',0,'DV005',NULL,N'Thay lốp',N'Dịch vụ',N'Công',2,50000),('BG-2026-0003',1,NULL,'PT004',N'Lốp Michelin',N'Phụ tùng',N'cái',2,1500000),
+('BG-2026-0004',0,'DV006',NULL,N'Bảo dưỡng định kỳ',N'Dịch vụ',N'Gói',1,500000),('BG-2026-0004',1,NULL,'PT001',N'Dầu động cơ 5W-30',N'Phụ tùng',N'lít',4,150000),('BG-2026-0004',2,NULL,'PT010',N'Lọc gió',N'Phụ tùng',N'cái',1,180000);
+INSERT dbo.PhieuSuaChua(MaPhieu,MaBaoGia,MaBaoGiaGoc,BienSo,KyThuatChinh,KyThuatPhoiHop,HanHoanThanh,GhiChu,TrangThai,NguoiPhatHanh,ThoiDiemPhatHanh,ThoiDiemHoanTat,KetQua0,KetQua1,KetQua2,MaThaoTac) VALUES
+('SC-2026-0002','BG-2026-0002','BG-2026-0002','51C-11111','NV010',NULL,DATEADD(HOUR,4,@T1),N'Theo báo giá','HOAN_THANH','NV009',DATEADD(MINUTE,50,@T1),DATEADD(MINUTE,120,@T1),N'Phanh hoạt động tốt',N'Đã đối chiếu',N'Chờ thu tiền','MAU-SC-2026-0002'),
+('SC-2026-0003','BG-2026-0003','BG-2026-0003','51D-22222','NV010',NULL,DATEADD(HOUR,4,@T2),N'Theo báo giá','HOAN_THANH','NV009',DATEADD(MINUTE,50,@T2),DATEADD(MINUTE,120,@T2),N'Xe vận hành tốt',N'Đã cân bằng bánh',N'Chờ thu tiền','MAU-SC-2026-0003'),
+('SC-2026-0004','BG-2026-0004','BG-2026-0004','51E-33333','NV010',NULL,DATEADD(HOUR,4,@T3),N'Theo báo giá','HOAN_THANH','NV009',DATEADD(MINUTE,50,@T3),DATEADD(MINUTE,120,@T3),N'Đã bảo dưỡng',N'Đã kiểm tra',N'Chờ thu tiền','MAU-SC-2026-0004');
+COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
+THROW;
+END CATCH;
+GO
+PRINT N'=== PHIẾU CHỜ THANH TOÁN ===';
+SELECT * FROM dbo.vw_PhieuChoThu ORDER BY MaLenh;
+PRINT N'=== HÓA ĐƠN ĐÃ THANH TOÁN ===';
+SELECT MaHoaDon, MaPhieuSuaChua, TenKhachHang, TongTien, HinhThucThanhToan
+FROM dbo.HoaDon ORDER BY MaHoaDon;
+
+PRINT N'=== KIỂM TRA TỔNG HÓA ĐƠN / CHI TIẾT ===';
+IF EXISTS (
+    SELECT 1
+    FROM dbo.HoaDon hd
+    LEFT JOIN dbo.ChiTietHoaDon ct ON ct.MaHoaDon = hd.MaHoaDon
+    GROUP BY hd.MaHoaDon, hd.TongTien
+    HAVING hd.TongTien <> COALESCE(SUM(ct.ThanhTien), 0)
+)
+    THROW 51000, N'Tổng hóa đơn không khớp tổng chi tiết hóa đơn.', 1;
+
+SELECT hd.MaHoaDon, hd.TongTien, SUM(ct.ThanhTien) AS TongChiTiet
+FROM dbo.HoaDon hd
+JOIN dbo.ChiTietHoaDon ct ON ct.MaHoaDon = hd.MaHoaDon
+GROUP BY hd.MaHoaDon, hd.TongTien
+ORDER BY hd.MaHoaDon;
+GO

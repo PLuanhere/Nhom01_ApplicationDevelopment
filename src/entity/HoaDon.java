@@ -1,6 +1,10 @@
 package entity;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
 
 /** Hóa đơn thanh toán được lập sau khi phiếu sửa chữa hoàn thành. */
 public final class HoaDon {
@@ -93,6 +97,81 @@ public final class HoaDon {
     /** Trả về nguoi thuc hien. */
     public String getNguoiThucHien() {
         return nguoiThucHien;
+    }
+
+    /** Kiểm tra dữ liệu người dùng nhập trước khi DAO ghi thanh toán. */
+    public static String kiemTraThanhToan(long phaiThu, long tienNhan, HinhThucThanhToan hinhThuc,
+            String maGiaoDich) {
+        if (phaiThu < 0 || tienNhan < phaiThu) {
+            throw new IllegalArgumentException("Số tiền nhận chưa đủ.");
+        }
+        if (hinhThuc == null) {
+            throw new IllegalArgumentException("Cần chọn hình thức thanh toán.");
+        }
+        String thamChieu = maGiaoDich == null ? "" : maGiaoDich.trim();
+        if (hinhThuc == HinhThucThanhToan.CHUYEN_KHOAN && thamChieu.isEmpty()) {
+            throw new IllegalArgumentException("Nhập mã giao dịch chuyển khoản.");
+        }
+        return thamChieu;
+    }
+
+    /** Tạo mã hóa đơn từ số thứ tự đã được DAO khóa và đọc trong database. */
+    public static String taoMa(int nam, int soThuTu) {
+        if (nam < 1 || soThuTu < 1 || soThuTu > 9999) {
+            throw new IllegalArgumentException("Số thứ tự hóa đơn không hợp lệ.");
+        }
+        return String.format("HD-%04d-%04d", nam, soThuTu);
+    }
+
+    /** Cộng tiền nguyên đồng và phát hiện dữ liệu âm hoặc tràn số. */
+    public static long congTien(long hienTai, long them) {
+        if (hienTai < 0 || them < 0 || Long.MAX_VALUE - hienTai < them) {
+            throw new IllegalArgumentException("Tổng tiền vượt giới hạn.");
+        }
+        return hienTai + them;
+    }
+
+    /** Tính tổng các dòng hóa đơn/báo giá bằng quy tắc của entity. */
+    public static long tinhTongChiTiet(List<ChiTietHoaDon> chiTiet) {
+        return ChiTietHoaDon.tinhTong(chiTiet);
+    }
+
+    /** Kiểm tra snapshot chi tiết khớp tổng tiền trên hóa đơn. */
+    public static void kiemTraTongChiTiet(long tongHoaDon, List<ChiTietHoaDon> chiTiet) {
+        if (tongHoaDon != tinhTongChiTiet(chiTiet)) {
+            throw new IllegalStateException("Chi tiết hóa đơn không khớp tổng phải thu.");
+        }
+    }
+
+    /** Lọc hóa đơn theo kỳ và hình thức; DAO chỉ cung cấp danh sách đã truy vấn. */
+    public static List<HoaDon> locTheoKy(List<HoaDon> danhSach, LocalDate tuNgay, LocalDate denNgay,
+            HinhThucThanhToan hinhThuc) {
+        if (tuNgay != null && denNgay != null && tuNgay.isAfter(denNgay)) {
+            throw new IllegalArgumentException("Từ ngày không được sau đến ngày.");
+        }
+        List<HoaDon> ketQua = new ArrayList<>();
+        if (danhSach == null) {
+            return ketQua;
+        }
+        for (HoaDon hoaDon : danhSach) {
+            LocalDate ngay = hoaDon.getThoiDiemThanhToan().toLocalDate();
+            if ((tuNgay == null || !ngay.isBefore(tuNgay)) && (denNgay == null || !ngay.isAfter(denNgay))
+                    && (hinhThuc == null || hoaDon.getHinhThucThanhToan() == hinhThuc)) {
+                ketQua.add(hoaDon);
+            }
+        }
+        return ketQua;
+    }
+
+    /** Tính tổng các hóa đơn đã được entity lọc. */
+    public static long tinhTong(List<HoaDon> danhSach) {
+        long tong = 0;
+        if (danhSach != null) {
+            for (HoaDon hoaDon : danhSach) {
+                tong = congTien(tong, hoaDon.getTongTien());
+            }
+        }
+        return tong;
     }
 
     /** Thực hiện require non blank cho thành phần hiện tại. */

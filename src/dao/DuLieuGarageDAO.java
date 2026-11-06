@@ -27,7 +27,7 @@ public final class DuLieuGarageDAO {
     private final DichVuDAO dichVuDAO = new DichVuDAO();
     private final BaoGiaDAO baoGiaDAO = new BaoGiaDAO(tiepNhanDAO, kiemTraDAO, phuTungDAO, dichVuDAO);
     private final PhieuSuaChuaDAO suaChuaDAO = new PhieuSuaChuaDAO(baoGiaDAO, nhanVienDAO);
-    private final HoaDonDAO hoaDonDAO = new HoaDonDAO(suaChuaDAO);
+    private final HoaDonDAO hoaDonDAO = new HoaDonDAO();
     private final BanGiaoXeDAO banGiaoDAO = new BanGiaoXeDAO(suaChuaDAO, hoaDonDAO);
     private final TrangChuTiepNhanDAO trangChuDAO = new TrangChuTiepNhanDAO(tiepNhanDAO, kiemTraDAO, baoGiaDAO,
             suaChuaDAO, phuTungDAO, banGiaoDAO);
