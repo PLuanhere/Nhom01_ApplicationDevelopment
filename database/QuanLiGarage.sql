@@ -48,15 +48,13 @@ BEGIN TRY
     );
 
     CREATE TABLE dbo.TaiKhoan (
-        MaTaiKhoan VARCHAR(20) PRIMARY KEY,
-        MaNhanVien VARCHAR(20) NOT NULL UNIQUE,
-        TenDangNhap VARCHAR(64) NOT NULL UNIQUE,
+        MaNhanVien VARCHAR(20) PRIMARY KEY,
         MatKhau NVARCHAR(255) NOT NULL,
         VaiTro VARCHAR(30) NOT NULL,
         HoatDong BIT NOT NULL DEFAULT 1,
         NgayTao DATETIME2(3) NOT NULL DEFAULT SYSDATETIME(),
+        PhienBan INT NOT NULL DEFAULT 1,
         FOREIGN KEY (MaNhanVien) REFERENCES dbo.NhanVien(MaNhanVien),
-        CHECK (LEN(LTRIM(RTRIM(TenDangNhap))) > 0),
         CHECK (LEN(MatKhau) > 0),
         CHECK (VaiTro IN ('QUAN_LY', 'NHAN_VIEN_TIEP_NHAN', 'NHAN_VIEN_KY_THUAT', 'THU_NGAN'))
     );
@@ -64,12 +62,12 @@ BEGIN TRY
     CREATE TABLE dbo.NhatKyTaiKhoan (
         MaNhatKy BIGINT IDENTITY(1,1) PRIMARY KEY,
         ThoiDiem DATETIME2(3) NOT NULL DEFAULT SYSDATETIME(),
-        NguoiThucHien VARCHAR(64) NOT NULL,
+        NguoiThucHien VARCHAR(20) NOT NULL,
         MaTaiKhoan VARCHAR(20) NOT NULL,
         HanhDong NVARCHAR(100) NOT NULL,
         LyDo NVARCHAR(1000) NOT NULL,
-        FOREIGN KEY (NguoiThucHien) REFERENCES dbo.TaiKhoan(TenDangNhap),
-        FOREIGN KEY (MaTaiKhoan) REFERENCES dbo.TaiKhoan(MaTaiKhoan)
+        FOREIGN KEY (NguoiThucHien) REFERENCES dbo.TaiKhoan(MaNhanVien),
+        FOREIGN KEY (MaTaiKhoan) REFERENCES dbo.TaiKhoan(MaNhanVien)
     );
 
     -- 2. Khách hàng, xe
@@ -142,17 +140,17 @@ BEGIN TRY
         TinhTrang NVARCHAR(2000) NOT NULL,
         TaiSan NVARCHAR(2000) NOT NULL DEFAULT N'',
         YeuCau NVARCHAR(2000) NOT NULL,
-        NguoiTiepNhan VARCHAR(64) NOT NULL,
+        NguoiTiepNhan VARCHAR(20) NOT NULL,
         DaXacNhan BIT NOT NULL DEFAULT 1,
         ThoiGianXacNhan DATETIME2(3) NOT NULL,
-        TaiKhoanKyThuat VARCHAR(64) NULL,
-        NguoiPhanCong VARCHAR(64) NULL,
+        TaiKhoanKyThuat VARCHAR(20) NULL,
+        NguoiPhanCong VARCHAR(20) NULL,
         ThoiDiemPhanCong DATETIME2(3) NULL,
         FOREIGN KEY (MaXe) REFERENCES dbo.Xe(MaXe),
         FOREIGN KEY (MaKH) REFERENCES dbo.KhachHang(MaKH),
-        FOREIGN KEY (NguoiTiepNhan) REFERENCES dbo.TaiKhoan(TenDangNhap),
-        FOREIGN KEY (TaiKhoanKyThuat) REFERENCES dbo.TaiKhoan(TenDangNhap),
-        FOREIGN KEY (NguoiPhanCong) REFERENCES dbo.TaiKhoan(TenDangNhap),
+        FOREIGN KEY (NguoiTiepNhan) REFERENCES dbo.TaiKhoan(MaNhanVien),
+        FOREIGN KEY (TaiKhoanKyThuat) REFERENCES dbo.TaiKhoan(MaNhanVien),
+        FOREIGN KEY (NguoiPhanCong) REFERENCES dbo.TaiKhoan(MaNhanVien),
         CHECK (SoKm >= 0),
         CHECK (DaXacNhan = 1),
         CHECK (
@@ -202,20 +200,20 @@ BEGIN TRY
         BienSo VARCHAR(20) NOT NULL,
         NgayHen DATETIME2(3) NOT NULL,
         NgayLap DATETIME2(3) NOT NULL,
-        NguoiLap VARCHAR(64) NOT NULL,
+        NguoiLap VARCHAR(20) NOT NULL,
         TrangThai VARCHAR(30) NOT NULL,
         NgayGui DATETIME2(3) NULL,
-        NguoiGui VARCHAR(64) NULL,
+        NguoiGui VARCHAR(20) NULL,
         ThoiDiemPhanHoi DATETIME2(3) NULL,
         ThoiDiemGhiNhan DATETIME2(3) NULL,
-        NguoiGhiNhan VARCHAR(64) NULL,
+        NguoiGhiNhan VARCHAR(20) NULL,
         KenhPhanHoi NVARCHAR(100) NOT NULL DEFAULT N'',
         GhiChuPhanHoi NVARCHAR(2000) NOT NULL DEFAULT N'',
         MaThaoTac VARCHAR(100) NOT NULL UNIQUE,
         FOREIGN KEY (MaBaoGiaGoc) REFERENCES dbo.NhomBaoGia(MaBaoGiaGoc),
-        FOREIGN KEY (NguoiLap) REFERENCES dbo.TaiKhoan(TenDangNhap),
-        FOREIGN KEY (NguoiGui) REFERENCES dbo.TaiKhoan(TenDangNhap),
-        FOREIGN KEY (NguoiGhiNhan) REFERENCES dbo.TaiKhoan(TenDangNhap),
+        FOREIGN KEY (NguoiLap) REFERENCES dbo.TaiKhoan(MaNhanVien),
+        FOREIGN KEY (NguoiGui) REFERENCES dbo.TaiKhoan(MaNhanVien),
+        FOREIGN KEY (NguoiGhiNhan) REFERENCES dbo.TaiKhoan(MaNhanVien),
         UNIQUE (MaBaoGiaGoc, PhienBan),
         UNIQUE (MaBaoGia, MaBaoGiaGoc),
         CHECK (PhienBan > 0),
@@ -259,12 +257,12 @@ BEGIN TRY
         MaBaoGia VARCHAR(50) NOT NULL,
         MaBaoGiaGoc VARCHAR(40) NOT NULL UNIQUE,
         BienSo VARCHAR(20) NOT NULL,
-        KyThuatChinh VARCHAR(64) NOT NULL,
-        KyThuatPhoiHop VARCHAR(64) NULL,
+        KyThuatChinh VARCHAR(20) NOT NULL,
+        KyThuatPhoiHop VARCHAR(20) NULL,
         HanHoanThanh DATETIME2(3) NOT NULL,
         GhiChu NVARCHAR(2000) NOT NULL DEFAULT N'',
         TrangThai VARCHAR(30) NOT NULL,
-        NguoiPhatHanh VARCHAR(64) NOT NULL,
+        NguoiPhatHanh VARCHAR(20) NOT NULL,
         ThoiDiemPhatHanh DATETIME2(3) NOT NULL,
         ThoiDiemHoanTat DATETIME2(3) NULL,
         KetQua0 NVARCHAR(2000) NOT NULL DEFAULT N'',
@@ -272,9 +270,9 @@ BEGIN TRY
         KetQua2 NVARCHAR(2000) NOT NULL DEFAULT N'',
         MaThaoTac VARCHAR(100) NOT NULL UNIQUE,
         FOREIGN KEY (MaBaoGia, MaBaoGiaGoc) REFERENCES dbo.BaoGia(MaBaoGia, MaBaoGiaGoc),
-        FOREIGN KEY (KyThuatChinh) REFERENCES dbo.TaiKhoan(TenDangNhap),
-        FOREIGN KEY (KyThuatPhoiHop) REFERENCES dbo.TaiKhoan(TenDangNhap),
-        FOREIGN KEY (NguoiPhatHanh) REFERENCES dbo.TaiKhoan(TenDangNhap),
+        FOREIGN KEY (KyThuatChinh) REFERENCES dbo.TaiKhoan(MaNhanVien),
+        FOREIGN KEY (KyThuatPhoiHop) REFERENCES dbo.TaiKhoan(MaNhanVien),
+        FOREIGN KEY (NguoiPhatHanh) REFERENCES dbo.TaiKhoan(MaNhanVien),
         CHECK (TrangThai IN ('CHO_SUA_CHUA', 'DANG_SUA', 'CHO_PHU_TUNG', 'HOAN_THANH')),
         CHECK (KyThuatPhoiHop IS NULL OR KyThuatPhoiHop <> KyThuatChinh),
         CHECK (
@@ -298,13 +296,13 @@ BEGIN TRY
         MaPhieu VARCHAR(40) NOT NULL,
         ViTri INT NOT NULL,
         TenHangMuc NVARCHAR(200) NOT NULL,
-        TaiKhoanThucHien VARCHAR(64) NOT NULL,
+        TaiKhoanThucHien VARCHAR(20) NOT NULL,
         KetQua NVARCHAR(2000) NOT NULL DEFAULT N'',
         TrangThai VARCHAR(30) NOT NULL,
         PhatSinh BIT NOT NULL DEFAULT 0,
         PRIMARY KEY (MaPhieu, ViTri),
         FOREIGN KEY (MaPhieu) REFERENCES dbo.PhieuSuaChua(MaPhieu),
-        FOREIGN KEY (TaiKhoanThucHien) REFERENCES dbo.TaiKhoan(TenDangNhap),
+        FOREIGN KEY (TaiKhoanThucHien) REFERENCES dbo.TaiKhoan(MaNhanVien),
         CHECK (ViTri >= 0),
         CHECK (TrangThai IN ('CHO_SUA_CHUA', 'DANG_SUA', 'CHO_PHU_TUNG', 'HOAN_THANH'))
     );
@@ -330,8 +328,8 @@ BEGIN TRY
         NgayNhap DATETIME2(3) NOT NULL,
         NguonNhap NVARCHAR(1000) NOT NULL,
         ChungTuNguon NVARCHAR(100) NOT NULL DEFAULT N'',
-        NguoiNhap VARCHAR(64) NOT NULL,
-        FOREIGN KEY (NguoiNhap) REFERENCES dbo.TaiKhoan(TenDangNhap),
+        NguoiNhap VARCHAR(20) NOT NULL,
+        FOREIGN KEY (NguoiNhap) REFERENCES dbo.TaiKhoan(MaNhanVien),
         CHECK (LEN(LTRIM(RTRIM(NguonNhap))) > 0)
     );
 
@@ -354,13 +352,13 @@ BEGIN TRY
         ViTriHangMuc INT NOT NULL,
         MaPhuTung VARCHAR(30) NOT NULL,
         SoLuong DECIMAL(18,3) NOT NULL,
-        NguoiThucHien VARCHAR(64) NOT NULL,
+        NguoiThucHien VARCHAR(20) NOT NULL,
         GhiChu NVARCHAR(2000) NOT NULL DEFAULT N'',
         TrangThai VARCHAR(20) NOT NULL,
         MaThaoTac VARCHAR(100) NOT NULL UNIQUE,
         FOREIGN KEY (MaLenhSuaChua, ViTriHangMuc) REFERENCES dbo.ChiTietSuaChua(MaPhieu, ViTri),
         FOREIGN KEY (MaPhuTung) REFERENCES dbo.PhuTung(MaPhuTung),
-        FOREIGN KEY (NguoiThucHien) REFERENCES dbo.TaiKhoan(TenDangNhap),
+        FOREIGN KEY (NguoiThucHien) REFERENCES dbo.TaiKhoan(MaNhanVien),
         CHECK (SoLuong > 0),
         CHECK (TrangThai IN ('NHAP', 'DA_GHI_NHAN'))
     );
@@ -373,10 +371,10 @@ BEGIN TRY
         TonTruoc DECIMAL(18,3) NOT NULL,
         TonSau DECIMAL(18,3) NOT NULL,
         ChungTu NVARCHAR(100) NOT NULL,
-        NguoiThucHien VARCHAR(64) NOT NULL,
+        NguoiThucHien VARCHAR(20) NOT NULL,
         LyDo NVARCHAR(2000) NOT NULL,
         FOREIGN KEY (MaPhuTung) REFERENCES dbo.PhuTung(MaPhuTung),
-        FOREIGN KEY (NguoiThucHien) REFERENCES dbo.TaiKhoan(TenDangNhap),
+        FOREIGN KEY (NguoiThucHien) REFERENCES dbo.TaiKhoan(MaNhanVien),
         CHECK (TonTruoc >= 0 AND TonSau >= 0)
     );
 
@@ -389,11 +387,11 @@ BEGIN TRY
         TongTien BIGINT NOT NULL,
         HinhThucThanhToan VARCHAR(20) NOT NULL,
         ThoiDiemThanhToan DATETIME2(3) NOT NULL,
-        NguoiThucHien VARCHAR(64) NOT NULL,
+        NguoiThucHien VARCHAR(20) NOT NULL,
         MaGiaoDich NVARCHAR(100) NOT NULL DEFAULT N'',
         FOREIGN KEY (MaPhieuSuaChua) REFERENCES dbo.PhieuSuaChua(MaPhieu),
         UNIQUE (MaHoaDon, MaPhieuSuaChua),
-        FOREIGN KEY (NguoiThucHien) REFERENCES dbo.TaiKhoan(TenDangNhap),
+        FOREIGN KEY (NguoiThucHien) REFERENCES dbo.TaiKhoan(MaNhanVien),
         CHECK (TongTien >= 0),
         CHECK (HinhThucThanhToan IN ('TIEN_MAT', 'CHUYEN_KHOAN')),
         CHECK (HinhThucThanhToan <> 'CHUYEN_KHOAN' OR LEN(LTRIM(RTRIM(MaGiaoDich))) > 0)
@@ -419,7 +417,7 @@ BEGIN TRY
         MaBanGiao VARCHAR(40) PRIMARY KEY,
         MaLenh VARCHAR(40) NOT NULL UNIQUE,
         MaHoaDon VARCHAR(40) NOT NULL,
-        NguoiGiao VARCHAR(64) NOT NULL,
+        NguoiGiao VARCHAR(20) NOT NULL,
         NguoiNhan NVARCHAR(150) NOT NULL,
         ThoiDiemGiao DATETIME2(3) NOT NULL,
         ThoiDiemGhiNhan DATETIME2(3) NOT NULL,
@@ -429,7 +427,7 @@ BEGIN TRY
         HinhThucXacNhan NVARCHAR(200) NOT NULL,
         MaThaoTac VARCHAR(100) NOT NULL UNIQUE,
         FOREIGN KEY (MaHoaDon, MaLenh) REFERENCES dbo.HoaDon(MaHoaDon, MaPhieuSuaChua),
-        FOREIGN KEY (NguoiGiao) REFERENCES dbo.TaiKhoan(TenDangNhap),
+        FOREIGN KEY (NguoiGiao) REFERENCES dbo.TaiKhoan(MaNhanVien),
         CHECK (ThoiDiemGiao <= ThoiDiemGhiNhan)
     );
 
@@ -441,8 +439,8 @@ BEGIN TRY
         DenNgay DATE NOT NULL,
         NoiDung NVARCHAR(MAX) NOT NULL DEFAULT N'',
         NgayLap DATETIME2(3) NOT NULL,
-        NguoiLap VARCHAR(64) NOT NULL,
-        FOREIGN KEY (NguoiLap) REFERENCES dbo.TaiKhoan(TenDangNhap),
+        NguoiLap VARCHAR(20) NOT NULL,
+        FOREIGN KEY (NguoiLap) REFERENCES dbo.TaiKhoan(MaNhanVien),
         CHECK (TuNgay <= DenNgay)
     );
 
@@ -588,18 +586,18 @@ BEGIN TRY
 
     -- 2. Tài khoản. Mật khẩu chung dùng để thử: 123
     INSERT dbo.TaiKhoan
-        (MaTaiKhoan, MaNhanVien, TenDangNhap, MatKhau, VaiTro, HoatDong, NgayTao)
+        (MaNhanVien, MatKhau, VaiTro, HoatDong, NgayTao)
     VALUES
-        ('TK001', 'NV001', 'quanly', N'123', 'QUAN_LY', 1, SYSDATETIME()),
-        ('TK003', 'NV003', 'tiepnhan', N'123', 'NHAN_VIEN_TIEP_NHAN', 1, SYSDATETIME()),
-        ('TK005', 'NV005', 'kythuat', N'123', 'NHAN_VIEN_KY_THUAT', 1, SYSDATETIME()),
-        ('TK007', 'NV007', 'thungan', N'123', 'THU_NGAN', 1, SYSDATETIME());
+        ('NV001', N'123', 'QUAN_LY', 1, SYSDATETIME()),
+        ('NV003', N'123', 'NHAN_VIEN_TIEP_NHAN', 1, SYSDATETIME()),
+        ('NV005', N'123', 'NHAN_VIEN_KY_THUAT', 1, SYSDATETIME()),
+        ('NV007', N'123', 'THU_NGAN', 1, SYSDATETIME());
 
     -- 3. Nhật ký tài khoản
     INSERT dbo.NhatKyTaiKhoan
         (ThoiDiem, NguoiThucHien, MaTaiKhoan, HanhDong, LyDo)
     VALUES
-        (SYSDATETIME(), 'quanly', 'TK001', N'Khởi tạo dữ liệu mẫu', N'Tạo bốn tài khoản thử nghiệm.');
+        (SYSDATETIME(), 'NV001', 'NV001', N'Khởi tạo dữ liệu mẫu', N'Tạo bốn tài khoản ban đầu.');
 
     -- 4. Khách hàng
     INSERT dbo.KhachHang
@@ -645,12 +643,12 @@ BEGIN TRY
     VALUES
         ('TN-2026-0001', 'MAU-TN-2026-0001', 'XE001', 'KH001', '51A-12345', N'Nguyễn Văn An', '0901000001',
          N'Toyota Vios', 42000, @LucTiepNhan, N'Đến kỳ thay dầu', N'01 chìa khóa',
-         N'Thay dầu và lọc dầu', 'tiepnhan', 1, DATEADD(MINUTE, 5, @LucTiepNhan),
-         'kythuat', 'tiepnhan', DATEADD(MINUTE, 10, @LucTiepNhan)),
+         N'Thay dầu và lọc dầu', 'NV003', 1, DATEADD(MINUTE, 5, @LucTiepNhan),
+         'NV005', 'NV003', DATEADD(MINUTE, 10, @LucTiepNhan)),
         ('TN-2026-0002', 'MAU-TN-2026-0002', 'XE002', 'KH002', '51B-67890', N'Trần Thị Bình', '0901000002',
          N'Honda City', 28000, DATEADD(HOUR, 1, @LucTiepNhan), N'Điều hòa làm lạnh yếu', N'01 chìa khóa',
-         N'Kiểm tra điều hòa', 'tiepnhan', 1, DATEADD(MINUTE, 65, @LucTiepNhan),
-         'kythuat', 'tiepnhan', DATEADD(MINUTE, 70, @LucTiepNhan));
+         N'Kiểm tra điều hòa', 'NV003', 1, DATEADD(MINUTE, 65, @LucTiepNhan),
+         'NV005', 'NV003', DATEADD(MINUTE, 70, @LucTiepNhan));
 
     -- 9. Báo cáo kiểm tra: một phiếu hoàn tất và một phiếu đang nhập.
     INSERT dbo.BaoCaoKiemTra
@@ -679,9 +677,9 @@ BEGIN TRY
          KenhPhanHoi, GhiChuPhanHoi, MaThaoTac)
     VALUES
         ('BG-2026-0001', 'BG-2026-0001', 1, '51A-12345', DATEADD(DAY, 1, @LucTiepNhan),
-         DATEADD(MINUTE, 45, @LucTiepNhan), 'tiepnhan', 'DA_DONG_Y',
-         DATEADD(MINUTE, 50, @LucTiepNhan), 'tiepnhan',
-         DATEADD(MINUTE, 60, @LucTiepNhan), DATEADD(MINUTE, 61, @LucTiepNhan), 'tiepnhan',
+         DATEADD(MINUTE, 45, @LucTiepNhan), 'NV003', 'DA_DONG_Y',
+         DATEADD(MINUTE, 50, @LucTiepNhan), 'NV003',
+         DATEADD(MINUTE, 60, @LucTiepNhan), DATEADD(MINUTE, 61, @LucTiepNhan), 'NV003',
          N'Trực tiếp', N'Khách đồng ý toàn bộ báo giá.', 'MAU-BG-2026-0001');
 
     -- 12. Chi tiết báo giá. Tổng cộng: 920.000 đồng.
@@ -698,8 +696,8 @@ BEGIN TRY
          HanHoanThanh, GhiChu, TrangThai, NguoiPhatHanh,
          ThoiDiemPhatHanh, ThoiDiemHoanTat, KetQua0, KetQua1, KetQua2, MaThaoTac)
     VALUES
-        ('SC-2026-0001', 'BG-2026-0001', 'BG-2026-0001', '51A-12345', 'kythuat', NULL,
-         DATEADD(DAY, 1, @LucTiepNhan), N'Thay đúng loại dầu trong báo giá.', 'HOAN_THANH', 'tiepnhan',
+        ('SC-2026-0001', 'BG-2026-0001', 'BG-2026-0001', '51A-12345', 'NV005', NULL,
+         DATEADD(DAY, 1, @LucTiepNhan), N'Thay đúng loại dầu trong báo giá.', 'HOAN_THANH', 'NV003',
          DATEADD(MINUTE, 70, @LucTiepNhan), DATEADD(MINUTE, 180, @LucTiepNhan),
          N'Xe vận hành bình thường', N'Đã đối chiếu đủ phụ tùng', N'Đủ điều kiện thu tiền', 'MAU-SC-2026-0001');
 
@@ -714,9 +712,9 @@ BEGIN TRY
     INSERT dbo.ChiTietSuaChua
         (MaPhieu, ViTri, TenHangMuc, TaiKhoanThucHien, KetQua, TrangThai, PhatSinh)
     VALUES
-        ('SC-2026-0001', 0, N'Thay dầu động cơ', 'kythuat', N'Đã thực hiện', 'HOAN_THANH', 0),
-        ('SC-2026-0001', 1, N'Dầu động cơ 5W-30', 'kythuat', N'Đã sử dụng 4 lít', 'HOAN_THANH', 0),
-        ('SC-2026-0001', 2, N'Lọc dầu động cơ', 'kythuat', N'Đã thay 1 cái', 'HOAN_THANH', 0);
+        ('SC-2026-0001', 0, N'Thay dầu động cơ', 'NV005', N'Đã thực hiện', 'HOAN_THANH', 0),
+        ('SC-2026-0001', 1, N'Dầu động cơ 5W-30', 'NV005', N'Đã sử dụng 4 lít', 'HOAN_THANH', 0),
+        ('SC-2026-0001', 2, N'Lọc dầu động cơ', 'NV005', N'Đã thay 1 cái', 'HOAN_THANH', 0);
 
     -- 16. Phát sinh sửa chữa đã bị khách từ chối nên không làm tăng chi phí.
     INSERT dbo.PhatSinhSuaChua
@@ -731,7 +729,7 @@ BEGIN TRY
     INSERT dbo.PhieuNhapKho
         (MaPhieu, NgayNhap, NguonNhap, ChungTuNguon, NguoiNhap)
     VALUES
-        ('NK-2026-0001', @LucNhapKho, N'Nhà cung cấp An Phát', N'CT-NK-2026-0001', 'quanly');
+        ('NK-2026-0001', @LucNhapKho, N'Nhà cung cấp An Phát', N'CT-NK-2026-0001', 'NV001');
 
     -- 17. Chi tiết nhập kho
     INSERT dbo.ChiTietNhapKho
@@ -746,18 +744,18 @@ BEGIN TRY
         (MaGhiNhan, MaLenhSuaChua, ViTriHangMuc, MaPhuTung,
          SoLuong, NguoiThucHien, GhiChu, TrangThai, MaThaoTac)
     VALUES
-        ('SD-2026-0001', 'SC-2026-0001', 1, 'PT001', 4, 'kythuat', N'Dùng theo báo giá', 'DA_GHI_NHAN', 'MAU-SD-2026-0001'),
-        ('SD-2026-0002', 'SC-2026-0001', 2, 'PT002', 1, 'kythuat', N'Dùng theo báo giá', 'DA_GHI_NHAN', 'MAU-SD-2026-0002');
+        ('SD-2026-0001', 'SC-2026-0001', 1, 'PT001', 4, 'NV005', N'Dùng theo báo giá', 'DA_GHI_NHAN', 'MAU-SD-2026-0001'),
+        ('SD-2026-0002', 'SC-2026-0001', 2, 'PT002', 1, 'NV005', N'Dùng theo báo giá', 'DA_GHI_NHAN', 'MAU-SD-2026-0002');
 
     -- 19. Biến động kho
     INSERT dbo.BienDongKho
         (MaPhuTung, ThoiDiem, Loai, TonTruoc, TonSau, ChungTu, NguoiThucHien, LyDo)
     VALUES
-        ('PT001', @LucNhapKho, N'Nhập', 0, 20, N'NK-2026-0001', 'quanly', N'Nhập dầu động cơ'),
-        ('PT002', @LucNhapKho, N'Nhập', 0, 10, N'NK-2026-0001', 'quanly', N'Nhập lọc dầu'),
-        ('PT003', @LucNhapKho, N'Nhập', 0, 5, N'NK-2026-0001', 'quanly', N'Nhập má phanh'),
-        ('PT001', DATEADD(MINUTE, 160, @LucTiepNhan), N'Xuất', 20, 16, N'SC-2026-0001', 'kythuat', N'Dùng cho xe 51A-12345'),
-        ('PT002', DATEADD(MINUTE, 161, @LucTiepNhan), N'Xuất', 10, 9, N'SC-2026-0001', 'kythuat', N'Dùng cho xe 51A-12345');
+        ('PT001', @LucNhapKho, N'Nhập', 0, 20, N'NK-2026-0001', 'NV001', N'Nhập dầu động cơ'),
+        ('PT002', @LucNhapKho, N'Nhập', 0, 10, N'NK-2026-0001', 'NV001', N'Nhập lọc dầu'),
+        ('PT003', @LucNhapKho, N'Nhập', 0, 5, N'NK-2026-0001', 'NV001', N'Nhập má phanh'),
+        ('PT001', DATEADD(MINUTE, 160, @LucTiepNhan), N'Xuất', 20, 16, N'SC-2026-0001', 'NV005', N'Dùng cho xe 51A-12345'),
+        ('PT002', DATEADD(MINUTE, 161, @LucTiepNhan), N'Xuất', 10, 9, N'SC-2026-0001', 'NV005', N'Dùng cho xe 51A-12345');
 
     -- 20. Hóa đơn
     INSERT dbo.HoaDon
@@ -765,7 +763,7 @@ BEGIN TRY
          HinhThucThanhToan, ThoiDiemThanhToan, NguoiThucHien, MaGiaoDich)
     VALUES
         ('HD-2026-0001', 'SC-2026-0001', N'Nguyễn Văn An', '51A-12345', 920000,
-         'TIEN_MAT', DATEADD(MINUTE, 190, @LucTiepNhan), 'thungan', N'');
+         'TIEN_MAT', DATEADD(MINUTE, 190, @LucTiepNhan), 'NV007', N'');
 
     -- 21. Chi tiết hóa đơn được chụp từ báo giá tại lúc thu tiền.
     INSERT dbo.ChiTietHoaDon
@@ -781,7 +779,7 @@ BEGIN TRY
          ThoiDiemGiao, ThoiDiemGhiNhan, TinhTrang, TaiSanDaTra,
          GhiChu, HinhThucXacNhan, MaThaoTac)
     VALUES
-        ('GX-2026-0001', 'SC-2026-0001', 'HD-2026-0001', 'tiepnhan', N'Nguyễn Văn An',
+        ('GX-2026-0001', 'SC-2026-0001', 'HD-2026-0001', 'NV003', N'Nguyễn Văn An',
          DATEADD(MINUTE, 200, @LucTiepNhan), DATEADD(MINUTE, 201, @LucTiepNhan),
          N'Xe vận hành bình thường', N'Đã trả 01 chìa khóa',
          N'Khách đã kiểm tra và nhận xe.', N'Ký phiếu bàn giao', 'MAU-GX-2026-0001');
@@ -791,7 +789,7 @@ BEGIN TRY
         (MaBaoCao, LoaiBaoCao, TuNgay, DenNgay, NoiDung, NgayLap, NguoiLap)
     VALUES
         ('BC-2026-0001', N'Doanh thu', @NgayBatDau, @NgayBatDau, N'Tổng doanh thu trong ngày: 920.000 đồng.',
-         DATEADD(MINUTE, 210, @LucTiepNhan), 'quanly');
+         DATEADD(MINUTE, 210, @LucTiepNhan), 'NV001');
 
     -- 24. Chỉ số báo cáo
     INSERT dbo.ChiSoBaoCao
@@ -830,9 +828,9 @@ BEGIN CATCH
 END CATCH;
 GO
 
-SELECT MaTaiKhoan, TenDangNhap, VaiTro, HoatDong
+SELECT MaNhanVien, VaiTro, HoatDong
 FROM dbo.TaiKhoan
-ORDER BY MaTaiKhoan;
+ORDER BY MaNhanVien;
 
 SELECT MaHoaDon, MaPhieuSuaChua, TongTien, HinhThucThanhToan
 FROM dbo.HoaDon;

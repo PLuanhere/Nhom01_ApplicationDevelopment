@@ -1,6 +1,5 @@
 package ui.screen.quanly;
 
-import dao.NhanVienDAO;
 import dao.TaiKhoanDAO;
 import entity.NhanVien;
 import entity.TaiKhoan;
@@ -44,16 +43,16 @@ public final class TaiKhoanPanel extends JPanel implements ActionListener {
     private final JPanel pnlDanhSach = new JPanel(new BorderLayout(0, 14));
 
     // Ô tìm kiếm và các bộ lọc danh sách.
-    private final JTextField txtTim = UiChung.taoTimKiem("Tìm mã TK, tài khoản, nhân viên");
+    private final JTextField txtTim = UiChung.taoTimKiem("Tìm mã nhân viên hoặc họ tên");
     private final JComboBox<String> cmbSapXep = new JComboBox<>(
-            new String[] { "Mã tăng dần", "Tên A → Z", "Tên Z → A" });
+            new String[] { "Mã tăng dần", "Họ tên A → Z", "Họ tên Z → A" });
     private final JComboBox<String> cmbTrangThai = new JComboBox<>(
             new String[] { "Tất cả trạng thái", "Đang hoạt động", "Đã khóa" });
     private final JComboBox<Object> cmbVaiTro = new JComboBox<>(new Object[] { "Tất cả vai trò", VaiTro.QUAN_LY,
             VaiTro.NHAN_VIEN_TIEP_NHAN, VaiTro.NHAN_VIEN_KY_THUAT, VaiTro.THU_NGAN });
     // Bảng dữ liệu và mô hình các dòng hiển thị.
     private final DefaultTableModel model = new DefaultTableModel(
-            new String[] { "Mã TK", "Tên đăng nhập", "Nhân viên", "Vai trò được cấp", "Trạng thái", "Thao tác" }, 0);
+            new String[] { "Mã nhân viên", "Nhân viên", "Vai trò được cấp", "Trạng thái", "Thao tác" }, 0);
     private final JTable tblTaiKhoan = new JTable(model);
 
     // Các nút thực hiện thao tác của màn hình.
@@ -153,7 +152,7 @@ public final class TaiKhoanPanel extends JPanel implements ActionListener {
 
     /** Tạo bảng chỉ đọc, phủ chiều rộng và không cho kéo thay đổi cột. */
     private void taoBang() {
-        UiChung.dinhDangBang(tblTaiKhoan, 90, 155, 240, 150, 145, 130);
+        UiChung.dinhDangBang(tblTaiKhoan, 140, 280, 220, 180, 150);
         ganSuKienBang();
     }
 
@@ -171,7 +170,7 @@ public final class TaiKhoanPanel extends JPanel implements ActionListener {
             @Override
             public void mouseClicked(MouseEvent event) {
                 if (tblTaiKhoan.rowAtPoint(event.getPoint()) >= 0
-                        && (tblTaiKhoan.columnAtPoint(event.getPoint()) == 5 || event.getClickCount() == 2)) {
+                        && (tblTaiKhoan.columnAtPoint(event.getPoint()) == 4 || event.getClickCount() == 2)) {
                     TaiKhoan tk = layDongChon();
                     if (tk != null) {
                         moHoSo(tk);
@@ -196,25 +195,31 @@ public final class TaiKhoanPanel extends JPanel implements ActionListener {
 
     /** Đọc dữ liệu theo điều kiện tìm, lọc, sắp xếp rồi cập nhật bảng và số kết quả. */
     private void taiDanhSach() {
-        int dongChon = tblTaiKhoan.getSelectedRow();
-        String maChon = dongChon < 0 ? null : String.valueOf(tblTaiKhoan.getValueAt(dongChon, 0));
-        int hoatDong = cmbTrangThai.getSelectedIndex() == 0 ? -1 : cmbTrangThai.getSelectedIndex() == 1 ? 1 : 0;
-        VaiTro vaiTro = cmbVaiTro.getSelectedItem() instanceof VaiTro ? (VaiTro) cmbVaiTro.getSelectedItem() : null;
-        List<TaiKhoan> ketQua = dao.timKiem(nguoiDung, txtTim.getText(), hoatDong, vaiTro,
-                cmbSapXep.getSelectedIndex());
-        model.setRowCount(0);
-        for (TaiKhoan tk : ketQua) {
-            NhanVien nv = new NhanVienDAO().timTheoMa(nguoiDung, tk.getMaNhanVien());
-            model.addRow(new Object[] { tk.getMaTaiKhoan(), tk.getTenDangNhap(), nv.getHoTen(),
-                    tk.getVaiTro().getTenHienThi(), TaiKhoanDAO.tenTrangThai(tk), "Xem chi tiết" });
+        try {
+            int dongChon = tblTaiKhoan.getSelectedRow();
+            String maChon = dongChon < 0 ? null : String.valueOf(tblTaiKhoan.getValueAt(dongChon, 0));
+            int hoatDong = cmbTrangThai.getSelectedIndex() == 0 ? -1 : cmbTrangThai.getSelectedIndex() == 1 ? 1 : 0;
+            VaiTro vaiTro = cmbVaiTro.getSelectedItem() instanceof VaiTro ? (VaiTro) cmbVaiTro.getSelectedItem() : null;
+            List<TaiKhoan> ketQua = dao.timKiem(nguoiDung, txtTim.getText(), hoatDong, vaiTro,
+                    cmbSapXep.getSelectedIndex());
+            model.setRowCount(0);
+            for (TaiKhoan tk : ketQua) {
+                NhanVien nv = dao.timNhanVienTheoMa(nguoiDung, tk.getMaNhanVien());
+                model.addRow(new Object[] { tk.getMaNhanVien(), nv.getHoTen(), tk.getVaiTro().getTenHienThi(),
+                        TaiKhoanDAO.tenTrangThai(tk), "Xem chi tiết" });
+            }
+            lblSoLuong.setText(ketQua.size() + " kết quả đang hiển thị");
+            lblHienThi.setText("Hiển thị " + ketQua.size() + " / " + dao.layDanhSach(nguoiDung).size() + " hồ sơ");
+            if (ketQua.isEmpty()) {
+                lblHienThi.setText(lblHienThi.getText() + " · Không có kết quả phù hợp.");
+            }
+            chonDong(maChon);
+            lblKetQua.setVisible(false);
+        } catch (IllegalStateException ex) {
+            model.setRowCount(0);
+            lblSoLuong.setText("Không tải được dữ liệu");
+            lblHienThi.setText(ex.getMessage());
         }
-        lblSoLuong.setText(ketQua.size() + " kết quả đang hiển thị");
-        lblHienThi.setText("Hiển thị " + ketQua.size() + " / " + dao.layDanhSach(nguoiDung).size() + " hồ sơ");
-        if (ketQua.isEmpty()) {
-            lblHienThi.setText(lblHienThi.getText() + " · Không có kết quả phù hợp.");
-        }
-        chonDong(maChon);
-        lblKetQua.setVisible(false);
     }
 
     /** Chọn và cuộn đến bản ghi theo mã nếu còn nằm trong danh sách lọc. */

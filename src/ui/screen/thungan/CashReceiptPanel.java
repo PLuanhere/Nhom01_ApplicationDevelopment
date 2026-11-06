@@ -55,7 +55,7 @@ public final class CashReceiptPanel extends JPanel implements ActionListener {
 
     /** Mở màn xem thử độc lập với dữ liệu tạo sẵn. */
     public CashReceiptPanel() {
-        this(new HoaDonDAO(), new TaiKhoan("thungan", VaiTro.THU_NGAN));
+        this(new HoaDonDAO(), new TaiKhoan("NV007", VaiTro.THU_NGAN));
     }
 
     /** Giữ cách mở màn từ phần tra cứu chứng từ hiện có. */

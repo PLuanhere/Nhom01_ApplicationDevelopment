@@ -36,6 +36,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.Timer;
 
 import ui.component.AppHeaderPanel;
 import ui.component.KyThuatUi;
@@ -96,13 +97,7 @@ public final class MainFrame extends JFrame implements ActionListener {
     private PhuTungDAO khoQuanLy;
     private String mucQuanLyDangMo = "Tổng quan điều hành";
     private final TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAO();
-    private final TaiKhoanDAO.TheoDoiTaiKhoan theoDoiTaiKhoan = new TaiKhoanDAO.TheoDoiTaiKhoan() {
-        /** Kiểm tra và đóng phiên khi tài khoản bị thay đổi. */
-        @Override
-        public void taiKhoanThayDoi() {
-            kiemTraPhienDangNhap();
-        }
-    };
+    private Timer timerKiemTraPhien;
 
     private HoaDonDAO thuNganDAO;
     private ThuNganNavigationPanel pnlDieuHuongThuNgan;
@@ -148,7 +143,14 @@ public final class MainFrame extends JFrame implements ActionListener {
             throw new NullPointerException("Cần thao tác quay lại trang đăng nhập.");
         }
         this.khiDangXuat = khiDangXuat;
-        taiKhoanDAO.themTheoDoi(theoDoiTaiKhoan);
+        timerKiemTraPhien = new Timer(3000, new ActionListener() {
+            /** Kiểm tra trạng thái tài khoản định kỳ từ database. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                kiemTraPhienDangNhap();
+            }
+        });
+        timerKiemTraPhien.start();
 
         setTitle(getTitle() + " — " + taiKhoan.getVaiTro().getTenHienThi());
         setUndecorated(false);
@@ -438,17 +440,23 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Đóng khung và yêu cầu đăng nhập lại khi phiên bị thu hồi. */
     private void kiemTraPhienDangNhap() {
-        if (taiKhoanDangNhap != null && !taiKhoanDangNhap.isPhienHopLe()) {
-            taiKhoanDangNhap = null;
-            dispose();
-            khiDangXuat.actionPerformed(new ActionEvent(khiDangXuat, ActionEvent.ACTION_PERFORMED, "thaoTac"));
+        try {
+            if (taiKhoanDangNhap != null && !taiKhoanDAO.phienConHopLe(taiKhoanDangNhap)) {
+                taiKhoanDangNhap = null;
+                dispose();
+                khiDangXuat.actionPerformed(new ActionEvent(khiDangXuat, ActionEvent.ACTION_PERFORMED, "thaoTac"));
+            }
+        } catch (IllegalStateException ex) {
+            lblTrangThai.setText("Mất kết nối database; đang thử kết nối lại...");
         }
     }
 
     /** Đóng cửa sổ và dọn dữ liệu hoặc theo dõi không còn sử dụng. */
     @Override
     public void dispose() {
-        taiKhoanDAO.boTheoDoi(theoDoiTaiKhoan);
+        if (timerKiemTraPhien != null) {
+            timerKiemTraPhien.stop();
+        }
         super.dispose();
     }
 

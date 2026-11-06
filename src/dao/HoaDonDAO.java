@@ -31,9 +31,9 @@ public final class HoaDonDAO {
         phieuTaoSan.add(new PhieuChoThu("SC-2026-0124", "51H-246.80", "Nguyễn Văn An", 1270000,
                 LocalDateTime.of(2026, 10, 5, 15, 30)));
         danhSachHoaDon.add(new HoaDon("HD-2026-0108", "SC-2026-0108", "Nguyễn Văn An", "51H-246.80", 1270000,
-                HinhThucThanhToan.CHUYEN_KHOAN, LocalDateTime.of(2026, 10, 5, 14, 30), "thungan", ""));
+                HinhThucThanhToan.CHUYEN_KHOAN, LocalDateTime.of(2026, 10, 5, 14, 30), "NV007", ""));
         danhSachHoaDon.add(new HoaDon("HD-2026-0104", "SC-2026-0104", "Lê Văn Cường", "51G-789.12", 1000000,
-                HinhThucThanhToan.TIEN_MAT, LocalDateTime.of(2026, 10, 4, 10, 15), "thungan", ""));
+                HinhThucThanhToan.TIEN_MAT, LocalDateTime.of(2026, 10, 4, 10, 15), "NV007", ""));
     }
 
     /** Nhận nguồn sửa chữa dùng chung, không trộn chứng từ tạo sẵn vào luồng này. */

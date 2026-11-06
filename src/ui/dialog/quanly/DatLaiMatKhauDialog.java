@@ -1,6 +1,5 @@
 package ui.dialog.quanly;
 
-import dao.NhanVienDAO;
 import dao.TaiKhoanDAO;
 import entity.TaiKhoan;
 
@@ -61,7 +60,7 @@ public final class DatLaiMatKhauDialog extends JDialog implements ActionListener
         them(pnl, UiChung.taoNhan("Chỉ Quản lý được thao tác cho tài khoản đã chọn.", 12, false, UiTheme.APP_MUTED));
         UiChung.dinhDangO(txtMatKhau);
         UiChung.dinhDangO(txtXacNhan);
-        String ten = new NhanVienDAO().timTheoMa(nguoiDung, dich.getMaNhanVien()).getHoTen();
+        String ten = new TaiKhoanDAO().timNhanVienTheoMa(nguoiDung, dich.getMaNhanVien()).getHoTen();
         them(pnl, UiChung.taoTruong("Tài khoản đích", UiChung.taoNhan(dich + " · " + ten, 13, true, UiTheme.APP_TEXT)));
         them(pnl, UiChung.taoNhan("Lý do: " + lyDo, 12, false, UiTheme.APP_MUTED));
         them(pnl, UiChung.taoHang(UiChung.taoTruong("Mật khẩu mới *", txtMatKhau),
@@ -133,7 +132,7 @@ public final class DatLaiMatKhauDialog extends JDialog implements ActionListener
             if (nguoiDung.isPhienHopLe()) {
                 khiLuu.actionPerformed(new ActionEvent(khiLuu, ActionEvent.ACTION_PERFORMED, "thaoTac"));
             }
-        } catch (IllegalArgumentException | SecurityException ex) {
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             lblLoi.setForeground(new Color(0xB42318));
             lblLoi.setText(ex.getMessage());
         } finally {

@@ -19,8 +19,8 @@ public final class TrangChuKyThuatDAO {
             throw new IllegalArgumentException("Cần tài khoản đã đăng nhập.");
         }
         taiKhoan.kiemTraPhien();
-        if (taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT || !"kythuat".equals(taiKhoan.getTenDangNhap())) {
-            throw new SecurityException("Dữ liệu mẫu chỉ dành cho tài khoản kythuat.");
+        if (taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT || !"NV005".equals(taiKhoan.getTenDangNhap())) {
+            throw new SecurityException("Dữ liệu mẫu chỉ dành cho tài khoản NV005.");
         }
         List<ThongKeNgayKyThuat> thongKe = new ArrayList<ThongKeNgayKyThuat>();
         thongKe.add(taoThongKeNgay(1, 1, 1, 0));
@@ -28,7 +28,7 @@ public final class TrangChuKyThuatDAO {
         thongKe.add(taoThongKeNgay(3, 0, 1, 0));
         thongKe.add(taoThongKeNgay(4, 2, 1, 0));
         thongKe.add(taoThongKeNgay(5, 2, 1, 1));
-        return new TongQuanKyThuat("Chung Ngô Minh Hoàng", LocalDate.of(2026, 10, 5), 3, 2, 1, thongKe);
+        return new TongQuanKyThuat("Lê Minh Tâm", LocalDate.of(2026, 10, 5), 3, 2, 1, thongKe);
     }
 
     // Ghép số lượng của ba nhóm công việc thành thống kê mẫu của một ngày.

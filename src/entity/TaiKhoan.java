@@ -2,56 +2,30 @@ package entity;
 
 import java.time.LocalDateTime;
 
-/** Lưu thông tin tài khoản, vai trò và trạng thái phiên đăng nhập. */
+/** Lưu thông tin đăng nhập của một nhân viên. */
 public final class TaiKhoan {
 
-    private final String maTaiKhoan;
     private final String maNhanVien;
-    private final String tenDangNhap;
     private final VaiTro vaiTro;
     private final boolean hoatDong;
     private final LocalDateTime ngayTao;
+    private final int phienBan;
 
     private boolean phienHopLe = true;
 
     /** Tạo thông tin tài khoản với vai trò và trạng thái truy cập. */
-    public TaiKhoan(String tenDangNhap, VaiTro vaiTro) {
-        this(tenDangNhap, vaiTro, "");
+    public TaiKhoan(String maNhanVien, VaiTro vaiTro) {
+        this(maNhanVien, vaiTro, true, LocalDateTime.now(), 1);
     }
 
     /** Tạo thông tin tài khoản với vai trò và trạng thái truy cập. */
-    public TaiKhoan(String tenDangNhap, VaiTro vaiTro, String maNhanVien) {
-        this.maTaiKhoan = "";
-        if (maNhanVien == null) {
-            throw new IllegalArgumentException("Thiếu maNhanVien.");
-        }
-        this.maNhanVien = maNhanVien.trim();
-        this.tenDangNhap = kiemTraTen(tenDangNhap);
-        if (vaiTro == null) {
-            throw new IllegalArgumentException("Thiếu vaiTro.");
-        }
-        this.vaiTro = vaiTro;
-        this.hoatDong = true;
-        this.ngayTao = LocalDateTime.now();
+    public TaiKhoan(String maNhanVien, VaiTro vaiTro, boolean hoatDong, LocalDateTime ngayTao) {
+        this(maNhanVien, vaiTro, hoatDong, ngayTao, 1);
     }
 
-    /** Tạo thông tin tài khoản với vai trò và trạng thái truy cập. */
-    public TaiKhoan(String maTaiKhoan, String maNhanVien, String tenDangNhap, VaiTro vaiTro, boolean hoatDong,
-            LocalDateTime ngayTao) {
-        if (maTaiKhoan == null) {
-            throw new IllegalArgumentException("Thiếu maTaiKhoan.");
-        }
-        this.maTaiKhoan = maTaiKhoan.trim();
-        if (maNhanVien == null) {
-            throw new IllegalArgumentException("Thiếu maNhanVien.");
-        }
-        this.maNhanVien = maNhanVien.trim();
-
-        if (this.maTaiKhoan.isEmpty() || this.maNhanVien.isEmpty()) {
-            throw new IllegalArgumentException("Mã tài khoản và mã nhân viên không được rỗng.");
-        }
-
-        this.tenDangNhap = kiemTraTen(tenDangNhap);
+    /** Tạo tài khoản đọc từ database và giữ phiên bản để kiểm tra phiên. */
+    public TaiKhoan(String maNhanVien, VaiTro vaiTro, boolean hoatDong, LocalDateTime ngayTao, int phienBan) {
+        this.maNhanVien = kiemTraMaNhanVien(maNhanVien);
         if (vaiTro == null) {
             throw new IllegalArgumentException("Thiếu vaiTro.");
         }
@@ -61,11 +35,12 @@ public final class TaiKhoan {
             throw new IllegalArgumentException("Thiếu ngayTao.");
         }
         this.ngayTao = ngayTao;
+        this.phienBan = phienBan;
     }
 
-    /** Trả về mã tài khoản. */
+    /** Trả về mã nhân viên dùng làm mã tài khoản. */
     public String getMaTaiKhoan() {
-        return maTaiKhoan;
+        return maNhanVien;
     }
 
     /** Trả về mã nhân viên. */
@@ -73,9 +48,9 @@ public final class TaiKhoan {
         return maNhanVien;
     }
 
-    /** Trả về tên đăng nhập. */
+    /** Trả về mã nhân viên dùng để đăng nhập. */
     public String getTenDangNhap() {
-        return tenDangNhap;
+        return maNhanVien;
     }
 
     /** Trả về vai trò được cấp. */
@@ -91,6 +66,11 @@ public final class TaiKhoan {
     /** Trả về thời điểm tạo tài khoản. */
     public LocalDateTime getNgayTao() {
         return ngayTao;
+    }
+
+    /** Trả về phiên bản dữ liệu tài khoản tại lúc đăng nhập. */
+    public int getPhienBan() {
+        return phienBan;
     }
 
     /** Cho biết phiên đăng nhập đã bị thu hồi hay chưa. */
@@ -121,9 +101,15 @@ public final class TaiKhoan {
         boolean dacBiet = false;
 
         for (char kyTu : matKhau) {
-            chuHoa |= Character.isUpperCase(kyTu);
-            chuSo |= Character.isDigit(kyTu);
-            dacBiet |= !Character.isLetterOrDigit(kyTu) && !Character.isWhitespace(kyTu);
+            if (Character.isUpperCase(kyTu)) {
+                chuHoa = true;
+            }
+            if (Character.isDigit(kyTu)) {
+                chuSo = true;
+            }
+            if (!Character.isLetterOrDigit(kyTu) && !Character.isWhitespace(kyTu)) {
+                dacBiet = true;
+            }
         }
 
         if (matKhau.length < 8 || !chuHoa || !chuSo || !dacBiet) {
@@ -131,18 +117,18 @@ public final class TaiKhoan {
         }
     }
 
-    /** Kiểm tra tên đăng nhập không rỗng và bỏ khoảng trắng hai đầu. */
-    private static String kiemTraTen(String ten) {
-        if (ten == null || ten.trim().isEmpty()) {
-            throw new IllegalArgumentException("Tên đăng nhập không được rỗng.");
+    /** Kiểm tra mã nhân viên dùng làm tài khoản. */
+    private static String kiemTraMaNhanVien(String maNhanVien) {
+        if (maNhanVien == null || maNhanVien.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã nhân viên không được rỗng.");
         }
-        return ten.trim();
+        return maNhanVien.trim();
     }
 
-    /** Trả về mã và tên đăng nhập để hiển thị tài khoản. */
+    /** Trả về mã nhân viên để hiển thị tài khoản. */
     @Override
     public String toString() {
-        return maTaiKhoan + " · " + tenDangNhap;
+        return maNhanVien;
     }
 
     public enum VaiTro {

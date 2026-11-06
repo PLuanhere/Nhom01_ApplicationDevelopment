@@ -52,7 +52,7 @@ public class BankTransferPaymentPanel extends JPanel {
     public BankTransferPaymentPanel(HoaDonDAO dao, PhieuChoThu phieu, TaiKhoan taiKhoan, Runnable onBack,
             Consumer<String> onConfirm) {
         this.dao = dao != null ? dao : new HoaDonDAO();
-        this.taiKhoan = taiKhoan != null ? taiKhoan : new TaiKhoan("thungan", VaiTro.THU_NGAN);
+        this.taiKhoan = taiKhoan != null ? taiKhoan : new TaiKhoan("NV007", VaiTro.THU_NGAN);
         if (phieu == null) {
             java.util.List<PhieuChoThu> ds = this.dao.layPhieuChoThu(this.taiKhoan);
             if (ds.isEmpty()) {
@@ -166,7 +166,7 @@ public class BankTransferPaymentPanel extends JPanel {
         fields.add(inputField("Số tiền đã nhận qua ngân hàng *", receivedAmountField));
         fields.add(inputField("Mã tham chiếu giao dịch *", referenceField));
 
-        String nguoiThu = taiKhoan != null ? (taiKhoan.getTenDangNhap() + " · Thu ngân") : "thungan · Thu ngân";
+        String nguoiThu = taiKhoan != null ? (taiKhoan.getTenDangNhap() + " · Thu ngân") : "NV007 · Thu ngân";
         fields.add(readOnlyField("Người đối soát · chỉ đọc", nguoiThu));
 
         statusLabel = label("Chờ xác minh đã nhận đủ tiền", 14, Font.PLAIN, MUTED);

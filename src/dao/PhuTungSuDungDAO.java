@@ -170,7 +170,7 @@ public final class PhuTungSuDungDAO {
         List<String> lenhDuocXem = docLenhDaDuyet(taiKhoan);
         for (PhuTungSuDung banGhi : hoSo) {
             String noiDung = banGhi.getMaGhiNhan() + " " + banGhi.getMaLenhSuaChua() + " " + banGhi.getPhuTung();
-            boolean duocDoc = nguonLenh == null ? taiKhoan.getTenDangNhap().equals("kythuat")
+            boolean duocDoc = nguonLenh == null ? taiKhoan.getTenDangNhap().equals("NV005")
                     : lenhDuocXem.contains(banGhi.getMaLenhSuaChua());
             if (duocDoc && noiDung.toLowerCase().contains(khoa)
                     && (trangThai == null || trangThai == banGhi.getTrangThai())) {
@@ -206,7 +206,7 @@ public final class PhuTungSuDungDAO {
             for (PhieuSuaChua lenh : nguonLenh.timKiem(taiKhoan, "", "Tất cả")) {
                 ketQua.add(lenh.getMaPhieu());
             }
-        } else if (taiKhoan.getTenDangNhap().equals("kythuat")) {
+        } else if (taiKhoan.getTenDangNhap().equals("NV005")) {
             String[] maMau = { "SC-2026-0111", "SC-2026-0113", "SC-2026-0114", "SC-2026-0108" };
             for (String ma : maMau) {
                 ketQua.add(ma);
@@ -402,7 +402,7 @@ public final class PhuTungSuDungDAO {
             }
             return;
         }
-        if (!taiKhoan.getTenDangNhap().equals("kythuat")) {
+        if (!taiKhoan.getTenDangNhap().equals("NV005")) {
             throw new SecurityException("Lệnh không thuộc phân công.");
         }
         String[] maMau = { "SC-2026-0111", "SC-2026-0113", "SC-2026-0114", "SC-2026-0108" };
