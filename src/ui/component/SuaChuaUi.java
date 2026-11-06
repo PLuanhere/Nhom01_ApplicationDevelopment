@@ -220,8 +220,8 @@ public final class SuaChuaUi {
     // Đổi tài khoản kỹ thuật mẫu thành tên người để hiển thị trên giao diện.
     /** Đọc ten ky thuat từ dữ liệu hiện tại. */
     public static String layTenKyThuat(String taiKhoan) {
-        if ("kythuat".equals(taiKhoan)) {
-            return "Chung Ngô Minh Hoàng";
+        if ("NV005".equals(taiKhoan)) {
+            return "Lê Minh Tâm";
         }
         return "kythuatvu".equals(taiKhoan) ? "Nguyễn Minh Vũ" : "Chưa phân công";
     }

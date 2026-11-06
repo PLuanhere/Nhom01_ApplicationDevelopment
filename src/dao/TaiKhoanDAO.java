@@ -1,446 +1,413 @@
 package dao;
 
+import connectDB.ConnectDB;
 import entity.NhanVien;
-import dao.TaiKhoanDAO.NhatKyTaiKhoan;
+import entity.NhanVien.BoPhanNhanVien;
+import entity.NhanVien.TrangThaiNhanVien;
 import entity.TaiKhoan;
 import entity.TaiKhoan.VaiTro;
 
-import java.time.LocalDateTime;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Quản lý tài khoản thử nghiệm, xác thực, phân quyền và thu hồi phiên. */
+/** Đọc và cập nhật tài khoản nhân viên trong SQL Server. */
 public final class TaiKhoanDAO {
-    /** Nhận thông báo khi tài khoản thay đổi để cửa sổ kiểm tra lại phiên. */
-    public interface TheoDoiTaiKhoan {
-        /** Báo cho bên theo dõi đọc lại trạng thái phiên hiện tại. */
-        void taiKhoanThayDoi();
-    }
 
-    private static final List<DuLieuTaiKhoan> DANH_SACH = taoDuLieuBanDau();
-    private static final List<NhatKyTaiKhoan> NHAT_KY = new ArrayList<>();
-    private static final List<TheoDoiTaiKhoan> THEO_DOI = new ArrayList<>();
-
-    private static final class DuLieuTaiKhoan {
-        private TaiKhoan thongTin;
-        private String matKhau;
-
-        /** Gắn thông tin tài khoản với mật khẩu thử nghiệm lưu trong DAO. */
-        private DuLieuTaiKhoan(TaiKhoan thongTin, String matKhau) {
-            this.thongTin = thongTin;
-            this.matKhau = matKhau;
+    /** Đăng nhập bằng mã nhân viên và mật khẩu được cấp. */
+    public TaiKhoan dangNhap(String maNhanVien, char[] matKhau) {
+        if (maNhanVien == null || maNhanVien.trim().isEmpty() || matKhau == null || matKhau.length == 0) {
+            throw new IllegalArgumentException("Cần nhập mã nhân viên và mật khẩu.");
         }
-    }
-
-    /** Đọc thông tin tài khoản để liên kết hồ sơ nhân viên, không trả mật khẩu. */
-    List<TaiKhoan> layTaiKhoanNoiBo() {
-        List<TaiKhoan> ketQua = new ArrayList<>();
-
-        for (DuLieuTaiKhoan duLieu : DANH_SACH) {
-            ketQua.add(duLieu.thongTin);
-        }
-
-        return ketQua;
-    }
-
-    /** Kiểm tra tên đăng nhập và mật khẩu; trả tài khoản hợp lệ hoặc null. */
-    public TaiKhoan dangNhap(String tenDangNhap, char[] matKhau) {
-        if (tenDangNhap == null || matKhau == null) {
-            throw new IllegalArgumentException("Cần nhập tên đăng nhập và mật khẩu.");
-        }
-        String matKhauNhap = new String(matKhau);
-        for (DuLieuTaiKhoan duLieu : DANH_SACH) {
-            TaiKhoan tk = duLieu.thongTin;
-            if (tk.isHoatDong() && tk.getTenDangNhap().equals(tenDangNhap.trim())
-                    && duLieu.matKhau.equals(matKhauNhap)) {
-                return tk;
+        String sql = "SELECT MaNhanVien, VaiTro, HoatDong, NgayTao, PhienBan "
+                + "FROM dbo.TaiKhoan WHERE MaNhanVien = ? AND MatKhau = ?";
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql)) {
+            lenh.setString(1, maNhanVien.trim());
+            lenh.setString(2, new String(matKhau));
+            try (ResultSet ketQua = lenh.executeQuery()) {
+                if (!ketQua.next()) {
+                    return null;
+                }
+                TaiKhoan taiKhoan = docTaiKhoan(ketQua);
+                if (!taiKhoan.isHoatDong()) {
+                    throw new SecurityException("Tài khoản đã bị khóa. Vui lòng liên hệ Quản lý.");
+                }
+                return taiKhoan;
             }
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể kiểm tra tài khoản.", ex);
         }
-        return null;
     }
 
-    /** Kết thúc phiên cũ và giữ thông tin tài khoản để lần đăng nhập sau dùng phiên mới. */
+    /** Kết thúc phiên đăng nhập hiện tại. */
     public void dangXuat(TaiKhoan taiKhoan) {
-        if (taiKhoan == null) {
-            return;
+        if (taiKhoan != null) {
+            taiKhoan.ketThucPhien();
         }
-        for (DuLieuTaiKhoan duLieu : DANH_SACH) {
-            if (duLieu.thongTin == taiKhoan) {
-                duLieu.thongTin = new TaiKhoan(taiKhoan.getMaTaiKhoan(), taiKhoan.getMaNhanVien(),
-                        taiKhoan.getTenDangNhap(), taiKhoan.getVaiTro(), taiKhoan.isHoatDong(), taiKhoan.getNgayTao());
-                break;
-            }
-        }
-        taiKhoan.ketThucPhien();
     }
 
-    /** Đọc danh sách tài khoản sau khi kiểm tra quyền truy cập. */
+    /** Đọc tài khoản để ghép với hồ sơ nhân viên trong các nghiệp vụ khác. */
+    List<TaiKhoan> layTaiKhoanNoiBo() {
+        String sql = "SELECT MaNhanVien, VaiTro, HoatDong, NgayTao, PhienBan "
+                + "FROM dbo.TaiKhoan ORDER BY MaNhanVien";
+        List<TaiKhoan> danhSach = new ArrayList<>();
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql); ResultSet ketQua = lenh.executeQuery()) {
+            while (ketQua.next()) {
+                danhSach.add(docTaiKhoan(ketQua));
+            }
+            return danhSach;
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc danh sách tài khoản.", ex);
+        }
+    }
+
+    /** Đọc toàn bộ tài khoản sau khi kiểm tra quyền Quản lý. */
     public List<TaiKhoan> layDanhSach(TaiKhoan nguoiDung) {
         kiemTraQuyen(nguoiDung);
-        List<TaiKhoan> ketQua = new ArrayList<>();
-
-        for (DuLieuTaiKhoan duLieu : DANH_SACH) {
-            ketQua.add(duLieu.thongTin);
-        }
-
-        return ketQua;
+        return layTaiKhoanNoiBo();
     }
 
-    /** Tìm và lọc tài khoản theo các điều kiện được truyền vào. */
-    public List<TaiKhoan> timKiem(TaiKhoan nguoiDung, String tuKhoa, int hoatDong) {
-        return timKiem(nguoiDung, tuKhoa, hoatDong, null);
-    }
-
-    /** Tìm và lọc tài khoản theo các điều kiện được truyền vào. */
-    public List<TaiKhoan> timKiem(TaiKhoan nguoiDung, String tuKhoa, int hoatDong, VaiTro vaiTro) {
-        String chu = boDau(tuKhoa == null ? "" : tuKhoa.trim());
-        List<NhanVien> nhanVien = new NhanVienDAO().layDanhSach(nguoiDung);
-        List<TaiKhoan> ketQua = new ArrayList<>();
-
-        for (TaiKhoan tk : layDanhSach(nguoiDung)) {
-            String ten = "";
-
-            for (NhanVien nv : nhanVien) {
-                if (nv.getMaNhanVien().equals(tk.getMaNhanVien())) {
-                    ten = nv.getHoTen();
-                    break;
-
-                }
-            }
-
-            String noiDung = tk.getMaTaiKhoan() + " " + tk.getTenDangNhap() + " " + tk.getMaNhanVien() + " " + ten;
-
-            if ((hoatDong == -1 || tk.isHoatDong() == (hoatDong == 1)) && (vaiTro == null || tk.getVaiTro() == vaiTro)
-                    && boDau(noiDung).contains(chu)) {
-                ketQua.add(tk);
-            }
-        }
-
-        return ketQua;
-    }
-
-    /** Tìm tài khoản theo mã; báo lỗi nếu không tồn tại. */
-    public TaiKhoan timTheoMa(TaiKhoan nguoiDung, String ma) {
+    /** Tìm, lọc và sắp xếp tài khoản cùng hồ sơ nhân viên. */
+    public List<TaiKhoan> timKiem(TaiKhoan nguoiDung, String tuKhoa, int hoatDong, VaiTro vaiTro, int sapXep) {
         kiemTraQuyen(nguoiDung);
-        return timDuLieu(ma).thongTin;
-    }
-
-    /** Sinh mã tài khoản dự kiến để hiển thị, chưa lưu hoặc chiếm mã. */
-    public String maTiepTheo(TaiKhoan nguoiDung) {
-        int lonNhat = 0;
-
-        for (TaiKhoan tk : layDanhSach(nguoiDung)) {
-            lonNhat = Math.max(lonNhat, Integer.parseInt(tk.getMaTaiKhoan().substring(2)));
+        String sapXepSql = "tk.MaNhanVien ASC";
+        if (sapXep == 1) {
+            sapXepSql = "nv.HoTen ASC";
+        } else if (sapXep == 2) {
+            sapXepSql = "nv.HoTen DESC";
         }
-
-        return String.format("TK%03d", lonNhat + 1);
-    }
-
-    /** Lấy các nhân viên chưa được liên kết với tài khoản nào. */
-    public List<NhanVien> nhanVienChuaCoTaiKhoan(TaiKhoan nguoiDung) {
-        List<NhanVien> ketQua = new ArrayList<>();
-        List<TaiKhoan> cacTaiKhoan = layDanhSach(nguoiDung);
-        for (NhanVien nv : new NhanVienDAO().layDanhSach(nguoiDung)) {
-            boolean daCo = false;
-            for (TaiKhoan tk : cacTaiKhoan) {
-                if (nv.getMaNhanVien().equals(tk.getMaNhanVien())) {
-                    daCo = true;
-                    break;
+        String sql = "SELECT tk.MaNhanVien, tk.VaiTro, tk.HoatDong, tk.NgayTao, tk.PhienBan "
+                + "FROM dbo.TaiKhoan tk JOIN dbo.NhanVien nv ON nv.MaNhanVien = tk.MaNhanVien "
+                + "WHERE (tk.MaNhanVien LIKE ? OR nv.HoTen LIKE ?) "
+                + "AND (? = -1 OR tk.HoatDong = ?) "
+                + "AND (? IS NULL OR tk.VaiTro = ?) ORDER BY " + sapXepSql;
+        String tim = "%" + (tuKhoa == null ? "" : tuKhoa.trim()) + "%";
+        List<TaiKhoan> danhSach = new ArrayList<>();
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql)) {
+            lenh.setString(1, tim);
+            lenh.setString(2, tim);
+            lenh.setInt(3, hoatDong);
+            lenh.setBoolean(4, hoatDong == 1);
+            if (vaiTro == null) {
+                lenh.setNull(5, java.sql.Types.VARCHAR);
+                lenh.setNull(6, java.sql.Types.VARCHAR);
+            } else {
+                lenh.setString(5, vaiTro.name());
+                lenh.setString(6, vaiTro.name());
+            }
+            try (ResultSet ketQua = lenh.executeQuery()) {
+                while (ketQua.next()) {
+                    danhSach.add(docTaiKhoan(ketQua));
                 }
             }
-            if (!daCo) {
-                ketQua.add(nv);
-            }
+            return danhSach;
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể tìm tài khoản.", ex);
         }
-        return ketQua;
     }
 
-    /** Kiểm tra quyền và dữ liệu trước khi thêm tài khoản vào nguồn. */
+    /** Tìm tài khoản theo mã nhân viên. */
+    public TaiKhoan timTheoMa(TaiKhoan nguoiDung, String maNhanVien) {
+        kiemTraQuyen(nguoiDung);
+        TaiKhoan taiKhoan = timTaiKhoan(maNhanVien);
+        if (taiKhoan == null) {
+            throw new IllegalArgumentException("Không tìm thấy tài khoản.");
+        }
+        return taiKhoan;
+    }
+
+    /** Tìm hồ sơ nhân viên phục vụ màn quản lý tài khoản. */
+    public NhanVien timNhanVienTheoMa(TaiKhoan nguoiDung, String maNhanVien) {
+        kiemTraQuyen(nguoiDung);
+        String sql = "SELECT * FROM dbo.NhanVien WHERE MaNhanVien = ?";
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql)) {
+            lenh.setString(1, maNhanVien);
+            try (ResultSet ketQua = lenh.executeQuery()) {
+                if (ketQua.next()) {
+                    return docNhanVien(ketQua);
+                }
+            }
+            throw new IllegalArgumentException("Không tìm thấy nhân viên.");
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc nhân viên.", ex);
+        }
+    }
+
+    /** Lấy nhân viên đang làm việc và chưa được cấp tài khoản. */
+    public List<NhanVien> nhanVienChuaCoTaiKhoan(TaiKhoan nguoiDung) {
+        kiemTraQuyen(nguoiDung);
+        String sql = "SELECT nv.* FROM dbo.NhanVien nv LEFT JOIN dbo.TaiKhoan tk "
+                + "ON tk.MaNhanVien = nv.MaNhanVien WHERE tk.MaNhanVien IS NULL "
+                + "AND nv.TrangThai = 'DANG_LAM' ORDER BY nv.MaNhanVien";
+        List<NhanVien> danhSach = new ArrayList<>();
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql); ResultSet ketQua = lenh.executeQuery()) {
+            while (ketQua.next()) {
+                danhSach.add(docNhanVien(ketQua));
+            }
+            return danhSach;
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc nhân viên chưa có tài khoản.", ex);
+        }
+    }
+
+    /** Cấp tài khoản mới; mã tài khoản chính là mã nhân viên. */
     public TaiKhoan them(TaiKhoan nguoiDung, TaiKhoan thongTin, char[] matKhau) {
         kiemTraQuyen(nguoiDung);
-        TaiKhoan.kiemTraMatKhauMoi(matKhau);
-        new NhanVienDAO().timTheoMa(nguoiDung, thongTin.getMaNhanVien());
-
-        if (!maTiepTheo(nguoiDung).equals(thongTin.getMaTaiKhoan())) {
-            throw new IllegalArgumentException("Mã tài khoản đã thay đổi. Hãy mở lại form cấp tài khoản.");
+        if (thongTin == null) {
+            throw new IllegalArgumentException("Thiếu thông tin tài khoản.");
         }
-
-        for (DuLieuTaiKhoan duLieu : DANH_SACH) {
-            if (duLieu.thongTin.getTenDangNhap().equals(thongTin.getTenDangNhap())) {
-                throw new IllegalArgumentException("Tên đăng nhập đã tồn tại.");
+        TaiKhoan.kiemTraMatKhauMoi(matKhau);
+        Connection ketNoi = ketNoi();
+        try {
+            ketNoi.setAutoCommit(false);
+            String sql = "INSERT dbo.TaiKhoan "
+                    + "(MaNhanVien, MatKhau, VaiTro, HoatDong, NgayTao) "
+                    + "VALUES (?, ?, ?, ?, SYSDATETIME())";
+            try (PreparedStatement lenh = ketNoi.prepareStatement(sql)) {
+                String ma = thongTin.getMaNhanVien();
+                lenh.setString(1, ma);
+                lenh.setString(2, new String(matKhau));
+                lenh.setString(3, thongTin.getVaiTro().name());
+                lenh.setBoolean(4, thongTin.isHoatDong());
+                lenh.executeUpdate();
             }
-
-            if (duLieu.thongTin.getMaNhanVien().equals(thongTin.getMaNhanVien())) {
+            TaiKhoan moi = timTaiKhoan(thongTin.getMaNhanVien(), ketNoi);
+            ghiNhatKy(ketNoi, nguoiDung, moi, "Cấp tài khoản · " + moi.getVaiTro().getTenHienThi(),
+                    "Cấp cho nhân viên");
+            ketNoi.commit();
+            return moi;
+        } catch (SQLException ex) {
+            hoanTac(ketNoi);
+            if (ex.getErrorCode() == 2601 || ex.getErrorCode() == 2627) {
                 throw new IllegalArgumentException("Nhân viên này đã có tài khoản.");
             }
+            throw loiDuLieu("Không thể cấp tài khoản.", ex);
+        } finally {
+            batLaiTuDongLuu(ketNoi);
         }
-
-        TaiKhoan tk = new TaiKhoan(thongTin.getMaTaiKhoan(), thongTin.getMaNhanVien(), thongTin.getTenDangNhap(),
-                thongTin.getVaiTro(), thongTin.isHoatDong(), LocalDateTime.now());
-
-        DANH_SACH.add(new DuLieuTaiKhoan(tk, new String(matKhau)));
-
-        ghiNhatKy(nguoiDung, tk, "Cấp tài khoản · " + tk.getVaiTro().getTenHienThi(), "Cấp cho nhân viên");
-
-        return tk;
     }
 
-    /** Kiểm tra dữ liệu rồi cập nhật tài khoản trong nguồn. */
+    /** Cập nhật vai trò hoặc trạng thái tài khoản. */
     public void capNhat(TaiKhoan nguoiDung, TaiKhoan banDau, VaiTro vaiTro, boolean hoatDong, String lyDo) {
         kiemTraQuyen(nguoiDung);
-        if (vaiTro == null) {
-            throw new IllegalArgumentException("Thiếu vaiTro.");
+        if (banDau == null || vaiTro == null) {
+            throw new IllegalArgumentException("Thiếu thông tin tài khoản.");
         }
-
         String lyDoHopLe = kiemTraLyDo(lyDo);
-        DuLieuTaiKhoan duLieu = kiemTraBanHienTai(banDau);
-
-        if (banDau.getVaiTro() == vaiTro && banDau.isHoatDong() == hoatDong) {
+        TaiKhoan hienTai = timTaiKhoan(banDau.getMaNhanVien());
+        if (hienTai == null) {
+            throw new IllegalArgumentException("Không tìm thấy tài khoản.");
+        }
+        if (hienTai.getPhienBan() != banDau.getPhienBan()
+                || hienTai.getVaiTro() != banDau.getVaiTro()
+                || hienTai.isHoatDong() != banDau.isHoatDong()) {
+            throw new IllegalArgumentException("Tài khoản đã thay đổi. Hãy mở lại danh sách.");
+        }
+        if (hienTai.getVaiTro() == vaiTro && hienTai.isHoatDong() == hoatDong) {
             throw new IllegalArgumentException("Vai trò và trạng thái chưa thay đổi.");
         }
-
-        if (nguoiDung.getMaTaiKhoan().equals(banDau.getMaTaiKhoan()) && (!hoatDong || vaiTro != VaiTro.QUAN_LY)) {
+        if (nguoiDung.getMaNhanVien().equals(hienTai.getMaNhanVien())
+                && (!hoatDong || vaiTro != VaiTro.QUAN_LY)) {
             throw new IllegalArgumentException("Không được tự khóa hoặc tự hạ quyền tài khoản đang đăng nhập.");
         }
-
-        if (banDau.isHoatDong() && banDau.getVaiTro() == VaiTro.QUAN_LY && (!hoatDong || vaiTro != VaiTro.QUAN_LY)
-                && demQuanLyHoatDong() <= 1) {
+        if (hienTai.isHoatDong() && hienTai.getVaiTro() == VaiTro.QUAN_LY
+                && (!hoatDong || vaiTro != VaiTro.QUAN_LY) && demQuanLyHoatDong() <= 1) {
             throw new IllegalArgumentException("Phải giữ ít nhất một tài khoản Quản lý hoạt động.");
         }
-
-        TaiKhoan moi = new TaiKhoan(banDau.getMaTaiKhoan(), banDau.getMaNhanVien(), banDau.getTenDangNhap(), vaiTro,
-                hoatDong, banDau.getNgayTao());
-
-        duLieu.thongTin = moi;
-
-        ghiNhatKy(nguoiDung, moi, banDau.getVaiTro().getTenHienThi() + " → " + vaiTro.getTenHienThi() + "; "
-                + tenTrangThai(banDau) + " → " + tenTrangThai(moi), lyDoHopLe);
-
-        thuHoiPhien(banDau, moi);
+        Connection ketNoi = ketNoi();
+        try {
+            ketNoi.setAutoCommit(false);
+            try (PreparedStatement lenh = ketNoi.prepareStatement(
+                    "UPDATE dbo.TaiKhoan SET VaiTro = ?, HoatDong = ?, PhienBan = PhienBan + 1 "
+                            + "WHERE MaNhanVien = ?")) {
+                lenh.setString(1, vaiTro.name());
+                lenh.setBoolean(2, hoatDong);
+                lenh.setString(3, hienTai.getMaNhanVien());
+                lenh.executeUpdate();
+            }
+            TaiKhoan moi = timTaiKhoan(hienTai.getMaNhanVien(), ketNoi);
+            String hanhDong = hienTai.getVaiTro().getTenHienThi() + " → " + vaiTro.getTenHienThi() + "; "
+                    + tenTrangThai(hienTai) + " → " + tenTrangThai(moi);
+            ghiNhatKy(ketNoi, nguoiDung, moi, hanhDong, lyDoHopLe);
+            ketNoi.commit();
+        } catch (SQLException ex) {
+            hoanTac(ketNoi);
+            throw loiDuLieu("Không thể cập nhật tài khoản.", ex);
+        } finally {
+            batLaiTuDongLuu(ketNoi);
+        }
     }
 
-    /** Kiểm tra quyền, lưu mật khẩu mới, ghi nhật ký và thu hồi phiên cũ. */
+    /** Đặt mật khẩu mới và thu hồi các phiên cũ của tài khoản. */
     public void datLaiMatKhau(TaiKhoan nguoiDung, TaiKhoan banDau, char[] matKhau, String lyDo) {
         kiemTraQuyen(nguoiDung);
+        if (banDau == null) {
+            throw new IllegalArgumentException("Thiếu tài khoản cần đặt lại mật khẩu.");
+        }
         TaiKhoan.kiemTraMatKhauMoi(matKhau);
-
         String lyDoHopLe = kiemTraLyDo(lyDo);
-        DuLieuTaiKhoan duLieu = kiemTraBanHienTai(banDau);
-
-        TaiKhoan moi = new TaiKhoan(banDau.getMaTaiKhoan(), banDau.getMaNhanVien(), banDau.getTenDangNhap(),
-                banDau.getVaiTro(), banDau.isHoatDong(), banDau.getNgayTao());
-
-        duLieu.matKhau = new String(matKhau);
-        duLieu.thongTin = moi;
-
-        ghiNhatKy(nguoiDung, moi, "Đặt lại mật khẩu", lyDoHopLe);
-        thuHoiPhien(banDau, moi);
+        if (timTaiKhoan(banDau.getMaNhanVien()) == null) {
+            throw new IllegalArgumentException("Không tìm thấy tài khoản.");
+        }
+        Connection ketNoi = ketNoi();
+        try {
+            ketNoi.setAutoCommit(false);
+            try (PreparedStatement lenh = ketNoi.prepareStatement(
+                    "UPDATE dbo.TaiKhoan SET MatKhau = ?, PhienBan = PhienBan + 1 WHERE MaNhanVien = ?")) {
+                lenh.setString(1, new String(matKhau));
+                lenh.setString(2, banDau.getMaNhanVien());
+                lenh.executeUpdate();
+            }
+            ghiNhatKy(ketNoi, nguoiDung, banDau, "Đặt lại mật khẩu", lyDoHopLe);
+            ketNoi.commit();
+        } catch (SQLException ex) {
+            hoanTac(ketNoi);
+            throw loiDuLieu("Không thể đặt lại mật khẩu.", ex);
+        } finally {
+            batLaiTuDongLuu(ketNoi);
+        }
     }
 
-    /** Đọc lịch sử thay đổi theo quyền truy cập và các điều kiện lọc. */
-    public List<NhatKyTaiKhoan> layNhatKy(TaiKhoan nguoiDung) {
-        kiemTraQuyen(nguoiDung);
-        return new ArrayList<>(NHAT_KY);
+    /** Trả về tên trạng thái tài khoản. */
+    public static String tenTrangThai(TaiKhoan taiKhoan) {
+        return taiKhoan.isHoatDong() ? "Đang hoạt động" : "Đã khóa";
     }
 
-    /** Đăng ký khung ứng dụng cần nhận thông báo thu hồi phiên. */
-    public void themTheoDoi(TheoDoiTaiKhoan listener) {
-        THEO_DOI.add(listener);
+    /** Kiểm tra tài khoản đăng nhập còn hoạt động và chưa bị đổi vai trò. */
+    public boolean phienConHopLe(TaiKhoan taiKhoan) {
+        if (taiKhoan == null || !taiKhoan.isPhienHopLe()) {
+            return false;
+        }
+        TaiKhoan hienTai = timTaiKhoan(taiKhoan.getMaNhanVien());
+        boolean hopLe = hienTai != null && hienTai.isHoatDong()
+                && hienTai.getVaiTro() == taiKhoan.getVaiTro()
+                && hienTai.getPhienBan() == taiKhoan.getPhienBan();
+        if (!hopLe) {
+            taiKhoan.ketThucPhien();
+        }
+        return hopLe;
     }
 
-    /** Gỡ khung đã đóng khỏi danh sách nhận thông báo tài khoản. */
-    public void boTheoDoi(TheoDoiTaiKhoan listener) {
-        THEO_DOI.remove(listener);
-    }
-
-    /** Lấy nhãn hoạt động hoặc đã khóa của tài khoản. */
-    public static String tenTrangThai(TaiKhoan tk) {
-        return tk.isHoatDong() ? "Đang hoạt động" : "Đã khóa";
-    }
-
-    /** Kiểm tra tài khoản, phiên đăng nhập và quyền Quản lý trước thao tác DAO. */
-    private static void kiemTraQuyen(TaiKhoan nguoiDung) {
+    /** Kiểm tra phiên hiện tại vẫn là tài khoản Quản lý hợp lệ trong database. */
+    private void kiemTraQuyen(TaiKhoan nguoiDung) {
         if (nguoiDung == null) {
             throw new SecurityException("Cần đăng nhập.");
         }
         nguoiDung.kiemTraPhien();
-
-        if (nguoiDung.getVaiTro() != VaiTro.QUAN_LY || nguoiDung.getMaTaiKhoan().isEmpty()) {
-            throw new SecurityException("Chỉ Quản lý được quản trị tài khoản.");
-        }
-
-        if (timDuLieu(nguoiDung.getMaTaiKhoan()).thongTin != nguoiDung) {
-            throw new SecurityException("Cần tài khoản Quản lý đã đăng nhập.");
+        if (nguoiDung.getVaiTro() != VaiTro.QUAN_LY || !phienConHopLe(nguoiDung)) {
+            nguoiDung.ketThucPhien();
+            throw new SecurityException("Phiên Quản lý đã hết hiệu lực. Vui lòng đăng nhập lại.");
         }
     }
 
-    /** Tìm dữ liệu nội bộ của tài khoản theo mã; báo lỗi nếu không có. */
-    private static DuLieuTaiKhoan timDuLieu(String ma) {
-        for (DuLieuTaiKhoan duLieu : DANH_SACH) {
-            if (duLieu.thongTin.getMaTaiKhoan().equals(ma)) {
-                return duLieu;
+    /** Tìm một tài khoản trực tiếp trong database. */
+    private TaiKhoan timTaiKhoan(String maNhanVien) {
+        try {
+            return timTaiKhoan(maNhanVien, ketNoi());
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc tài khoản.", ex);
+        }
+    }
+
+    /** Tìm một tài khoản bằng kết nối đang tham gia giao dịch. */
+    private TaiKhoan timTaiKhoan(String maNhanVien, Connection ketNoi) throws SQLException {
+        String sql = "SELECT MaNhanVien, VaiTro, HoatDong, NgayTao, PhienBan "
+                + "FROM dbo.TaiKhoan WHERE MaNhanVien = ?";
+        try (PreparedStatement lenh = ketNoi.prepareStatement(sql)) {
+            lenh.setString(1, maNhanVien);
+            try (ResultSet ketQua = lenh.executeQuery()) {
+                return ketQua.next() ? docTaiKhoan(ketQua) : null;
             }
         }
-
-        throw new IllegalArgumentException("Không tìm thấy tài khoản.");
     }
 
-    /** Kiểm tra tài khoản mở trên form vẫn là bản ghi hiện tại trước khi sửa. */
-    private static DuLieuTaiKhoan kiemTraBanHienTai(TaiKhoan banDau) {
-        if (banDau == null) {
-            throw new IllegalArgumentException("Thiếu tài khoản ban đầu.");
+    /** Đếm số tài khoản Quản lý đang hoạt động. */
+    private int demQuanLyHoatDong() {
+        String sql = "SELECT COUNT(*) FROM dbo.TaiKhoan WHERE VaiTro = 'QUAN_LY' AND HoatDong = 1";
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql); ResultSet ketQua = lenh.executeQuery()) {
+            ketQua.next();
+            return ketQua.getInt(1);
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể kiểm tra tài khoản Quản lý.", ex);
         }
-        DuLieuTaiKhoan duLieu = timDuLieu(banDau.getMaTaiKhoan());
-
-        if (duLieu.thongTin != banDau) {
-            throw new IllegalArgumentException("Tài khoản đã thay đổi. Hãy quay lại danh sách và mở lại.");
-        }
-
-        return duLieu;
     }
 
-    /** Đếm tài khoản Quản lý đang hoạt động để bảo vệ quyền quản trị cuối cùng. */
-    private static int demQuanLyHoatDong() {
-        int soLuong = 0;
-
-        for (DuLieuTaiKhoan duLieu : DANH_SACH) {
-            if (duLieu.thongTin.isHoatDong() && duLieu.thongTin.getVaiTro() == VaiTro.QUAN_LY) {
-                soLuong++;
-            }
+    /** Ghi một thay đổi tài khoản vào nhật ký. */
+    private void ghiNhatKy(Connection ketNoi, TaiKhoan nguoiDung, TaiKhoan dich, String hanhDong, String lyDo)
+            throws SQLException {
+        String sql = "INSERT dbo.NhatKyTaiKhoan "
+                + "(ThoiDiem, NguoiThucHien, MaTaiKhoan, HanhDong, LyDo) "
+                + "VALUES (SYSDATETIME(), ?, ?, ?, ?)";
+        try (PreparedStatement lenh = ketNoi.prepareStatement(sql)) {
+            lenh.setString(1, nguoiDung.getMaNhanVien());
+            lenh.setString(2, dich.getMaNhanVien());
+            lenh.setString(3, hanhDong);
+            lenh.setString(4, lyDo);
+            lenh.executeUpdate();
         }
-
-        return soLuong;
     }
 
-    /** Kiểm tra lý do thay đổi không rỗng và bỏ khoảng trắng hai đầu. */
+    /** Chuyển một dòng tài khoản thành Entity. */
+    private static TaiKhoan docTaiKhoan(ResultSet ketQua) throws SQLException {
+        String maNhanVien = ketQua.getString("MaNhanVien");
+        Timestamp ngayTao = ketQua.getTimestamp("NgayTao");
+        return new TaiKhoan(maNhanVien, VaiTro.valueOf(ketQua.getString("VaiTro")),
+                ketQua.getBoolean("HoatDong"), ngayTao.toLocalDateTime(), ketQua.getInt("PhienBan"));
+    }
+
+    /** Chuyển một dòng nhân viên thành Entity. */
+    private static NhanVien docNhanVien(ResultSet ketQua) throws SQLException {
+        Date ngaySinh = ketQua.getDate("NgaySinh");
+        return new NhanVien(ketQua.getString("MaNhanVien"), ketQua.getString("HoTen"), ngaySinh.toLocalDate(),
+                ketQua.getString("SoDienThoai"), ketQua.getInt("SoNamKinhNghiem"),
+                ketQua.getString("GioiTinh"), ketQua.getString("DiaChi"),
+                BoPhanNhanVien.valueOf(ketQua.getString("BoPhan")),
+                TrangThaiNhanVien.valueOf(ketQua.getString("TrangThai")));
+    }
+
+    /** Kiểm tra lý do thay đổi. */
     private static String kiemTraLyDo(String lyDo) {
-        if (lyDo == null || lyDo.isBlank()) {
+        if (lyDo == null || lyDo.trim().isEmpty()) {
             throw new IllegalArgumentException("Vui lòng nhập lý do thay đổi.");
         }
-
         return lyDo.trim();
     }
 
-    /** Lưu người thực hiện, thời điểm, tài khoản đích và nội dung thay đổi. */
-    private static void ghiNhatKy(TaiKhoan nguoiDung, TaiKhoan dich, String hanhDong, String lyDo) {
-        NHAT_KY.add(new NhatKyTaiKhoan(LocalDateTime.now(), nguoiDung.getTenDangNhap(), dich.getMaTaiKhoan(), hanhDong,
-                lyDo));
-    }
-
-    /** Hủy hiệu lực phiên cũ và thông báo các khung đang theo dõi tài khoản. */
-    private static void thuHoiPhien(TaiKhoan cu, TaiKhoan moi) {
-        cu.ketThucPhien();
-        List<TheoDoiTaiKhoan> cacKhung = new ArrayList<>(THEO_DOI);
-        for (TheoDoiTaiKhoan khung : cacKhung) {
-            khung.taiKhoanThayDoi();
+    /** Lấy kết nối SQL Server đang mở. */
+    private static Connection ketNoi() {
+        try {
+            return ConnectDB.getInstance().getConnection();
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể kết nối database QuanLiGarage.", ex);
         }
     }
 
-    /** Đổi chữ tiếng Việt thành chữ thường không dấu để tìm và sắp xếp. */
-    private static String boDau(String chu) {
-        String thuong = chu.toLowerCase();
-        String[] cacNhom = { "àáảãạăằắẳẵặâầấẩẫậ", "èéẻẽẹêềếểễệ", "ìíỉĩị", "òóỏõọôồốổỗộơờớởỡợ", "ùúủũụưừứửữự", "ỳýỷỹỵ",
-                "đ" };
-        String thayThe = "aeiouyd";
-        String ketQua = "";
-        for (int i = 0; i < thuong.length(); i++) {
-            char c = thuong.charAt(i);
-            if (c >= '\u0300' && c <= '\u036F') {
-                continue;
-            }
-            for (int j = 0; j < cacNhom.length; j++) {
-                if (cacNhom[j].indexOf(c) >= 0) {
-                    c = thayThe.charAt(j);
-                    break;
-                }
-            }
-            ketQua = ketQua + c;
-        }
-        return ketQua;
-    }
-
-    /** Tạo danh sách tài khoản ban đầu cho lần chạy thử nghiệm. */
-    private static List<DuLieuTaiKhoan> taoDuLieuBanDau() {
-        List<DuLieuTaiKhoan> ketQua = new ArrayList<>();
-
-        String[] ma = { "001", "003", "005", "007" };
-        String[] ten = { "quanly", "tiepnhan", "kythuat", "thungan" };
-
-        for (int i = 0; i < ma.length; i++) {
-            TaiKhoan tk = new TaiKhoan("TK" + ma[i], "NV" + ma[i], ten[i], VaiTro.values()[i], true,
-                    LocalDateTime.of(2026, 10, 5, 8, 0));
-
-            ketQua.add(new DuLieuTaiKhoan(tk, "123"));
-        }
-
-        return ketQua;
-    }
-
-    /** Tìm và lọc tài khoản theo các điều kiện rồi sắp xếp danh sách kết quả. */
-    public List<TaiKhoan> timKiem(TaiKhoan nguoiDung, String tuKhoa, int hoatDong, VaiTro vaiTro, int sapXep) {
-        List<TaiKhoan> ketQua = timKiem(nguoiDung, tuKhoa, hoatDong, vaiTro);
-        for (int i = 0; i < ketQua.size() - 1; i++) {
-            for (int j = i + 1; j < ketQua.size(); j++) {
-                TaiKhoan a = ketQua.get(i);
-                TaiKhoan b = ketQua.get(j);
-                int soSanh;
-                if (sapXep == 0) {
-                    soSanh = a.getMaTaiKhoan().compareToIgnoreCase(b.getMaTaiKhoan());
-                } else {
-                    soSanh = boDau(a.getTenDangNhap()).compareTo(boDau(b.getTenDangNhap()));
-                }
-                if (sapXep == 2) {
-                    soSanh = -soSanh;
-                }
-                if (soSanh > 0) {
-                    ketQua.set(i, b);
-                    ketQua.set(j, a);
-                }
-            }
-        }
-        return ketQua;
-    }
-
-    public static final class NhatKyTaiKhoan {
-        private final LocalDateTime thoiDiem;
-        private final String nguoiThucHien;
-        private final String maTaiKhoan;
-        private final String hanhDong;
-        private final String lyDo;
-    
-        /** Tạo thông tin nhật ký sau một thao tác tài khoản. */
-        public NhatKyTaiKhoan(LocalDateTime thoiDiem, String nguoiThucHien, String maTaiKhoan, String hanhDong,
-                String lyDo) {
-            this.thoiDiem = thoiDiem;
-            this.nguoiThucHien = nguoiThucHien;
-            this.maTaiKhoan = maTaiKhoan;
-            this.hanhDong = hanhDong;
-            this.lyDo = lyDo;
-        }
-    
-        /** Trả về thoiDiem. */
-        public LocalDateTime getThoiDiem() {
-            return thoiDiem;
-        }
-    
-        /** Trả về nguoiThucHien. */
-        public String getNguoiThucHien() {
-            return nguoiThucHien;
-        }
-    
-        /** Trả về maTaiKhoan. */
-        public String getMaTaiKhoan() {
-            return maTaiKhoan;
-        }
-    
-        /** Trả về hanhDong. */
-        public String getHanhDong() {
-            return hanhDong;
-        }
-    
-        /** Trả về lyDo. */
-        public String getLyDo() {
-            return lyDo;
+    /** Hoàn tác giao dịch khi lưu thất bại. */
+    private static void hoanTac(Connection ketNoi) {
+        try {
+            ketNoi.rollback();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
         }
     }
+
+    /** Trả kết nối về chế độ tự động lưu sau giao dịch. */
+    private static void batLaiTuDongLuu(Connection ketNoi) {
+        try {
+            ketNoi.setAutoCommit(true);
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    /** Tạo lỗi dễ hiểu cho tầng giao diện. */
+    private static IllegalStateException loiDuLieu(String thongBao, SQLException ex) {
+        return new IllegalStateException(thongBao + " " + ex.getMessage(), ex);
+    }
+
 }

@@ -33,14 +33,14 @@ public final class BaoCaoKiemTraDAO {
     public BaoCaoKiemTraDAO() {
         PhieuTiepNhan phieuCu = new PhieuTiepNhan("TN-2026-0108", "51H-246.80",
                 "Bảo dưỡng định kỳ, kiểm tra tiếng kêu phanh trước.",
-                "Tiếng kêu nhẹ khi phanh; thân xe không va quẹt mới.", "kythuat", true);
+                "Tiếng kêu nhẹ khi phanh; thân xe không va quẹt mới.", "NV005", true);
         danhSachPhieu.add(phieuCu);
         danhSachPhieu.add(new PhieuTiepNhan("TN-2026-0111", "51K-001.23", "Kiểm tra điều hòa", "Điều hòa làm lạnh yếu.",
-                "kythuat", true));
+                "NV005", true));
         danhSachPhieu.add(new PhieuTiepNhan("TN-2026-0113", "51H-135.79", "Bảo dưỡng, kiểm tra phanh",
-                "Tiếng kêu nhẹ khi phanh.", "kythuat", true));
+                "Tiếng kêu nhẹ khi phanh.", "NV005", true));
         danhSachPhieu.add(new PhieuTiepNhan("TN-2026-0112", "51F-112.34", "Kiểm tra xe",
-                "Chưa xác nhận nội dung tiếp nhận.", "kythuat", false));
+                "Chưa xác nhận nội dung tiếp nhận.", "NV005", false));
         danhSachBaoCao
                 .add(new BaoCaoKiemTra("KT-2026-0112", danhSachPhieu.get(1), LocalDate.of(2026, 10, 5), "Điều hòa",
                         new String[] { "Làm lạnh yếu", "Lọc gió bẩn", "Vệ sinh lọc gió và đo áp suất", "", "", "", "" },

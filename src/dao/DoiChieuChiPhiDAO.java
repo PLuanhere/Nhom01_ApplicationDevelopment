@@ -15,7 +15,7 @@ public final class DoiChieuChiPhiDAO {
 
     /** Mở dữ liệu xem thử độc lập. */
     public DoiChieuChiPhiDAO() {
-        this(new HoaDonDAO(), new TaiKhoan("thungan", VaiTro.THU_NGAN));
+        this(new HoaDonDAO(), new TaiKhoan("NV007", VaiTro.THU_NGAN));
     }
 
     /** Dùng cùng nguồn và phiên Thu ngân với màn thanh toán. */

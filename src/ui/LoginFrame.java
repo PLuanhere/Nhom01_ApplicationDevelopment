@@ -41,14 +41,14 @@ public final class LoginFrame extends JFrame {
     private final TaiKhoanDAO taiKhoanDAO = new TaiKhoanDAO();
 
     // Các ô nhập và lựa chọn trên biểu mẫu.
-    private final JTextField txtTenDangNhap = new JTextField() {
+    private final JTextField txtMaNhanVien = new JTextField() {
         private static final long serialVersionUID = 1L;
 
         /** Vẽ nội dung giao diện và giữ chữ hoặc gợi ý nhập liệu dễ đọc. */
         @Override
         protected void paintComponent(Graphics graphics) {
             super.paintComponent(graphics);
-            veGoiY(graphics, this, "Ví dụ: quanly");
+            veGoiY(graphics, this, "Ví dụ: NV001");
         }
     };
     private final JPasswordField txtMatKhau = new JPasswordField() {
@@ -117,7 +117,7 @@ public final class LoginFrame extends JFrame {
             /** Khởi tạo hoặc cập nhật giao diện trên luồng Swing. */
             @Override
             public void run() {
-                txtTenDangNhap.requestFocusInWindow();
+                txtMaNhanVien.requestFocusInWindow();
             }
         });
     }
@@ -139,7 +139,7 @@ public final class LoginFrame extends JFrame {
         lblThongBao.setForeground(UiTheme.APP_MUTED);
         themDong(pnlForm, lblThongBao, 21);
         pnlForm.add(Box.createVerticalStrut(26));
-        themDong(pnlForm, taoHangNhap("Tên đăng nhập *", txtTenDangNhap), 65);
+        themDong(pnlForm, taoHangNhap("Mã nhân viên *", txtMaNhanVien), 65);
         pnlForm.add(Box.createVerticalStrut(18));
         themDong(pnlForm, taoHangNhap("Mật khẩu *", txtMatKhau), 65);
         pnlForm.add(Box.createVerticalStrut(18));
@@ -246,28 +246,28 @@ public final class LoginFrame extends JFrame {
             return;
         }
 
-        String tenDangNhap = txtTenDangNhap.getText().trim();
+        String maNhanVien = txtMaNhanVien.getText().trim();
         char[] matKhau = txtMatKhau.getPassword();
-        if (tenDangNhap.isEmpty() || matKhau.length == 0) {
+        if (maNhanVien.isEmpty() || matKhau.length == 0) {
             Arrays.fill(matKhau, '\0');
-            hienThiLoi(tenDangNhap.isEmpty() ? "Vui lòng nhập tên đăng nhập." : "Vui lòng nhập mật khẩu.");
+            hienThiLoi(maNhanVien.isEmpty() ? "Vui lòng nhập mã nhân viên." : "Vui lòng nhập mật khẩu.");
 
             return;
         }
         setDangXuLy(true);
-        xacThucTaiKhoan(tenDangNhap, matKhau);
+        xacThucTaiKhoan(maNhanVien, matKhau);
     }
 
     /** Gọi DAO kiểm tra tài khoản và mở khung làm việc khi đăng nhập hợp lệ. */
-    private void xacThucTaiKhoan(String tenDangNhap, char[] matKhau) {
+    private void xacThucTaiKhoan(String maNhanVien, char[] matKhau) {
         try {
-            TaiKhoan ketQua = taiKhoanDAO.dangNhap(tenDangNhap, matKhau);
+            TaiKhoan ketQua = taiKhoanDAO.dangNhap(maNhanVien, matKhau);
             if (ketQua != null && ketQua.isPhienHopLe()) {
                 moKhungChinh(ketQua);
             } else {
-                hienThiLoi("Tên đăng nhập hoặc mật khẩu không đúng.");
+                hienThiLoi("Mã nhân viên hoặc mật khẩu không đúng.");
             }
-        } catch (IllegalArgumentException | SecurityException ex) {
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienThiLoi(ex.getMessage());
         } finally {
             for (int i = 0; i < matKhau.length; i++) {
@@ -279,7 +279,7 @@ public final class LoginFrame extends JFrame {
 
     /** Đổi trạng thái ô nhập và nút khi kiểm tra thông tin đăng nhập. */
     private void setDangXuLy(boolean dangXuLy) {
-        txtTenDangNhap.setEnabled(!dangXuLy);
+        txtMaNhanVien.setEnabled(!dangXuLy);
         txtMatKhau.setEnabled(!dangXuLy);
         chkHienMatKhau.setEnabled(!dangXuLy);
         btnDangNhap.setEnabled(!dangXuLy);
@@ -294,8 +294,8 @@ public final class LoginFrame extends JFrame {
     private void hienThiLoi(String thongBao) {
         lblThongBao.setForeground(UiTheme.ERROR);
         lblThongBao.setText(thongBao);
-        if (txtTenDangNhap.getText().trim().isEmpty()) {
-            txtTenDangNhap.requestFocusInWindow();
+        if (txtMaNhanVien.getText().trim().isEmpty()) {
+            txtMaNhanVien.requestFocusInWindow();
         } else {
             txtMatKhau.requestFocusInWindow();
         }

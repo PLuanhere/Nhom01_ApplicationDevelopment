@@ -1,6 +1,5 @@
 package ui.screen.quanly;
 
-import dao.NhanVienDAO;
 import dao.TaiKhoanDAO;
 import entity.TaiKhoan;
 import entity.TaiKhoan.VaiTro;
@@ -123,7 +122,7 @@ public final class BaoMatTaiKhoanPanel extends QuanLyFormPanel implements Action
         them(pnl, UiChung.taoNhan("Bảo mật tài khoản & quyền truy cập", 18, true, UiTheme.APP_TEXT));
         them(pnl, UiChung.taoNhan("Khóa, mở và đổi quyền là thao tác quản trị riêng; đặt lại mật khẩu là tác vụ riêng.",
                 12, false, UiTheme.APP_MUTED));
-        String ten = new NhanVienDAO().timTheoMa(nguoiDung, dich.getMaNhanVien()).getHoTen();
+        String ten = dao.timNhanVienTheoMa(nguoiDung, dich.getMaNhanVien()).getHoTen();
         them(pnl,
                 UiChung.taoHang(
                         UiChung.taoTruong("Tài khoản đang chọn",
@@ -232,7 +231,7 @@ public final class BaoMatTaiKhoanPanel extends QuanLyFormPanel implements Action
                 return;
             }
             luuThayDoi(vaiTro, hoatDong, lyDo);
-        } catch (IllegalArgumentException | SecurityException ex) {
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienThongBao(ex.getMessage(), false);
         }
     }
@@ -259,7 +258,7 @@ public final class BaoMatTaiKhoanPanel extends QuanLyFormPanel implements Action
             if (nguoiDung.isPhienHopLe()) {
                 manHinh.moBaoMat(dich, "Đã cập nhật tài khoản " + dich.getMaTaiKhoan() + ".");
             }
-        } catch (IllegalArgumentException | SecurityException ex) {
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienThongBao(ex.getMessage(), false);
         } finally {
             batDangLuu(false);
@@ -293,7 +292,7 @@ public final class BaoMatTaiKhoanPanel extends QuanLyFormPanel implements Action
                     });
             dlg.napMatKhau(matKhau, xacNhan);
             dlg.setVisible(true);
-        } catch (IllegalArgumentException | SecurityException ex) {
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienThongBao(ex.getMessage(), false);
         } finally {
             Arrays.fill(matKhau, '\0');

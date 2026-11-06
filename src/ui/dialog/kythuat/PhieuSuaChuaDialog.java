@@ -126,7 +126,7 @@ public final class PhieuSuaChuaDialog extends JDialog implements ActionListener 
                 throw new IllegalArgumentException("Chưa chọn báo giá đã được khách đồng ý.");
             }
             ketQua = phieuDAO.luu(taiKhoan, phieuCu == null ? "" : phieuCu.getMaPhieu(), baoGia.getMaBaoGia(),
-                    cmbKyThuat.getSelectedIndex() == 0 ? "kythuat" : "kythuatvu",
+                    cmbKyThuat.getSelectedIndex() == 0 ? "NV005" : "kythuatvu",
                     phieuCu == null ? "" : phieuCu.getKyThuatPhoiHop(), han, txaNoiDung.getText().trim());
             dispose();
         } catch (DateTimeParseException loi) {

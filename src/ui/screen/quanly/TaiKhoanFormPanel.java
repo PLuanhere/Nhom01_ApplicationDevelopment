@@ -1,6 +1,5 @@
 package ui.screen.quanly;
 
-import dao.NhanVienDAO;
 import dao.TaiKhoanDAO;
 import entity.NhanVien;
 import entity.TaiKhoan;
@@ -50,7 +49,6 @@ public final class TaiKhoanFormPanel extends QuanLyFormPanel implements ActionLi
 
     // Các ô nhập và lựa chọn trên biểu mẫu.
     private final JTextField txtMa = UiChung.taoONhap(false);
-    private final JTextField txtTen = UiChung.taoONhap(true);
     private final JComboBox<NhanVien> cmbNhanVien = new JComboBox<>();
     private final JComboBox<VaiTro> cmbVaiTro = new JComboBox<>(VaiTro.values());
     private final JComboBox<String> cmbTrangThai = new JComboBox<>(new String[] { "Đang hoạt động", "Đã khóa" });
@@ -99,6 +97,8 @@ public final class TaiKhoanFormPanel extends QuanLyFormPanel implements ActionLi
         btnSua.addActionListener(this);
         btnBaoMat.setActionCommand("baoMat");
         btnBaoMat.addActionListener(this);
+        cmbNhanVien.setActionCommand("nhanVien");
+        cmbNhanVien.addActionListener(this);
         getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke("ESCAPE"), "quayLai");
         getActionMap().put("quayLai", new AbstractAction() {
             private static final long serialVersionUID = 1L;
@@ -113,25 +113,26 @@ public final class TaiKhoanFormPanel extends QuanLyFormPanel implements ActionLi
 
     /** Đưa dữ liệu gốc vào các trường và đặt lại mốc kiểm tra thay đổi. */
     private void napDuLieu() {
-        txtMa.setText(banDau == null ? dao.maTiepTheo(nguoiDung) : banDau.getMaTaiKhoan());
         List<NhanVien> nhanVien = new ArrayList<>();
         if (banDau == null) {
             nhanVien = dao.nhanVienChuaCoTaiKhoan(nguoiDung);
         } else {
-            nhanVien.add(new NhanVienDAO().timTheoMa(nguoiDung, banDau.getMaNhanVien()));
+            nhanVien.add(dao.timNhanVienTheoMa(nguoiDung, banDau.getMaNhanVien()));
         }
         for (NhanVien nv : nhanVien) {
             cmbNhanVien.addItem(nv);
         }
         cmbVaiTro.setSelectedIndex(-1);
         if (banDau != null) {
-            txtTen.setText(banDau.getTenDangNhap());
+            txtMa.setText(banDau.getMaNhanVien());
             cmbVaiTro.setSelectedItem(banDau.getVaiTro());
             cmbTrangThai.setSelectedIndex(banDau.isHoatDong() ? 0 : 1);
             btnLuu.setText("Kiểm tra & lưu thay đổi");
         } else if (nhanVien.isEmpty()) {
             lblLoi.setText("Chưa có nhân viên để cấp tài khoản. Hãy thêm hồ sơ tại trang Nhân viên.");
             lblLoi.setForeground(UiTheme.APP_MUTED);
+        } else {
+            txtMa.setText(nhanVien.get(0).getMaNhanVien());
         }
     }
 
@@ -145,8 +146,8 @@ public final class TaiKhoanFormPanel extends QuanLyFormPanel implements ActionLi
                 true, UiTheme.APP_TEXT));
         themHang(pnl,
                 UiChung.taoNhan(
-                        banDau == null ? "Chọn nhân viên, tên đăng nhập và vai trò trước khi cấp tài khoản."
-                                : "Tên đăng nhập và nhân viên liên kết được giữ cố định sau khi cấp.",
+                        banDau == null ? "Chọn nhân viên và vai trò; mã nhân viên sẽ dùng để đăng nhập."
+                                : "Mã nhân viên dùng để đăng nhập và được giữ cố định sau khi cấp.",
                         12, false, UiTheme.APP_MUTED));
         for (JComponent o : new JComponent[] { cmbNhanVien, cmbVaiTro, cmbTrangThai, txtMatKhau, txtXacNhan }) {
             UiChung.dinhDangO(o);
@@ -154,20 +155,13 @@ public final class TaiKhoanFormPanel extends QuanLyFormPanel implements ActionLi
         for (JComboBox<?> cmb : new JComboBox<?>[] { cmbNhanVien, cmbVaiTro, cmbTrangThai }) {
             dinhDangLuaChon(cmb);
         }
-        JTextField txtChinhSach = UiChung.taoONhap(false);
-        txtChinhSach.setText("Một tài khoản chỉ truy cập chức năng được cấp");
-        txtChinhSach.setToolTipText(txtChinhSach.getText());
-        themHang(pnl, UiChung.taoHang(UiChung.taoTruong("Mã tài khoản · chỉ đọc", txtMa),
+        themHang(pnl, UiChung.taoHang(UiChung.taoTruong("Mã nhân viên / đăng nhập · chỉ đọc", txtMa),
                 UiChung.taoTruong("Nhân viên *", cmbNhanVien)));
-        themHang(pnl,
-                UiChung.taoHang(UiChung.taoTruong(
-                        banDau == null ? "Tên đăng nhập * · kiểm tra trùng" : "Tên đăng nhập · cố định", txtTen),
-                        UiChung.taoTruong("Vai trò được cấp *", cmbVaiTro)));
+        themHang(pnl, UiChung.taoHang(UiChung.taoTruong("Vai trò được cấp *", cmbVaiTro),
+                UiChung.taoTruong("Trạng thái tài khoản", cmbTrangThai)));
         if (banDau == null) {
             themHang(pnl, UiChung.taoHang(UiChung.taoTruong("Mật khẩu mới *", txtMatKhau),
                     UiChung.taoTruong("Nhập lại mật khẩu *", txtXacNhan)));
-            themHang(pnl, UiChung.taoHang(UiChung.taoTruong("Trạng thái tài khoản", cmbTrangThai),
-                    UiChung.taoTruong("Chính sách quyền · chỉ đọc", txtChinhSach)));
         } else {
             JTextField txtNgayTao = UiChung.taoONhap(false);
             txtNgayTao.setText(banDau.getNgayTao().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
@@ -234,8 +228,6 @@ public final class TaiKhoanFormPanel extends QuanLyFormPanel implements ActionLi
     private void batChinhSua(boolean choSua) {
         dangSua = choSua;
         boolean laBanThan = banDau != null && banDau.getMaTaiKhoan().equals(nguoiDung.getMaTaiKhoan());
-        txtTen.setEditable(choSua && banDau == null);
-        txtTen.setBackground(banDau == null ? Color.WHITE : new Color(0xF5F7FB));
         cmbNhanVien.setEnabled(choSua && banDau == null && cmbNhanVien.getItemCount() > 0);
         cmbVaiTro.setEnabled(choSua && !laBanThan);
         cmbTrangThai.setEnabled(choSua && !laBanThan);
@@ -253,7 +245,7 @@ public final class TaiKhoanFormPanel extends QuanLyFormPanel implements ActionLi
 
     /** Lấy các giá trị đang nhập để phát hiện thay đổi chưa lưu. */
     private String[] layGiaTri() {
-        return new String[] { txtTen.getText(), String.valueOf(cmbNhanVien.getSelectedItem()),
+        return new String[] { String.valueOf(cmbNhanVien.getSelectedItem()),
                 String.valueOf(cmbVaiTro.getSelectedItem()), String.valueOf(cmbTrangThai.getSelectedItem()),
                 txtLyDo.getText() };
     }
@@ -290,25 +282,15 @@ public final class TaiKhoanFormPanel extends QuanLyFormPanel implements ActionLi
                 throw new IllegalArgumentException("Hãy chọn nhân viên chưa có tài khoản.");
             }
             NhanVien nv = (NhanVien) cmbNhanVien.getSelectedItem();
-            if (txtTen.getText().isBlank()) {
-                txtTen.requestFocusInWindow();
-                throw new IllegalArgumentException("Nhập tên đăng nhập.");
-            }
             VaiTro vaiTro = (VaiTro) cmbVaiTro.getSelectedItem();
             if (vaiTro == null) {
                 cmbVaiTro.requestFocusInWindow();
                 throw new IllegalArgumentException("Hãy chọn vai trò.");
             }
             boolean hoatDong = cmbTrangThai.getSelectedIndex() == 0;
-            TaiKhoan thongTin = new TaiKhoan(txtMa.getText(), nv.getMaNhanVien(), txtTen.getText(), vaiTro, hoatDong,
+            TaiKhoan thongTin = new TaiKhoan(nv.getMaNhanVien(), vaiTro, hoatDong,
                     banDau == null ? LocalDateTime.now() : banDau.getNgayTao());
             if (banDau == null) {
-                for (TaiKhoan daCo : dao.layDanhSach(nguoiDung)) {
-                    if (daCo.getTenDangNhap().equals(thongTin.getTenDangNhap())) {
-                        txtTen.requestFocusInWindow();
-                        throw new IllegalArgumentException("Tên đăng nhập đã tồn tại.");
-                    }
-                }
                 kiemTraMatKhau();
             } else if (banDau.getVaiTro() == vaiTro && banDau.isHoatDong() == hoatDong) {
                 throw new IllegalArgumentException("Vai trò và trạng thái chưa thay đổi.");
@@ -333,7 +315,7 @@ public final class TaiKhoanFormPanel extends QuanLyFormPanel implements ActionLi
             }
             char[] matKhau = txtMatKhau.getPassword();
             luuTaiKhoan(thongTin, matKhau, lyDo);
-        } catch (IllegalArgumentException | SecurityException ex) {
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienLoi(ex.getMessage());
         }
     }
@@ -360,7 +342,7 @@ public final class TaiKhoanFormPanel extends QuanLyFormPanel implements ActionLi
             if (nguoiDung.isPhienHopLe()) {
                 manHinh.hienKetQua(thongTin.getMaTaiKhoan(), "Đã lưu tài khoản " + thongTin.getMaTaiKhoan() + ".");
             }
-        } catch (IllegalArgumentException | SecurityException ex) {
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
             hienLoi(ex.getMessage());
         } finally {
             for (int i = 0; i < matKhau.length; i++) {
@@ -389,7 +371,7 @@ public final class TaiKhoanFormPanel extends QuanLyFormPanel implements ActionLi
     /** Khóa hoặc mở điều khiển để tránh thao tác lặp trong lúc lưu. */
     private void batDangLuu(boolean luu) {
         dangLuu = luu;
-        for (JComponent o : new JComponent[] { txtTen, cmbNhanVien, cmbVaiTro, cmbTrangThai, txtLyDo, txtMatKhau,
+        for (JComponent o : new JComponent[] { cmbNhanVien, cmbVaiTro, cmbTrangThai, txtLyDo, txtMatKhau,
                 txtXacNhan, btnLuu }) {
             o.setEnabled(!luu);
         }
@@ -418,6 +400,8 @@ public final class TaiKhoanFormPanel extends QuanLyFormPanel implements ActionLi
             if (choPhepRoiTrang()) {
                 manHinh.moBaoMat(banDau);
             }
+        } else if ("nhanVien".equals(lenh) && cmbNhanVien.getSelectedItem() instanceof NhanVien) {
+            txtMa.setText(((NhanVien) cmbNhanVien.getSelectedItem()).getMaNhanVien());
         }
     }
 }

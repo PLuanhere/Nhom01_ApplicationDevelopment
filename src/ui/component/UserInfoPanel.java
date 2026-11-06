@@ -16,7 +16,7 @@ public final class UserInfoPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    /** Ghép avatar vai trò, tên đăng nhập và vai trò của phiên hiện tại. */
+    /** Ghép avatar, mã nhân viên và vai trò của phiên hiện tại. */
     public UserInfoPanel(TaiKhoan taiKhoan, boolean dark) {
         super(new BorderLayout(8, 0));
         if (taiKhoan == null) {

@@ -94,7 +94,7 @@ public final class DuLieuLienQuanKiemTraDialog extends JDialog implements Action
         pnlTruong.add(KiemTraUi.taoTruong("Phiếu tiếp nhận", KiemTraUi.taoNhan(baoCao.getPhieu().getMaPhieu(), false)));
         pnlTruong.add(KiemTraUi.taoTruong("Biển số", KiemTraUi.taoNhan(baoCao.getPhieu().getBienSo(), false)));
         String taiKhoanKyThuat = baoCao.getPhieu().getTaiKhoanKyThuat();
-        String tenKyThuat = "kythuat".equals(taiKhoanKyThuat) ? "Chung Ngô Minh Hoàng" : taiKhoanKyThuat;
+        String tenKyThuat = "NV005".equals(taiKhoanKyThuat) ? "Lê Minh Tâm" : taiKhoanKyThuat;
         pnlTruong.add(KiemTraUi.taoTruong("Kỹ thuật viên", KiemTraUi.taoNhan(tenKyThuat, false)));
         pnlTruong.add(
                 KiemTraUi.taoTruong("Trạng thái", KiemTraUi.taoNhan(baoCao.getTrangThai().getTenHienThi(), false)));

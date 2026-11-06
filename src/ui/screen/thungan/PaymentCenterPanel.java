@@ -47,7 +47,7 @@ public final class PaymentCenterPanel extends JPanel {
 
     /** Tạo màn hình với no-op callback, dùng DAO mặc định. */
     public PaymentCenterPanel() {
-        this(new HoaDonDAO(), new TaiKhoan("thungan", VaiTro.THU_NGAN), new Navigation());
+        this(new HoaDonDAO(), new TaiKhoan("NV007", VaiTro.THU_NGAN), new Navigation());
     }
 
     /** Tạo màn hình với DAO và callback điều hướng do MainFrame cung cấp. */

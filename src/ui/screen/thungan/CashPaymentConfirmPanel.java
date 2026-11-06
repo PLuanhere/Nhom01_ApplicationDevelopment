@@ -227,7 +227,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
         grid.setOpaque(false);
         String tongHienThi = new DecimalFormat("#,##0",
                 DecimalFormatSymbols.getInstance(Locale.forLanguageTag("vi-VN"))).format(phieu.getTongTien()) + "đ";
-        String nguoiThuHienThi = taiKhoan != null ? taiKhoan.getTenDangNhap() : "thungan";
+        String nguoiThuHienThi = taiKhoan != null ? taiKhoan.getTenDangNhap() : "NV007";
         grid.add(field("Tổng phải thu · chỉ đọc", readOnly(tongHienThi)));
         grid.add(field("Số tiền khách giao *", receivedField));
         grid.add(field("Tiền thừa trả khách · chỉ đọc", readOnly(changeValue)));

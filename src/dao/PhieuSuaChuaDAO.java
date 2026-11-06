@@ -54,7 +54,7 @@ public final class PhieuSuaChuaDAO {
         danhSachPhieu.add(new PhieuSuaChua("SC-2026-0112", "BG-2026-0111", "51K-001.23", "", "",
                 LocalDateTime.of(2026, 10, 6, 11, 0), "Kiểm tra điều hòa và hệ thống làm lạnh.",
                 TrangThaiSuaChua.CHO_SUA_CHUA, taoHangMuc("Điều hòa", false), null));
-        danhSachPhieu.add(new PhieuSuaChua("SC-2026-0108", "BG-2026-0108", "51H-246.80", "kythuat", "",
+        danhSachPhieu.add(new PhieuSuaChua("SC-2026-0108", "BG-2026-0108", "51H-246.80", "NV005", "",
                 LocalDateTime.of(2026, 10, 5, 17, 0), "Bảo dưỡng, vệ sinh phanh.", TrangThaiSuaChua.DANG_SUA,
                 taoHangMuc("Bảo dưỡng", true), null));
         // Các lệnh riêng giúp kiểm tra phản hồi khách mà không tự duyệt đề xuất vừa gửi.
@@ -64,14 +64,14 @@ public final class PhieuSuaChuaDAO {
             String maBaoGia = "BG-MAU-" + soThuTu;
             List<ChiTietSuaChua> hangMuc = taoHangMuc("Bảo dưỡng", true);
             if (trangThai == TrangThaiPhatSinh.DA_DUYET) {
-                hangMuc.add(new ChiTietSuaChua("Thay rotuyn lái", "kythuat", "", TrangThaiSuaChua.CHO_SUA_CHUA, true));
+                hangMuc.add(new ChiTietSuaChua("Thay rotuyn lái", "NV005", "", TrangThaiSuaChua.CHO_SUA_CHUA, true));
             }
             PhatSinhSuaChua phatSinh = new PhatSinhSuaChua(
                     new String[] { "Rotuyn lái bị rơ", "Phát hiện khi kiểm tra bổ sung gầm xe.",
                             "Thay 1 rotuyn lái, tiền công thay.", "2 giờ", "Chỉ thực hiện phần đã được khách duyệt." },
                     trangThai, trangThai == TrangThaiPhatSinh.CHO_DUYET ? "" : "Nguyễn Văn An",
                     trangThai == TrangThaiPhatSinh.CHO_DUYET ? null : LocalDateTime.of(2026, 10, 5, 14, 0));
-            danhSachPhieu.add(new PhieuSuaChua("SC-2026-0" + soThuTu, maBaoGia, "51H-246.80", "kythuat", "",
+            danhSachPhieu.add(new PhieuSuaChua("SC-2026-0" + soThuTu, maBaoGia, "51H-246.80", "NV005", "",
                     LocalDateTime.of(2026, 10, 5, 17, 0), "Bảo dưỡng, vệ sinh phanh.", TrangThaiSuaChua.DANG_SUA,
                     hangMuc, phatSinh));
         }
@@ -153,10 +153,10 @@ public final class PhieuSuaChuaDAO {
         if (nguonBaoGia != null) {
             throw new IllegalStateException("Dùng phát hành lệnh với phân công từng hạng mục.");
         }
-        if (!"kythuat".equals(kyThuatChinh) && !"kythuatvu".equals(kyThuatChinh)) {
+        if (!"NV005".equals(kyThuatChinh) && !"kythuatvu".equals(kyThuatChinh)) {
             throw new IllegalArgumentException("Cần chọn kỹ thuật viên chính hợp lệ.");
         }
-        if ((!kyThuatPhoiHop.isEmpty() && !"kythuat".equals(kyThuatPhoiHop) && !"kythuatvu".equals(kyThuatPhoiHop))
+        if ((!kyThuatPhoiHop.isEmpty() && !"NV005".equals(kyThuatPhoiHop) && !"kythuatvu".equals(kyThuatPhoiHop))
                 || kyThuatChinh.equals(kyThuatPhoiHop)) {
             throw new IllegalArgumentException("Kỹ thuật viên phối hợp không hợp lệ hoặc trùng người chính.");
         }
@@ -502,7 +502,7 @@ public final class PhieuSuaChuaDAO {
     /** Tạo hang muc cho giao diện. */
     private List<ChiTietSuaChua> taoHangMuc(String nhom, boolean daBatDau) {
         List<ChiTietSuaChua> ketQua = new ArrayList<ChiTietSuaChua>();
-        ketQua.add(new ChiTietSuaChua("Điều hòa".equals(nhom) ? "Kiểm tra điều hòa" : "Bảo dưỡng dầu / lọc", "kythuat",
+        ketQua.add(new ChiTietSuaChua("Điều hòa".equals(nhom) ? "Kiểm tra điều hòa" : "Bảo dưỡng dầu / lọc", "NV005",
                 daBatDau ? "Đã thay dầu, kiểm tra rò rỉ" : "",
                 daBatDau ? TrangThaiSuaChua.HOAN_THANH : TrangThaiSuaChua.CHO_SUA_CHUA, false));
         if (!"Điều hòa".equals(nhom)) {

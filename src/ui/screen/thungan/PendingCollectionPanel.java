@@ -77,7 +77,7 @@ public class PendingCollectionPanel extends JPanel {
 
     /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
     public PendingCollectionPanel(ActionListener onCreateInvoice, ActionListener onViewDetails) {
-        this(new HoaDonDAO(), new TaiKhoan("thungan", VaiTro.THU_NGAN), null, onCreateInvoice, onViewDetails);
+        this(new HoaDonDAO(), new TaiKhoan("NV007", VaiTro.THU_NGAN), null, onCreateInvoice, onViewDetails);
     }
 
     /** Khởi tạo bộ lọc, danh sách và thao tác cho phiếu được chọn. */
