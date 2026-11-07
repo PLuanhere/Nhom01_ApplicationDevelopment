@@ -26,7 +26,7 @@ public final class PhieuSuaChua {
     private String nguoiPhatHanh = "";
     private LocalDateTime thoiDiemPhatHanh;
 
-    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+    // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
     public PhieuSuaChua(String maPhieu, String maBaoGia, String bienSo, String kyThuatChinh, String kyThuatPhoiHop,
             LocalDateTime hanHoanThanh, String ghiChu, TrangThaiSuaChua trangThai, List<ChiTietSuaChua> danhSachHangMuc,
             PhatSinhSuaChua phatSinh) {
@@ -69,7 +69,7 @@ public final class PhieuSuaChua {
         }
     }
 
-    /** Giữ constructor cũ cho kỹ thuật; lệnh tiếp nhận mới có thêm dấu vết phát hành. */
+    // Giữ constructor cũ cho kỹ thuật; lệnh tiếp nhận mới có thêm dấu vết phát hành.
     public PhieuSuaChua(String maPhieu, String maBaoGia, String bienSo, String kyThuatChinh, String kyThuatPhoiHop,
             LocalDateTime hanHoanThanh, String ghiChu, List<ChiTietSuaChua> hangMuc, String nguoiPhatHanh,
             LocalDateTime thoiDiemPhatHanh) {
@@ -82,7 +82,7 @@ public final class PhieuSuaChua {
         this.thoiDiemPhatHanh = thoiDiemPhatHanh;
     }
 
-    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+    // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
     public PhieuSuaChua(PhieuSuaChua phieu) {
         this(phieu.maPhieu, phieu.maBaoGia, phieu.bienSo, phieu.kyThuatChinh, phieu.kyThuatPhoiHop, phieu.hanHoanThanh,
                 phieu.ghiChu, phieu.trangThai, phieu.danhSachHangMuc, phieu.phatSinh);
@@ -92,78 +92,94 @@ public final class PhieuSuaChua {
         thoiDiemPhatHanh = phieu.thoiDiemPhatHanh;
     }
 
-    /** Trả về nguoi phat hanh. */
+    // Khôi phục lệnh cùng lịch sử phát hành và kết quả hoàn tất đã được lưu.
+    public PhieuSuaChua(String ma, String maBG, String bienSo, String chinh, String hoTro,
+            LocalDateTime han, String ghiChu, TrangThaiSuaChua trangThai,
+            List<ChiTietSuaChua> hangMuc, PhatSinhSuaChua phatSinh, String nguoiPhatHanh,
+            LocalDateTime lucPhatHanh, String[] ketQua, LocalDateTime lucHoanTat) {
+        this(ma, maBG, bienSo, chinh, hoTro, han, ghiChu, trangThai, hangMuc, phatSinh);
+        if (ketQua == null || ketQua.length != 3
+                || (trangThai == TrangThaiSuaChua.HOAN_THANH) != (lucHoanTat != null)) {
+            throw new IllegalArgumentException("Trạng thái và kết quả hoàn tất không hợp lệ.");
+        }
+        this.nguoiPhatHanh = nguoiPhatHanh;
+        this.thoiDiemPhatHanh = lucPhatHanh;
+        this.ketQuaHoanTat = ketQua.clone();
+        this.thoiDiemHoanTat = lucHoanTat;
+    }
+
+    // Trả về nguoi phat hanh.
     public String getNguoiPhatHanh() {
         return nguoiPhatHanh;
     }
 
-    /** Trả về thoi diem phat hanh. */
+    // Trả về thoi diem phat hanh.
     public LocalDateTime getThoiDiemPhatHanh() {
         return thoiDiemPhatHanh;
     }
 
-    /** Trả về ma phieu. */
+    // Trả về ma phieu.
     public String getMaPhieu() {
         return maPhieu;
     }
 
-    /** Trả về ma bao gia. */
+    // Trả về ma bao gia.
     public String getMaBaoGia() {
         return maBaoGia;
     }
 
-    /** Trả về bien so. */
+    // Trả về bien so.
     public String getBienSo() {
         return bienSo;
     }
 
-    /** Trả về ky thuat chinh. */
+    // Trả về ky thuat chinh.
     public String getKyThuatChinh() {
         return kyThuatChinh;
     }
 
-    /** Trả về ky thuat phoi hop. */
+    // Trả về ky thuat phoi hop.
     public String getKyThuatPhoiHop() {
         return kyThuatPhoiHop;
     }
 
-    /** Trả về han hoan thanh. */
+    // Trả về han hoan thanh.
     public LocalDateTime getHanHoanThanh() {
         return hanHoanThanh;
     }
 
-    /** Trả về ghi chu. */
+    // Trả về ghi chu.
     public String getGhiChu() {
         return ghiChu;
     }
 
-    /** Trả về trang thai. */
+    // Trả về trang thai.
     public TrangThaiSuaChua getTrangThai() {
         return trangThai;
     }
 
-    /** Trả về danh sach hang muc. */
+    // Trả về danh sach hang muc.
     public List<ChiTietSuaChua> getDanhSachHangMuc() {
         return new ArrayList<ChiTietSuaChua>(danhSachHangMuc);
     }
 
-    /** Trả về phat sinh. */
+    // Trả về phat sinh.
     public PhatSinhSuaChua getPhatSinh() {
         return phatSinh;
     }
 
-    /** Trả về ket qua hoan tat. */
+    // Trả về ket qua hoan tat.
     public String[] getKetQuaHoanTat() {
         return ketQuaHoanTat.clone();
     }
 
-    /** Trả về thoi diem hoan tat. */
+    // Trả về thoi diem hoan tat.
     public LocalDateTime getThoiDiemHoanTat() {
         return thoiDiemHoanTat;
     }
 
     // Cập nhật thông tin phân công khi lệnh chưa bắt đầu thực hiện.
-    /** Thực hiện cap nhat phan cong cho thành phần hiện tại. */
+    // Thực hiện cap nhat phan cong cho thành phần hiện tại.
     public void capNhatPhanCong(PhieuSuaChua banSua) {
         if (trangThai != TrangThaiSuaChua.CHO_SUA_CHUA) {
             throw new IllegalStateException("Lệnh đã bắt đầu, không sửa phân công trực tiếp.");
@@ -177,7 +193,7 @@ public final class PhieuSuaChua {
     }
 
     // Thay nội dung một công việc và đánh dấu lệnh đã bắt đầu thực hiện.
-    /** Thực hiện cap nhat hang muc cho thành phần hiện tại. */
+    // Thực hiện cap nhat hang muc cho thành phần hiện tại.
     public void capNhatHangMuc(int viTri, ChiTietSuaChua hangMuc) {
         if (trangThai == TrangThaiSuaChua.HOAN_THANH) {
             throw new IllegalStateException("Lệnh đã hoàn thành, không sửa tiến độ trực tiếp.");
@@ -187,7 +203,7 @@ public final class PhieuSuaChua {
     }
 
     // Ghi nhận một đề xuất phát sinh đang chờ phản hồi từ khách.
-    /** Thực hiện ghi nhan phat sinh cho thành phần hiện tại. */
+    // Thực hiện ghi nhan phat sinh cho thành phần hiện tại.
     public void ghiNhanPhatSinh(PhatSinhSuaChua deXuat) {
         if (trangThai == TrangThaiSuaChua.HOAN_THANH || phatSinh != null) {
             throw new IllegalStateException("Không thể gửi thêm đề xuất trong trạng thái hiện tại.");
@@ -199,7 +215,7 @@ public final class PhieuSuaChua {
     }
 
     // Lưu kết luận và chuyển lệnh sang hoàn thành sau khi DAO kiểm tra điều kiện.
-    /** Thực hiện hoan tat cho thành phần hiện tại. */
+    // Thực hiện hoan tat cho thành phần hiện tại.
     public void hoanTat(String[] ketQua, LocalDateTime thoiDiem) {
         if (trangThai == TrangThaiSuaChua.HOAN_THANH || ketQua.length != 3 || ketQua[0].isBlank()) {
             throw new IllegalStateException("Kết luận hoặc trạng thái hoàn tất chưa hợp lệ.");
@@ -217,10 +233,10 @@ public final class PhieuSuaChua {
         private final String taiKhoanThucHien;
         private final String ketQua;
         private final TrangThaiSuaChua trangThai;
-    
+
         private final boolean phatSinh;
-    
-        /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+
+        // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
         public ChiTietSuaChua(String tenHangMuc, String taiKhoanThucHien, String ketQua, TrangThaiSuaChua trangThai,
                 boolean phatSinh) {
             if (tenHangMuc == null) {
@@ -244,28 +260,28 @@ public final class PhieuSuaChua {
                 throw new IllegalArgumentException("Tên công việc hoặc kết quả hoàn thành chưa hợp lệ.");
             }
         }
-    
-        /** Trả về ten hang muc. */
+
+        // Trả về ten hang muc.
         public String getTenHangMuc() {
             return tenHangMuc;
         }
-    
-        /** Trả về tai khoan thuc hien. */
+
+        // Trả về tai khoan thuc hien.
         public String getTaiKhoanThucHien() {
             return taiKhoanThucHien;
         }
-    
-        /** Trả về ket qua. */
+
+        // Trả về ket qua.
         public String getKetQua() {
             return ketQua;
         }
-    
-        /** Trả về trang thai. */
+
+        // Trả về trang thai.
         public TrangThaiSuaChua getTrangThai() {
             return trangThai;
         }
-    
-        /** Cho biết phat sinh. */
+
+        // Cho biết phat sinh.
         public boolean isPhatSinh() {
             return phatSinh;
         }
@@ -274,12 +290,12 @@ public final class PhieuSuaChua {
     public static final class PhatSinhSuaChua {
         // Thứ tự: hư hỏng, nguyên nhân, đề xuất, thời gian thêm và ghi chú.
         private final String[] noiDung;
-    
+
         private final TrangThaiPhatSinh trangThai;
         private final String nguoiXacNhan;
         private final LocalDateTime thoiDiemXacNhan;
-    
-        /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+
+        // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
         public PhatSinhSuaChua(String[] noiDung, TrangThaiPhatSinh trangThai, String nguoiXacNhan,
                 LocalDateTime thoiDiemXacNhan) {
             if (noiDung == null || noiDung.length != 5) {
@@ -289,7 +305,7 @@ public final class PhieuSuaChua {
                 if (giaTri == null) {
                     throw new NullPointerException("Thiếu dữ liệu bắt buộc.");
                 }
-    
+
             }
             if (noiDung[0].isBlank() || noiDung[1].isBlank() || noiDung[2].isBlank()) {
                 throw new IllegalArgumentException("Cần nhập hư hỏng, nguyên nhân và đề xuất.");
@@ -308,23 +324,23 @@ public final class PhieuSuaChua {
             this.noiDung = noiDung.clone();
             this.thoiDiemXacNhan = thoiDiemXacNhan;
         }
-    
-        /** Trả về noi dung. */
+
+        // Trả về noi dung.
         public String[] getNoiDung() {
             return noiDung.clone();
         }
-    
-        /** Trả về trang thai. */
+
+        // Trả về trang thai.
         public TrangThaiPhatSinh getTrangThai() {
             return trangThai;
         }
-    
-        /** Trả về nguoi xac nhan. */
+
+        // Trả về nguoi xac nhan.
         public String getNguoiXacNhan() {
             return nguoiXacNhan;
         }
-    
-        /** Trả về thoi diem xac nhan. */
+
+        // Trả về thoi diem xac nhan.
         public LocalDateTime getThoiDiemXacNhan() {
             return thoiDiemXacNhan;
         }
@@ -332,15 +348,15 @@ public final class PhieuSuaChua {
 
     public enum TrangThaiPhatSinh {
         CHO_DUYET("Chờ khách duyệt"), DA_DUYET("Đã được khách đồng ý"), TU_CHOI("Khách từ chối");
-    
+
         private final String tenHienThi;
-    
-        /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+
+        // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
         TrangThaiPhatSinh(String tenHienThi) {
             this.tenHienThi = tenHienThi;
         }
-    
-        /** Trả về ten hien thi. */
+
+        // Trả về ten hien thi.
         public String getTenHienThi() {
             return tenHienThi;
         }
@@ -348,20 +364,20 @@ public final class PhieuSuaChua {
 
     public enum TrangThaiSuaChua {
         CHO_SUA_CHUA("Chờ sửa chữa"), DANG_SUA("Đang sửa"), CHO_PHU_TUNG("Chờ phụ tùng"), HOAN_THANH("Hoàn thành");
-    
+
         private final String tenHienThi;
-    
-        /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+
+        // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
         TrangThaiSuaChua(String tenHienThi) {
             this.tenHienThi = tenHienThi;
         }
-    
-        /** Trả về ten hien thi. */
+
+        // Trả về ten hien thi.
         public String getTenHienThi() {
             return tenHienThi;
         }
-    
-        /** {@inheritDoc} */
+
+        // {@inheritDoc}
         // Hiển thị nhãn trạng thái trong JComboBox.
         @Override
         public String toString() {
