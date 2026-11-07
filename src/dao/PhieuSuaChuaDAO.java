@@ -1,601 +1,723 @@
 package dao;
 
-import dao.BaoGiaDAO;
-import dao.NhanVienDAO;
-import dao.TaiKhoanDAO;
-import dao.PhuTungSuDungDAO;
-import entity.BaoGia;
-import entity.BaoGia.ChiTietBaoGia;
-import entity.Xe;
-import dao.NhanVienDAO.KyThuatVienPhanCong;
-import entity.TaiKhoan;
+import connectDB.ConnectDB;
+import entity.*;
+import entity.BaoGia.*;
+import entity.NhanVien.*;
+import entity.PhieuSuaChua.*;
 import entity.TaiKhoan.VaiTro;
-import dao.PhuTungSuDungDAO.PhuTungSuDung;
-import dao.PhuTungSuDungDAO.TrangThaiSuDung;
-import entity.PhieuSuaChua.ChiTietSuaChua;
-import entity.PhieuSuaChua.PhatSinhSuaChua;
-import entity.PhieuSuaChua;
-import entity.PhieuSuaChua.TrangThaiPhatSinh;
-import entity.PhieuSuaChua.TrangThaiSuaChua;
-
+import dao.NhanVienDAO.KyThuatVienPhanCong;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
-// Nghiệp vụ sửa chữa trên dữ liệu mẫu trong bộ nhớ
+// Đọc và ghi lệnh sửa chữa bằng JDBC trong DAO hiện có.
 public final class PhieuSuaChuaDAO {
-    private final List<PhieuSuaChua> danhSachPhieu = new ArrayList<PhieuSuaChua>();
-    private final List<BaoGia> danhSachBaoGia = new ArrayList<>();
-    private int soTiepTheo = 113;
-
-    private BaoGiaDAO nguonBaoGia;
-    private NhanVienDAO nguonKyThuat;
-    private PhuTungSuDungDAO nguonThucDung;
-    private final List<String[]> luotPhatHanh = new ArrayList<>();
-
-    /** Kho tiếp nhận mới nhận nguồn có kiểm soát, không trộn lệnh/báo giá mẫu của kỹ thuật. */
-    public PhieuSuaChuaDAO(BaoGiaDAO baoGiaDAO, NhanVienDAO nguonKyThuat) {
-        if (baoGiaDAO == null) {
-            throw new NullPointerException("Thiếu dữ liệu bắt buộc.");
-        }
-        nguonBaoGia = baoGiaDAO;
-        if (nguonKyThuat == null) {
-            throw new NullPointerException("Thiếu dữ liệu bắt buộc.");
-        }
-        this.nguonKyThuat = nguonKyThuat;
-        soTiepTheo = 1;
-    }
-
-    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+    // Khởi tạo DAO sử dụng SQL Server.
     public PhieuSuaChuaDAO() {
-        danhSachBaoGia.addAll(taoDanhSachBaoGia());
-        danhSachPhieu.add(new PhieuSuaChua("SC-2026-0112", "BG-2026-0111", "51K-001.23", "", "",
-                LocalDateTime.of(2026, 10, 6, 11, 0), "Kiểm tra điều hòa và hệ thống làm lạnh.",
-                TrangThaiSuaChua.CHO_SUA_CHUA, taoHangMuc("Điều hòa", false), null));
-        danhSachPhieu.add(new PhieuSuaChua("SC-2026-0108", "BG-2026-0108", "51H-246.80", "NV005", "",
-                LocalDateTime.of(2026, 10, 5, 17, 0), "Bảo dưỡng, vệ sinh phanh.", TrangThaiSuaChua.DANG_SUA,
-                taoHangMuc("Bảo dưỡng", true), null));
-        // Các lệnh riêng giúp kiểm tra phản hồi khách mà không tự duyệt đề xuất vừa gửi.
-        for (int soThuTu = 109; soThuTu <= 111; soThuTu++) {
-            TrangThaiPhatSinh trangThai = soThuTu == 109 ? TrangThaiPhatSinh.DA_DUYET
-                    : soThuTu == 110 ? TrangThaiPhatSinh.TU_CHOI : TrangThaiPhatSinh.CHO_DUYET;
-            String maBaoGia = "BG-MAU-" + soThuTu;
-            List<ChiTietSuaChua> hangMuc = taoHangMuc("Bảo dưỡng", true);
-            if (trangThai == TrangThaiPhatSinh.DA_DUYET) {
-                hangMuc.add(new ChiTietSuaChua("Thay rotuyn lái", "NV005", "", TrangThaiSuaChua.CHO_SUA_CHUA, true));
-            }
-            PhatSinhSuaChua phatSinh = new PhatSinhSuaChua(
-                    new String[] { "Rotuyn lái bị rơ", "Phát hiện khi kiểm tra bổ sung gầm xe.",
-                            "Thay 1 rotuyn lái, tiền công thay.", "2 giờ", "Chỉ thực hiện phần đã được khách duyệt." },
-                    trangThai, trangThai == TrangThaiPhatSinh.CHO_DUYET ? "" : "Nguyễn Văn An",
-                    trangThai == TrangThaiPhatSinh.CHO_DUYET ? null : LocalDateTime.of(2026, 10, 5, 14, 0));
-            danhSachPhieu.add(new PhieuSuaChua("SC-2026-0" + soThuTu, maBaoGia, "51H-246.80", "NV005", "",
-                    LocalDateTime.of(2026, 10, 5, 17, 0), "Bảo dưỡng, vệ sinh phanh.", TrangThaiSuaChua.DANG_SUA,
-                    hangMuc, phatSinh));
+    }
+
+    // Giữ constructor của nguồn dữ liệu chung.
+    public PhieuSuaChuaDAO(BaoGiaDAO bg, NhanVienDAO nv) {
+        if (bg == null || nv == null) {
+            throw new IllegalArgumentException("Thiếu nguồn báo giá hoặc nhân viên.");
         }
     }
 
-    /** Nhận nguồn thực dùng để chặn hoàn tất khi chưa ghi nhận phụ tùng. */
+    // Giữ chỗ nối nguồn; phụ tùng thực dùng được đối chiếu trực tiếp trong SQL.
     public void noiNguonThucDung(PhuTungSuDungDAO nguon) {
-        if (nguon == null || nguonThucDung != null) {
-            throw new IllegalStateException("Nguồn phụ tùng thiếu hoặc đã được kết nối.");
+        if (nguon == null) {
+            throw new IllegalArgumentException("Thiếu nguồn phụ tùng.");
         }
-        nguonThucDung = nguon;
     }
 
-    // Lấy báo giá của chính lệnh đang chọn để đối chiếu hạng mục, số lượng và giá tiền.
-    /** Đọc bao gia từ dữ liệu hiện tại. */
-    public BaoGia layBaoGia(TaiKhoan taiKhoan, String maPhieu) {
-        kiemTraVaiTro(taiKhoan);
-        PhieuSuaChua phieu = layPhieuNoiBo(taiKhoan, maPhieu);
-        for (BaoGia baoGia : danhSachBaoGia) {
-            if (baoGia.getMaBaoGia().equals(phieu.getMaBaoGia())) {
-                return baoGia;
+    // Đọc các lệnh đúng phân công rồi lọc từ khóa và trạng thái.
+    public List<PhieuSuaChua> timKiem(TaiKhoan tk, String tuKhoa, String trangThai) {
+        kiemTraQuyen(tk, VaiTro.NHAN_VIEN_TIEP_NHAN, VaiTro.NHAN_VIEN_KY_THUAT);
+        String sql = "SELECT * FROM dbo.PhieuSuaChua";
+        boolean kyThuat = tk.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT;
+        if (kyThuat) {
+            sql += " WHERE KyThuatChinh=? OR KyThuatPhoiHop=?";
+        }
+        sql += " ORDER BY MaPhieu";
+        List<PhieuSuaChua> ds = new ArrayList<>();
+        String khoa = tuKhoa == null ? "" : tuKhoa.trim().toLowerCase(Locale.ROOT);
+        Connection c = ketNoi();
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            if (kyThuat) {
+                ps.setString(1, tk.getMaNhanVien());
+                ps.setString(2, tk.getMaNhanVien());
             }
-        }
-        throw new IllegalStateException("Không tìm thấy báo giá liên kết.");
-    }
-
-    // Trả danh sách báo giá hợp lệ để tiếp nhận chọn khi tạo lệnh.
-    /** Đọc bao gia da duyet từ dữ liệu hiện tại. */
-    public List<BaoGia> layBaoGiaDaDuyet(TaiKhoan taiKhoan) {
-        kiemTraTiepNhan(taiKhoan);
-        if (nguonBaoGia != null) {
-            return nguonBaoGia.layDaDuyet(taiKhoan);
-        }
-        List<BaoGia> ketQua = new ArrayList<BaoGia>();
-        for (BaoGia baoGia : danhSachBaoGia) {
-            if (baoGia.isDaDongY()) {
-                ketQua.add(baoGia);
-            }
-        }
-        return ketQua;
-    }
-
-    // Lọc lệnh theo quyền, phân công và tiêu chí rồi trả bản sao cho giao diện.
-    /** Thực hiện tim kiem cho thành phần hiện tại. */
-    public List<PhieuSuaChua> timKiem(TaiKhoan taiKhoan, String tuKhoa, String trangThai) {
-        kiemTraVaiTro(taiKhoan);
-        String tuKhoaChuanHoa = tuKhoa.trim().toLowerCase();
-        List<PhieuSuaChua> ketQua = new ArrayList<PhieuSuaChua>();
-        for (PhieuSuaChua phieu : danhSachPhieu) {
-            String noiDung = phieu.getMaPhieu() + " " + phieu.getMaBaoGia() + " " + phieu.getBienSo();
-            String bienTim = Xe.khoaBienSo(tuKhoaChuanHoa);
-            if (duocXem(taiKhoan, phieu)
-                    && (noiDung.toLowerCase().contains(tuKhoaChuanHoa)
-                            || (!bienTim.isEmpty() && Xe.chuanHoaBienSo(phieu.getBienSo()).contains(bienTim)))
-                    && ("Tất cả".equals(trangThai) || phieu.getTrangThai().getTenHienThi().equals(trangThai))) {
-                ketQua.add(new PhieuSuaChua(phieu));
-            }
-        }
-        return ketQua;
-    }
-
-    // Tìm lệnh theo mã trong đúng phạm vi của tài khoản đang đăng nhập.
-    /** Thực hiện tim theo ma cho thành phần hiện tại. */
-    public PhieuSuaChua timTheoMa(TaiKhoan taiKhoan, String maPhieu) {
-        kiemTraVaiTro(taiKhoan);
-        for (PhieuSuaChua phieu : danhSachPhieu) {
-            if (phieu.getMaPhieu().equals(maPhieu) && duocXem(taiKhoan, phieu)) {
-                return new PhieuSuaChua(phieu);
-            }
-        }
-        return null;
-    }
-
-    // Thêm hoặc sửa lệnh chờ, kiểm tra báo giá và chống tạo nhiều lệnh cho cùng báo giá.
-    /** Kiểm tra và lưu . */
-    public PhieuSuaChua luu(TaiKhoan taiKhoan, String maPhieu, String maBaoGia, String kyThuatChinh,
-            String kyThuatPhoiHop, LocalDateTime hanHoanThanh, String ghiChu) {
-        kiemTraTiepNhan(taiKhoan);
-        if (nguonBaoGia != null) {
-            throw new IllegalStateException("Dùng phát hành lệnh với phân công từng hạng mục.");
-        }
-        if (!"NV005".equals(kyThuatChinh) && !"kythuatvu".equals(kyThuatChinh)) {
-            throw new IllegalArgumentException("Cần chọn kỹ thuật viên chính hợp lệ.");
-        }
-        if ((!kyThuatPhoiHop.isEmpty() && !"NV005".equals(kyThuatPhoiHop) && !"kythuatvu".equals(kyThuatPhoiHop))
-                || kyThuatChinh.equals(kyThuatPhoiHop)) {
-            throw new IllegalArgumentException("Kỹ thuật viên phối hợp không hợp lệ hoặc trùng người chính.");
-        }
-        BaoGia baoGiaChon = null;
-        for (BaoGia baoGia : danhSachBaoGia) {
-            if (baoGia.getMaBaoGia().equals(maBaoGia) && baoGia.isDaDongY()) {
-                baoGiaChon = baoGia;
-            }
-        }
-        if (baoGiaChon == null || hanHoanThanh == null || ghiChu.isBlank()) {
-            throw new IllegalArgumentException("Cần báo giá đã được khách đồng ý, hạn và nội dung phân công.");
-        }
-        for (PhieuSuaChua phieu : danhSachPhieu) {
-            if (phieu.getMaBaoGia().equals(maBaoGia) && !phieu.getMaPhieu().equals(maPhieu)) {
-                throw new IllegalStateException("Báo giá đã có lệnh sửa chữa. Hãy mở lệnh hiện có.");
-            }
-        }
-        PhieuSuaChua phieuCu = maPhieu.isEmpty() ? null : layPhieuNoiBo(taiKhoan, maPhieu);
-        if (phieuCu != null && !phieuCu.getMaBaoGia().equals(maBaoGia)) {
-            throw new IllegalStateException("Không đổi báo giá của lệnh đã tạo.");
-        }
-        String maMoi = phieuCu == null ? String.format("SC-2026-%04d", soTiepTheo) : maPhieu;
-        List<ChiTietSuaChua> hangMuc = phieuCu == null ? taoHangMuc("Điều hòa", false) : phieuCu.getDanhSachHangMuc();
-        List<ChiTietSuaChua> hangMucPhanCong = new ArrayList<ChiTietSuaChua>();
-        for (int viTri = 0; viTri < hangMuc.size(); viTri++) {
-            ChiTietSuaChua congViec = hangMuc.get(viTri);
-            String nguoiThucHien = viTri > 0 && !kyThuatPhoiHop.isEmpty() ? kyThuatPhoiHop : kyThuatChinh;
-            hangMucPhanCong.add(new ChiTietSuaChua(congViec.getTenHangMuc(), nguoiThucHien, congViec.getKetQua(),
-                    congViec.getTrangThai(), congViec.isPhatSinh()));
-        }
-        PhieuSuaChua banSua = new PhieuSuaChua(maMoi, maBaoGia, baoGiaChon.getBienSo(), kyThuatChinh, kyThuatPhoiHop,
-                hanHoanThanh, ghiChu.trim(), TrangThaiSuaChua.CHO_SUA_CHUA, hangMucPhanCong, null);
-        if (phieuCu == null) {
-            danhSachPhieu.add(banSua);
-            soTiepTheo++;
-            return new PhieuSuaChua(banSua);
-        }
-        phieuCu.capNhatPhanCong(banSua);
-        return new PhieuSuaChua(phieuCu);
-    }
-
-    /** Chỉ chọn một báo giá hiệu lực cho nhóm chưa có lệnh; điều chỉnh lệnh có sẵn là thao tác riêng. */
-    public List<BaoGia> layBaoGiaCoThePhatHanh(TaiKhoan taiKhoan) {
-        List<BaoGia> ketQua = new ArrayList<>();
-        for (BaoGia bg : layBaoGiaDaDuyet(taiKhoan)) {
-            boolean daCoLenh = false;
-            for (PhieuSuaChua lenh : danhSachPhieu) {
-                for (BaoGia daLap : danhSachBaoGia) {
-                    if (lenh.getMaBaoGia().equals(daLap.getMaBaoGia())
-                            && daLap.getMaBaoGiaGoc().equals(bg.getMaBaoGiaGoc())) {
-                        daCoLenh = true;
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    PhieuSuaChua p = docPhieu(c, rs);
+                    String chu = p.getMaPhieu() + " " + p.getMaBaoGia() + " " + p.getBienSo();
+                    String bien = Xe.khoaBienSo(khoa);
+                    boolean khop = chu.toLowerCase(Locale.ROOT).contains(khoa)
+                            || (!bien.isEmpty() && Xe.khoaBienSo(p.getBienSo()).contains(bien));
+                    if (khop && (trangThai == null || "Tất cả".equals(trangThai)
+                            || p.getTrangThai().getTenHienThi().equals(trangThai))) {
+                        ds.add(p);
                     }
                 }
             }
-            if (!daCoLenh) {
-                ketQua.add(bg);
-            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không đọc được danh sách lệnh.", ex);
         }
-        return ketQua;
+        return ds;
     }
 
-    /** Nguồn phải liên kết bằng mã hồ sơ/tài khoản; không dùng tên để đoán tài khoản kỹ thuật. */
-    public List<KyThuatVienPhanCong> layKyThuatPhanCong(TaiKhoan taiKhoan) {
-        kiemTraTiepNhan(taiKhoan);
-        if (nguonKyThuat == null) {
-            return new ArrayList<>();
-        }
-        List<KyThuatVienPhanCong> ketQua = new ArrayList<>();
-        List<String> taiKhoanDaCo = new ArrayList<>(), nhanVienDaCo = new ArrayList<>();
-        for (KyThuatVienPhanCong kt : nguonKyThuat.layLienKetKyThuat(new TaiKhoanDAO())) {
-            if (kt == null || !kt.duocPhanCong()) {
-                continue;
+    // Tìm một lệnh và từ chối trả dữ liệu ngoài phân công kỹ thuật.
+    public PhieuSuaChua timTheoMa(TaiKhoan tk, String ma) {
+        kiemTraQuyen(tk, VaiTro.NHAN_VIEN_TIEP_NHAN, VaiTro.NHAN_VIEN_KY_THUAT);
+        try {
+            PhieuSuaChua p = docTheoMa(ketNoi(), ma, false);
+            if (p != null && tk.getVaiTro() == VaiTro.NHAN_VIEN_KY_THUAT && !duocGiao(tk, p)) {
+                return null;
             }
-            String ten = kt.getTaiKhoan().getTenDangNhap(), ma = kt.getNhanVien().getMaNhanVien();
-            if (taiKhoanDaCo.contains(ten) || nhanVienDaCo.contains(ma)) {
-                throw new IllegalStateException("Nguồn phân công có liên kết nhân viên/tài khoản bị trùng.");
-            }
-            taiKhoanDaCo.add(ten);
-            nhanVienDaCo.add(ma);
-            ketQua.add(kt);
+            return p;
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không đọc được lệnh sửa chữa.", ex);
         }
-        return ketQua;
     }
 
-    /** Phát hành một lần; tên và thứ tự công việc luôn lấy từ chính phiên bản khách duyệt. */
-    public PhieuSuaChua phatHanh(TaiKhoan taiKhoan, String maLuot, BaoGia baoGiaDaDoc, String chinh, String hoTro,
+    // Đọc báo giá đúng với lệnh mà tài khoản được phép xem.
+    public BaoGia layBaoGia(TaiKhoan tk, String ma) {
+        PhieuSuaChua p = timTheoMa(tk, ma);
+        if (p == null) {
+            throw new SecurityException("Lệnh không tồn tại hoặc không thuộc phân công.");
+        }
+        return docBaoGiaNoiBo(p.getMaBaoGia());
+    }
+
+    // Đọc báo giá khách đồng ý ở phiên bản mới nhất của mỗi nhóm.
+    public List<BaoGia> layBaoGiaDaDuyet(TaiKhoan tk) {
+        kiemTraQuyen(tk, VaiTro.NHAN_VIEN_TIEP_NHAN);
+        String sql = "SELECT b.MaBaoGia FROM dbo.BaoGia b WHERE b.TrangThai='DA_DONG_Y' "
+                + "AND NOT EXISTS (SELECT 1 FROM dbo.BaoGia x WHERE x.MaBaoGiaGoc=b.MaBaoGiaGoc "
+                + "AND x.PhienBan>b.PhienBan) ORDER BY b.MaBaoGia";
+        List<BaoGia> ds = new ArrayList<>();
+        Connection c = ketNoi();
+        try (PreparedStatement ps = c.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                ds.add(docBaoGia(c, rs.getString("MaBaoGia")));
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không đọc được báo giá đã duyệt.", ex);
+        }
+        return ds;
+    }
+
+    // Loại các nhóm báo giá đã có lệnh để ngăn phát hành trùng.
+    public List<BaoGia> layBaoGiaCoThePhatHanh(TaiKhoan tk) {
+        List<BaoGia> ds = new ArrayList<>();
+        Connection c = ketNoi();
+        String sql = "SELECT MaPhieu FROM dbo.PhieuSuaChua WHERE MaBaoGiaGoc=?";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            for (BaoGia bg : layBaoGiaDaDuyet(tk)) {
+                ps.setString(1, bg.getMaBaoGiaGoc());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) {
+                        ds.add(bg);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không đọc được nguồn phát hành lệnh.", ex);
+        }
+        return ds;
+    }
+
+    // Đọc nhân viên kỹ thuật đang làm và có tài khoản hoạt động từ SQL.
+    public List<KyThuatVienPhanCong> layKyThuatPhanCong(TaiKhoan tk) {
+        kiemTraQuyen(tk, VaiTro.NHAN_VIEN_TIEP_NHAN);
+        String sql = "SELECT n.*,t.NgayTao,t.PhienBan FROM dbo.NhanVien n JOIN dbo.TaiKhoan t "
+                + "ON t.MaNhanVien=n.MaNhanVien WHERE n.BoPhan='KY_THUAT' AND n.TrangThai='DANG_LAM' "
+                + "AND t.HoatDong=1 AND t.VaiTro='NHAN_VIEN_KY_THUAT' ORDER BY n.MaNhanVien";
+        List<KyThuatVienPhanCong> ds = new ArrayList<>();
+        try (PreparedStatement ps = ketNoi().prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                NhanVien nv = new NhanVien(rs.getString("MaNhanVien"), rs.getString("HoTen"),
+                        rs.getDate("NgaySinh").toLocalDate(), rs.getString("SoDienThoai"),
+                        rs.getInt("SoNamKinhNghiem"), rs.getString("GioiTinh"), rs.getString("DiaChi"),
+                        BoPhanNhanVien.KY_THUAT, TrangThaiNhanVien.DANG_LAM);
+                TaiKhoan kt = new TaiKhoan(rs.getString("MaNhanVien"), VaiTro.NHAN_VIEN_KY_THUAT,
+                        true, rs.getTimestamp("NgayTao").toLocalDateTime(), rs.getInt("PhienBan"));
+                ds.add(new KyThuatVienPhanCong(nv, kt));
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không đọc được nhân sự kỹ thuật.", ex);
+        }
+        return ds;
+    }
+
+    // Phát hành một lệnh cùng chi tiết và phân công trong cùng giao dịch.
+    public PhieuSuaChua phatHanh(TaiKhoan tk, String luot, BaoGia ban, String chinh, String hoTro,
             List<String> phuTrach, LocalDateTime han, String ghiChu) {
-        kiemTraTiepNhan(taiKhoan);
-        if (nguonBaoGia == null) {
-            throw new IllegalStateException("Chưa cấp nguồn báo giá cho chức năng phát hành.");
+        kiemTraQuyen(tk, VaiTro.NHAN_VIEN_TIEP_NHAN);
+        if (ban == null || luot == null || luot.isBlank() || luot.length() > 100) {
+            throw new IllegalArgumentException("Thiếu báo giá hoặc mã thao tác không hợp lệ.");
         }
-        if (maLuot == null || maLuot.isBlank() || baoGiaDaDoc == null) {
-            throw new IllegalArgumentException("Thiếu mã thao tác hoặc báo giá.");
-        }
-        String noiDung = ghiChu == null ? "" : ghiChu.trim();
-        String daLuu = timLenhDaPhatHanh(maLuot);
-        if (daLuu != null) {
-            PhieuSuaChua cu = layPhieuNoiBo(taiKhoan, daLuu);
-            if (!cungPhatHanh(cu, taiKhoan, baoGiaDaDoc, chinh, hoTro, phuTrach, han, noiDung)) {
-                throw new IllegalArgumentException("Mã thao tác đã phát hành một nội dung khác.");
+        String phu = hoTro == null ? "" : hoTro.trim();
+        String gc = ghiChu == null ? "" : ghiChu.trim();
+        Connection c = ketNoi();
+        try {
+            c.setAutoCommit(false);
+            try (PreparedStatement ps = c.prepareStatement("SELECT * FROM dbo.PhieuSuaChua "
+                    + "WITH (UPDLOCK,HOLDLOCK) WHERE MaThaoTac=?")) {
+                ps.setString(1, luot);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        PhieuSuaChua cu = docPhieu(c, rs);
+                        kiemTraPhatHanhLap(cu, tk, ban, chinh, phu, phuTrach, han, gc);
+                        c.commit();
+                        return cu;
+                    }
+                }
             }
-            return new PhieuSuaChua(cu);
-        }
-        BaoGia baoGia = nguonBaoGia.timTheoMa(taiKhoan, baoGiaDaDoc.getMaBaoGia());
-        if (baoGia != baoGiaDaDoc || !baoGia.isDaDongY() || baoGia.getThoiDiemPhanHoi() == null
-                || !nguonBaoGia.layDaDuyet(taiKhoan).contains(baoGia)) {
-            throw new IllegalStateException("Cần đúng phiên bản báo giá đã được khách đồng ý và còn hiệu lực.");
-        }
-        for (BaoGia cu : danhSachBaoGia) {
-            if (cu.getMaBaoGiaGoc().equals(baoGia.getMaBaoGiaGoc())) {
-                throw new IllegalStateException(
-                        "Nhóm báo giá đã có lệnh. Không phát hành lệnh thứ hai từ bản điều chỉnh.");
+            try (PreparedStatement ps = c.prepareStatement("SELECT MaBaoGia FROM dbo.BaoGia "
+                    + "WITH (UPDLOCK,HOLDLOCK) WHERE MaBaoGia=?")) {
+                ps.setString(1, ban.getMaBaoGia());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) {
+                        throw new IllegalStateException("Báo giá chưa được lưu trong SQL.");
+                    }
+                }
             }
-        }
-        LocalDateTime lucLap = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
-        if (han == null || han.isBefore(lucLap) || han.isBefore(baoGia.getThoiDiemPhanHoi())) {
-            throw new IllegalArgumentException("Hạn dự kiến phải sau thời điểm phát hành và phản hồi đồng ý.");
-        }
-        List<KyThuatVienPhanCong> nhanSu = layKyThuatPhanCong(taiKhoan);
-        kiemTraNguoiPhanCong(nhanSu, chinh);
-        if (hoTro == null || chinh.equals(hoTro)) {
-            throw new IllegalArgumentException("Người hỗ trợ không được trùng kỹ thuật viên chính.");
-        }
-        if (!hoTro.isEmpty()) {
-            kiemTraNguoiPhanCong(nhanSu, hoTro);
-        }
-        List<ChiTietBaoGia> chiTiet = baoGia.getChiTiet();
-        if (phuTrach == null || phuTrach.size() != chiTiet.size()) {
-            throw new IllegalArgumentException("Cần phân công đủ từng dòng báo giá đã duyệt.");
-        }
-        List<ChiTietSuaChua> hangMuc = new ArrayList<>();
-        for (int i = 0; i < chiTiet.size(); i++) {
-            String nguoi = phuTrach.get(i);
-            if (nguoi == null || nguoi.isBlank() || (!nguoi.equals(chinh) && !nguoi.equals(hoTro))) {
-                throw new IllegalArgumentException(
-                        "Hạng mục " + (i + 1) + " phải giao cho người chính hoặc hỗ trợ đã chọn.");
+            BaoGia bg = docBaoGia(c, ban.getMaBaoGia());
+            if (!bg.isDaDongY() || !cungBaoGia(ban, bg)) {
+                throw new IllegalStateException("Báo giá đã thay đổi hoặc chưa được khách đồng ý.");
             }
-            hangMuc.add(new ChiTietSuaChua(chiTiet.get(i).getTenHangMuc(), nguoi, "", TrangThaiSuaChua.CHO_SUA_CHUA,
-                    false));
+            try (PreparedStatement ps = c.prepareStatement("SELECT MaBaoGia FROM dbo.BaoGia "
+                    + "WHERE MaBaoGiaGoc=? AND PhienBan>?")) {
+                ps.setString(1, bg.getMaBaoGiaGoc());
+                ps.setInt(2, bg.getPhienBan());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        throw new IllegalStateException("Báo giá đã có phiên bản mới hơn.");
+                    }
+                }
+            }
+            try (PreparedStatement ps = c.prepareStatement("SELECT MaPhieu FROM dbo.PhieuSuaChua "
+                    + "WITH (UPDLOCK,HOLDLOCK) WHERE MaBaoGiaGoc=?")) {
+                ps.setString(1, bg.getMaBaoGiaGoc());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        throw new IllegalStateException("Nhóm báo giá đã có lệnh sửa chữa.");
+                    }
+                }
+            }
+            LocalDateTime luc = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+            if (han == null || han.isBefore(luc) || han.isBefore(bg.getThoiDiemPhanHoi())) {
+                throw new IllegalArgumentException("Hạn phải sau thời điểm phát hành và khách đồng ý.");
+            }
+            Set<String> nhanSu = new HashSet<>();
+            for (KyThuatVienPhanCong kt : layKyThuatPhanCong(tk)) {
+                nhanSu.add(kt.getTaiKhoan().getMaNhanVien());
+            }
+            if (!nhanSu.contains(chinh) || chinh.equals(phu) || (!phu.isEmpty() && !nhanSu.contains(phu))) {
+                throw new IllegalArgumentException("Kỹ thuật viên chính hoặc hỗ trợ không hợp lệ.");
+            }
+            if (phuTrach == null || phuTrach.size() != bg.getChiTiet().size()) {
+                throw new IllegalArgumentException("Cần phân công đủ từng hạng mục.");
+            }
+            for (String nguoi : phuTrach) {
+                if (nguoi == null || nguoi.isBlank() || (!nguoi.equals(chinh) && !nguoi.equals(phu))) {
+                    throw new IllegalArgumentException("Mỗi hạng mục phải giao cho người chính hoặc hỗ trợ.");
+                }
+            }
+            String ma = taoMa(c, "SC");
+            String sql = "INSERT dbo.PhieuSuaChua (MaPhieu,MaBaoGia,MaBaoGiaGoc,BienSo,KyThuatChinh,"
+                    + "KyThuatPhoiHop,HanHoanThanh,GhiChu,TrangThai,NguoiPhatHanh,ThoiDiemPhatHanh,MaThaoTac) "
+                    + "VALUES (?,?,?,?,?,?,?,?,'CHO_SUA_CHUA',?,?,?)";
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setString(1, ma);
+                ps.setString(2, bg.getMaBaoGia());
+                ps.setString(3, bg.getMaBaoGiaGoc());
+                ps.setString(4, bg.getBienSo());
+                ps.setString(5, chinh);
+                ps.setString(6, phu.isEmpty() ? null : phu);
+                ps.setTimestamp(7, Timestamp.valueOf(han));
+                ps.setString(8, gc);
+                ps.setString(9, tk.getMaNhanVien());
+                ps.setTimestamp(10, Timestamp.valueOf(luc));
+                ps.setString(11, luot);
+                ps.executeUpdate();
+            }
+            sql = "INSERT dbo.ChiTietSuaChua (MaPhieu,ViTri,TenHangMuc,TaiKhoanThucHien,KetQua,TrangThai,PhatSinh) "
+                    + "VALUES (?,?,?,?,'','CHO_SUA_CHUA',0)";
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                for (int i = 0; i < phuTrach.size(); i++) {
+                    ps.setString(1, ma);
+                    ps.setInt(2, i);
+                    ps.setString(3, bg.getChiTiet().get(i).getTenHangMuc());
+                    ps.setString(4, phuTrach.get(i));
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+            sql = "INSERT dbo.PhanCong (MaPC,MaPhieuSC,MaNV,NgayPhanCong,GhiChu) VALUES (?,?,?,?,?)";
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                for (String nv : new String[] {chinh, phu}) {
+                    if (!nv.isEmpty()) {
+                        ps.setString(1, taoMa(c, "PC"));
+                        ps.setString(2, ma);
+                        ps.setString(3, nv);
+                        ps.setTimestamp(4, Timestamp.valueOf(luc));
+                        ps.setString(5, gc);
+                        ps.executeUpdate();
+                    }
+                }
+            }
+            PhieuSuaChua moi = docTheoMa(c, ma, false);
+            c.commit();
+            return moi;
+        } catch (SQLException | RuntimeException ex) {
+            hoanTac(c);
+            if (ex instanceof RuntimeException) {
+                throw (RuntimeException) ex;
+            }
+            throw new IllegalStateException("Không phát hành được lệnh sửa chữa.", ex);
+        } finally {
+            batTuDongLuu(c);
         }
-        String ma = String.format(Locale.ROOT, "SC-%04d-%04d", lucLap.getYear(), soTiepTheo);
-        PhieuSuaChua moi = new PhieuSuaChua(ma, baoGia.getMaBaoGia(), baoGia.getBienSo(), chinh, hoTro, han, noiDung,
-                hangMuc, taiKhoan.getTenDangNhap(), lucLap);
-        danhSachPhieu.add(moi);
-        danhSachBaoGia.add(baoGia);
-        luotPhatHanh.add(new String[] { maLuot, ma });
-        soTiepTheo++;
-        return new PhieuSuaChua(moi);
     }
 
-    /** Kiểm tra nguoi phan cong trước khi xử lý. */
-    private void kiemTraNguoiPhanCong(List<KyThuatVienPhanCong> nhanSu, String tenDangNhap) {
-        for (KyThuatVienPhanCong kt : nhanSu) {
-            if (kt.getTaiKhoan().getTenDangNhap().equals(tenDangNhap)) {
-                return;
-            }
-        }
-        throw new IllegalArgumentException(
-                "Kỹ thuật viên không tồn tại, đã nghỉ hoặc chưa có tài khoản kỹ thuật hợp lệ.");
+    // Giữ hợp đồng cũ và yêu cầu dùng màn hình phân công từng hạng mục như luồng chung hiện có.
+    public PhieuSuaChua luu(TaiKhoan tk, String ma, String bg, String chinh, String phu,
+            LocalDateTime han, String gc) {
+        kiemTraQuyen(tk, VaiTro.NHAN_VIEN_TIEP_NHAN);
+        throw new IllegalStateException("Sử dụng màn hình phát hành lệnh và phân công từng hạng mục.");
     }
 
-    /** Thực hiện cung phat hanh cho thành phần hiện tại. */
-    private boolean cungPhatHanh(PhieuSuaChua cu, TaiKhoan tk, BaoGia bg, String chinh, String hoTro,
-            List<String> phuTrach, LocalDateTime han, String ghiChu) {
-        if (!cu.getNguoiPhatHanh().equals(tk.getTenDangNhap()) || !cu.getMaBaoGia().equals(bg.getMaBaoGia())
-                || !cu.getKyThuatChinh().equals(chinh) || !cu.getKyThuatPhoiHop().equals(hoTro)
-                || !cu.getHanHoanThanh().equals(han) || !cu.getGhiChu().equals(ghiChu) || phuTrach == null
-                || phuTrach.size() != cu.getDanhSachHangMuc().size()) {
+    // Giữ lịch sử lệnh đã phát hành, không xóa trực tiếp chứng từ.
+    public void xoa(TaiKhoan tk, String ma) {
+        kiemTraQuyen(tk, VaiTro.NHAN_VIEN_TIEP_NHAN);
+        throw new IllegalStateException("Không xóa trực tiếp lệnh đã phát hành.");
+    }
+
+    // Cập nhật tiến độ đúng hạng mục được giao và tính trạng thái lệnh.
+    public void capNhatTienDo(TaiKhoan tk, String ma, int viTri, TrangThaiSuaChua tt, String ketQua) {
+        kiemTraQuyen(tk, VaiTro.NHAN_VIEN_KY_THUAT);
+        Connection c = ketNoi();
+        try {
+            c.setAutoCommit(false);
+            PhieuSuaChua p = khoaLenh(c, tk, ma);
+            if (tt == null || ketQua == null || ketQua.isBlank()
+                    || viTri < 0 || viTri >= p.getDanhSachHangMuc().size()) {
+                throw new IllegalArgumentException("Cần hạng mục, trạng thái và kết quả hợp lệ.");
+            }
+            ChiTietSuaChua ct = p.getDanhSachHangMuc().get(viTri);
+            if (!tk.getMaNhanVien().equals(p.getKyThuatChinh())
+                    && !tk.getMaNhanVien().equals(ct.getTaiKhoanThucHien())) {
+                throw new SecurityException("Bạn không được cập nhật công việc này.");
+            }
+            if (ct.isPhatSinh() && (p.getPhatSinh() == null
+                    || p.getPhatSinh().getTrangThai() != TrangThaiPhatSinh.DA_DUYET)) {
+                throw new IllegalStateException("Phát sinh chưa được duyệt.");
+            }
+            try (PreparedStatement ps = c.prepareStatement("UPDATE dbo.ChiTietSuaChua "
+                    + "SET TrangThai=?,KetQua=? WHERE MaPhieu=? AND ViTri=?")) {
+                ps.setString(1, tt.name());
+                ps.setString(2, ketQua.trim());
+                ps.setString(3, ma);
+                ps.setInt(4, viTri);
+                ps.executeUpdate();
+            }
+            String sql = "UPDATE dbo.PhieuSuaChua SET TrangThai=CASE WHEN EXISTS "
+                    + "(SELECT 1 FROM dbo.ChiTietSuaChua WHERE MaPhieu=? AND TrangThai='CHO_PHU_TUNG') "
+                    + "THEN 'CHO_PHU_TUNG' ELSE 'DANG_SUA' END WHERE MaPhieu=?";
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setString(1, ma);
+                ps.setString(2, ma);
+                ps.executeUpdate();
+            }
+            c.commit();
+        } catch (SQLException | RuntimeException ex) {
+            hoanTac(c);
+            if (ex instanceof RuntimeException) {
+                throw (RuntimeException) ex;
+            }
+            throw new IllegalStateException("Không cập nhật được tiến độ.", ex);
+        } finally {
+            batTuDongLuu(c);
+        }
+    }
+
+    // Lưu đề xuất phát sinh để chờ phản hồi của khách, không tự phê duyệt.
+    public void guiPhatSinh(TaiKhoan tk, String ma, String[] nd) {
+        kiemTraQuyen(tk, VaiTro.NHAN_VIEN_KY_THUAT);
+        PhatSinhSuaChua deXuat = new PhatSinhSuaChua(nd, TrangThaiPhatSinh.CHO_DUYET, "", null);
+        Connection c = ketNoi();
+        try {
+            c.setAutoCommit(false);
+            PhieuSuaChua p = khoaLenh(c, tk, ma);
+            if (p.getPhatSinh() != null) {
+                throw new IllegalStateException("Lệnh đã có đề xuất phát sinh.");
+            }
+            String sql = "INSERT dbo.PhatSinhSuaChua (MaPhieu,HuHong,NguyenNhan,DeXuat,ThoiGianThem,GhiChu,TrangThai) "
+                    + "VALUES (?,?,?,?,?,?,'CHO_DUYET')";
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setString(1, ma);
+                for (int i = 0; i < 5; i++) {
+                    ps.setString(i + 2, deXuat.getNoiDung()[i]);
+                }
+                ps.executeUpdate();
+            }
+            c.commit();
+        } catch (SQLException | RuntimeException ex) {
+            hoanTac(c);
+            if (ex instanceof RuntimeException) {
+                throw (RuntimeException) ex;
+            }
+            throw new IllegalStateException("Không gửi được phát sinh.", ex);
+        } finally {
+            batTuDongLuu(c);
+        }
+    }
+
+    // Hoàn tất khi mọi hạng mục đã xong, đủ thực dùng và không còn phát sinh chờ duyệt.
+    public void hoanTat(TaiKhoan tk, String ma, String[] kq, boolean[] dat) {
+        kiemTraQuyen(tk, VaiTro.NHAN_VIEN_KY_THUAT);
+        Connection c = ketNoi();
+        try {
+            c.setAutoCommit(false);
+            PhieuSuaChua p = khoaLenh(c, tk, ma);
+            if (!p.getKyThuatChinh().equals(tk.getMaNhanVien())) {
+                throw new SecurityException("Chỉ kỹ thuật viên chính được hoàn tất lệnh.");
+            }
+            if (kq == null || kq.length != 3 || kq[0] == null || kq[0].isBlank()
+                    || kq[1] == null || kq[2] == null || dat == null || dat.length != 4) {
+                throw new IllegalArgumentException("Cần kết luận và đủ bốn điều kiện kiểm tra cuối.");
+            }
+            for (boolean b : dat) {
+                if (!b) {
+                    throw new IllegalArgumentException("Chưa đối chiếu đủ điều kiện kiểm tra cuối.");
+                }
+            }
+            if (p.getPhatSinh() != null && p.getPhatSinh().getTrangThai() == TrangThaiPhatSinh.CHO_DUYET) {
+                throw new IllegalStateException("Còn phát sinh chờ khách duyệt.");
+            }
+            for (ChiTietSuaChua ct : p.getDanhSachHangMuc()) {
+                if (ct.getTrangThai() != TrangThaiSuaChua.HOAN_THANH || ct.getKetQua().isBlank()) {
+                    throw new IllegalStateException("Còn công việc chưa hoàn thành.");
+                }
+            }
+            String sql = "SELECT c.ViTri FROM dbo.ChiTietBaoGia c WHERE c.MaBaoGia=? AND c.MaPhuTung IS NOT NULL "
+                    + "AND NOT EXISTS (SELECT 1 FROM dbo.PhuTungSuDung s WHERE s.MaLenhSuaChua=? "
+                    + "AND s.ViTriHangMuc=c.ViTri AND s.MaPhuTung=c.MaPhuTung AND s.TrangThai='DA_GHI_NHAN')";
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setString(1, p.getMaBaoGia());
+                ps.setString(2, ma);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        throw new IllegalStateException("Chưa ghi nhận phụ tùng ở hạng mục " + (rs.getInt(1) + 1));
+                    }
+                }
+            }
+            sql = "UPDATE dbo.PhieuSuaChua SET TrangThai='HOAN_THANH',ThoiDiemHoanTat=?,KetQua0=?,KetQua1=?,"
+                    + "KetQua2=? WHERE MaPhieu=?";
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"))));
+                for (int i = 0; i < 3; i++) {
+                    ps.setString(i + 2, kq[i].trim());
+                }
+                ps.setString(5, ma);
+                ps.executeUpdate();
+            }
+            c.commit();
+        } catch (SQLException | RuntimeException ex) {
+            hoanTac(c);
+            if (ex instanceof RuntimeException) {
+                throw (RuntimeException) ex;
+            }
+            throw new IllegalStateException("Không hoàn tất được lệnh.", ex);
+        } finally {
+            batTuDongLuu(c);
+        }
+    }
+
+    // Khóa lệnh trên kết nối giao dịch để bảo vệ tiến độ và việc xuất phụ tùng.
+    PhieuSuaChua khoaLenh(Connection c, TaiKhoan tk, String ma) throws SQLException {
+        PhieuSuaChua p = docTheoMa(c, ma, true);
+        if (p == null || !duocGiao(tk, p)) {
+            throw new SecurityException("Lệnh không tồn tại hoặc không thuộc phân công.");
+        }
+        if (p.getTrangThai() == TrangThaiSuaChua.HOAN_THANH) {
+            throw new IllegalStateException("Lệnh đã hoàn thành.");
+        }
+        return p;
+    }
+
+    // Đọc lệnh bằng mã trên kết nối được cấp, tùy chọn khóa để cập nhật.
+    private PhieuSuaChua docTheoMa(Connection c, String ma, boolean khoa) throws SQLException {
+        String sql = "SELECT * FROM dbo.PhieuSuaChua " + (khoa ? "WITH (UPDLOCK,HOLDLOCK) " : "") + "WHERE MaPhieu=?";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, ma);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? docPhieu(c, rs) : null;
+            }
+        }
+    }
+
+    // Khôi phục đủ chi tiết, phát sinh và các thời điểm của lệnh từ SQL.
+    private PhieuSuaChua docPhieu(Connection c, ResultSet rs) throws SQLException {
+        String ma = rs.getString("MaPhieu");
+        List<ChiTietSuaChua> ct = new ArrayList<>();
+        try (PreparedStatement ps = c.prepareStatement("SELECT * FROM dbo.ChiTietSuaChua WHERE MaPhieu=? ORDER BY ViTri")) {
+            ps.setString(1, ma);
+            try (ResultSet dong = ps.executeQuery()) {
+                while (dong.next()) {
+                    if (dong.getInt("ViTri") != ct.size()) {
+                        throw new IllegalStateException("Thứ tự hạng mục không liên tục.");
+                    }
+                    ct.add(new ChiTietSuaChua(dong.getString("TenHangMuc"), dong.getString("TaiKhoanThucHien"),
+                            dong.getString("KetQua"), TrangThaiSuaChua.valueOf(dong.getString("TrangThai")),
+                            dong.getBoolean("PhatSinh")));
+                }
+            }
+        }
+        PhatSinhSuaChua phatSinh = null;
+        try (PreparedStatement ps = c.prepareStatement("SELECT * FROM dbo.PhatSinhSuaChua WHERE MaPhieu=?")) {
+            ps.setString(1, ma);
+            try (ResultSet dong = ps.executeQuery()) {
+                if (dong.next()) {
+                    String nguoi = dong.getString("NguoiXacNhan");
+                    phatSinh = new PhatSinhSuaChua(new String[] {dong.getString("HuHong"), dong.getString("NguyenNhan"),
+                            dong.getString("DeXuat"), dong.getString("ThoiGianThem"), dong.getString("GhiChu")},
+                            TrangThaiPhatSinh.valueOf(dong.getString("TrangThai")), nguoi == null ? "" : nguoi,
+                            docThoiGian(dong, "ThoiDiemXacNhan"));
+                }
+            }
+        }
+        String phu = rs.getString("KyThuatPhoiHop");
+        return new PhieuSuaChua(ma, rs.getString("MaBaoGia"), rs.getString("BienSo"), rs.getString("KyThuatChinh"),
+                phu == null ? "" : phu, docThoiGian(rs, "HanHoanThanh"), rs.getString("GhiChu"),
+                TrangThaiSuaChua.valueOf(rs.getString("TrangThai")), ct, phatSinh, rs.getString("NguoiPhatHanh"),
+                docThoiGian(rs, "ThoiDiemPhatHanh"), new String[] {rs.getString("KetQua0"),rs.getString("KetQua1"),
+                        rs.getString("KetQua2")}, docThoiGian(rs, "ThoiDiemHoanTat"));
+    }
+
+    // Đọc báo giá liên kết cho thu ngân và các DAO sử dụng nội bộ.
+    public BaoGia docBaoGiaNoiBo(String ma) {
+        try {
+            return docBaoGia(ketNoi(), ma);
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không đọc được báo giá của lệnh.", ex);
+        }
+    }
+
+    // Khôi phục báo giá, các dòng được duyệt và phản hồi khách bằng JDBC.
+    private BaoGia docBaoGia(Connection c, String ma) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("SELECT * FROM dbo.BaoGia WHERE MaBaoGia=?")) {
+            ps.setString(1, ma);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                List<ChiTietBaoGia> ct = new ArrayList<>();
+                try (PreparedStatement lenh = c.prepareStatement("SELECT * FROM dbo.ChiTietBaoGia WHERE MaBaoGia=? ORDER BY ViTri")) {
+                    lenh.setString(1, ma);
+                    try (ResultSet dong = lenh.executeQuery()) {
+                        while (dong.next()) {
+                            if (dong.getInt("ViTri") != ct.size()) {
+                                throw new IllegalStateException("Thứ tự dòng báo giá không liên tục.");
+                            }
+                            String dv = dong.getString("MaDichVu"), pt = dong.getString("MaPhuTung");
+                            ct.add(new ChiTietBaoGia(dv == null ? "" : dv, dong.getString("TenHangMuc"),
+                                    dong.getString("Loai"), dong.getString("DonVi"), dong.getDouble("SoLuong"),
+                                    dong.getLong("DonGia"), pt == null ? "" : pt));
+                        }
+                    }
+                }
+                entity.PhieuTiepNhan.BaoCaoKiemTra kt;
+                String sql = "SELECT k.* FROM dbo.BaoCaoKiemTra k JOIN dbo.NhomBaoGia n "
+                        + "ON n.MaBaoCao=k.MaBaoCao WHERE n.MaBaoGiaGoc=?";
+                try (PreparedStatement lenh = c.prepareStatement(sql)) {
+                    lenh.setString(1, rs.getString("MaBaoGiaGoc"));
+                    try (ResultSet dong = lenh.executeQuery()) {
+                        if (!dong.next()) {
+                            throw new IllegalStateException("Báo giá thiếu báo cáo kiểm tra.");
+                        }
+                        kt = BaoCaoKiemTraDAO.docBaoCao(c, dong);
+                    }
+                }
+                BaoGia bg = new BaoGia(ma, rs.getString("MaBaoGiaGoc"), rs.getInt("PhienBan"), kt, ct,
+                        docThoiGian(rs, "NgayHen"), rs.getString("NguoiLap"), docThoiGian(rs, "NgayLap"));
+                String tt = rs.getString("TrangThai");
+                if (!"NHAP".equals(tt)) {
+                    bg = bg.guiKhach(rs.getString("NguoiGui"), docThoiGian(rs, "NgayGui"));
+                    if (!"CHO_XAC_NHAN".equals(tt)) {
+                        bg = bg.ghiNhanPhanHoi(TrangThaiBaoGia.valueOf(tt), rs.getString("NguoiGhiNhan"),
+                                docThoiGian(rs,"ThoiDiemPhanHoi"), docThoiGian(rs,"ThoiDiemGhiNhan"),
+                                rs.getString("KenhPhanHoi"), rs.getString("GhiChuPhanHoi"));
+                    }
+                }
+                return bg;
+            }
+        }
+    }
+
+    // Đọc các lệnh hoàn thành để thu ngân lập hóa đơn.
+    public List<PhieuSuaChua> layLenhHoanThanhNoiBo() {
+        return docDanhSachNoiBo(true);
+    }
+
+    // Đọc tất cả lệnh cho chức năng báo cáo của nhóm.
+    public List<PhieuSuaChua> layLenhBaoCao() {
+        return docDanhSachNoiBo(false);
+    }
+
+    // Đọc các lệnh SQL phục vụ những DAO liên kết nội bộ.
+    private List<PhieuSuaChua> docDanhSachNoiBo(boolean hoanTat) {
+        List<PhieuSuaChua> ds = new ArrayList<>();
+        Connection c = ketNoi();
+        String sql = "SELECT * FROM dbo.PhieuSuaChua " + (hoanTat ? "WHERE TrangThai='HOAN_THANH' " : "") + "ORDER BY MaPhieu";
+        try (PreparedStatement ps = c.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                ds.add(docPhieu(c, rs));
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không đọc được nguồn sửa chữa.", ex);
+        }
+        return ds;
+    }
+
+    // Kiểm tra dịch vụ đã được dùng trong báo giá trước khi quản lý xóa danh mục.
+    public static boolean daSuDungDichVu(TaiKhoan tk, String ma) {
+        if (tk == null || tk.getVaiTro() != VaiTro.QUAN_LY || !new TaiKhoanDAO().phienConHopLe(tk)) {
+            throw new SecurityException("Chỉ quản lý được kiểm tra dịch vụ.");
+        }
+        try {
+            Connection c = ConnectDB.getInstance().getConnection();
+            try (PreparedStatement ps = c.prepareStatement("SELECT TOP 1 MaBaoGia FROM dbo.ChiTietBaoGia WHERE MaDichVu=?")) {
+                ps.setString(1, ma);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next();
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không kiểm tra được dịch vụ.", ex);
+        }
+    }
+
+    // Xác định tài khoản được giao chính hoặc phối hợp trong lệnh.
+    private boolean duocGiao(TaiKhoan tk, PhieuSuaChua p) {
+        return tk.getMaNhanVien().equals(p.getKyThuatChinh()) || tk.getMaNhanVien().equals(p.getKyThuatPhoiHop());
+    }
+
+    // Kiểm tra nội dung báo giá chưa thay đổi kể từ lúc màn hình đọc dữ liệu.
+    private boolean cungBaoGia(BaoGia a, BaoGia b) {
+        if (!a.getMaBaoGia().equals(b.getMaBaoGia()) || a.getPhienBan() != b.getPhienBan()
+                || a.getTrangThai() != b.getTrangThai() || a.getChiTiet().size() != b.getChiTiet().size()) {
             return false;
         }
-        List<ChiTietSuaChua> hangMuc = cu.getDanhSachHangMuc();
-        for (int i = 0; i < hangMuc.size(); i++) {
-            if (!hangMuc.get(i).getTaiKhoanThucHien().equals(phuTrach.get(i))) {
+        for (int i = 0; i < a.getChiTiet().size(); i++) {
+            ChiTietBaoGia x = a.getChiTiet().get(i), y = b.getChiTiet().get(i);
+            if (!x.getTenHangMuc().equals(y.getTenHangMuc()) || !x.getMaDichVu().equals(y.getMaDichVu())
+                    || !x.getMaPhuTung().equals(y.getMaPhuTung()) || !x.getLoai().equals(y.getLoai())
+                    || !x.getDonVi().equals(y.getDonVi()) || x.getSoLuong() != y.getSoLuong() || x.getDonGia() != y.getDonGia()) {
                 return false;
             }
         }
         return true;
     }
 
-    // Chỉ xóa lệnh chưa bắt đầu và chưa có kết quả hoặc phát sinh liên quan.
-    /** Thực hiện xoa cho thành phần hiện tại. */
-    public void xoa(TaiKhoan taiKhoan, String maPhieu) {
-        kiemTraTiepNhan(taiKhoan);
-        if (nguonBaoGia != null) {
-            throw new IllegalStateException("Lệnh đã phát hành cần giữ lịch sử, không xóa trực tiếp.");
+    // Cho phép bấm phát hành lại cùng nội dung mà không tạo thêm lệnh.
+    private void kiemTraPhatHanhLap(PhieuSuaChua cu, TaiKhoan tk, BaoGia bg, String chinh,
+            String phu, List<String> phuTrach, LocalDateTime han, String gc) {
+        if (!cu.getMaBaoGia().equals(bg.getMaBaoGia()) || !cu.getKyThuatChinh().equals(chinh)
+                || !cu.getKyThuatPhoiHop().equals(phu) || !cu.getHanHoanThanh().equals(han)
+                || !cu.getGhiChu().equals(gc) || !cu.getNguoiPhatHanh().equals(tk.getMaNhanVien())
+                || phuTrach == null || phuTrach.size() != cu.getDanhSachHangMuc().size()) {
+            throw new IllegalStateException("Mã thao tác đã sử dụng cho nội dung khác.");
         }
-        PhieuSuaChua phieu = layPhieuNoiBo(taiKhoan, maPhieu);
-        if (phieu.getTrangThai() != TrangThaiSuaChua.CHO_SUA_CHUA || phieu.getPhatSinh() != null) {
-            throw new IllegalStateException("Lệnh đã bắt đầu hoặc có dữ liệu liên quan, không được xóa.");
-        }
-        for (ChiTietSuaChua hangMuc : phieu.getDanhSachHangMuc()) {
-            if (!hangMuc.getKetQua().isBlank()) {
-                throw new IllegalStateException("Lệnh đã có kết quả, không được xóa.");
-            }
-        }
-        danhSachPhieu.remove(phieu);
-    }
-
-    // Cập nhật đúng công việc được giao và chặn thực hiện phát sinh chưa được khách duyệt.
-    /** Thực hiện cap nhat tien do cho thành phần hiện tại. */
-    public void capNhatTienDo(TaiKhoan taiKhoan, String maPhieu, int viTri, TrangThaiSuaChua trangThai, String ketQua) {
-        PhieuSuaChua phieu = layPhieuKyThuat(taiKhoan, maPhieu);
-        if (viTri < 0 || viTri >= phieu.getDanhSachHangMuc().size() || trangThai == null) {
-            throw new IllegalArgumentException("Chọn hạng mục và trạng thái hợp lệ.");
-        }
-        ChiTietSuaChua hangMuc = phieu.getDanhSachHangMuc().get(viTri);
-        // Người chính điều phối tiến độ lệnh; người phối hợp chỉ cập nhật công việc được giao.
-        if (!hangMuc.getTaiKhoanThucHien().equals(taiKhoan.getTenDangNhap())
-                && !phieu.getKyThuatChinh().equals(taiKhoan.getTenDangNhap())) {
-            throw new SecurityException("Bạn không được cập nhật công việc này.");
-        }
-        if (hangMuc.isPhatSinh()
-                && (phieu.getPhatSinh() == null || phieu.getPhatSinh().getTrangThai() != TrangThaiPhatSinh.DA_DUYET)) {
-            throw new IllegalStateException("Phát sinh chưa được duyệt, chỉ tiếp tục các công việc đã được duyệt.");
-        }
-        if (ketQua == null || ketQua.isBlank()) {
-            throw new IllegalArgumentException("Kết quả thực hiện là bắt buộc.");
-        }
-        phieu.capNhatHangMuc(viTri, new ChiTietSuaChua(hangMuc.getTenHangMuc(), hangMuc.getTaiKhoanThucHien(),
-                ketQua.trim(), trangThai, hangMuc.isPhatSinh()));
-    }
-
-    // Gửi đề xuất sang trạng thái chờ duyệt, không tự tạo xác nhận của khách.
-    /** Thực hiện gui phat sinh cho thành phần hiện tại. */
-    public void guiPhatSinh(TaiKhoan taiKhoan, String maPhieu, String[] noiDung) {
-        PhieuSuaChua phieu = layPhieuKyThuat(taiKhoan, maPhieu);
-        phieu.ghiNhanPhatSinh(new PhatSinhSuaChua(noiDung, TrangThaiPhatSinh.CHO_DUYET, "", null));
-    }
-
-    // Hoàn tất sau khi tất cả công việc hợp lệ đã xong và không còn phát sinh chờ xử lý.
-    /** Thực hiện hoan tat cho thành phần hiện tại. */
-    public void hoanTat(TaiKhoan taiKhoan, String maPhieu, String[] ketQua, boolean[] daDoiChieu) {
-        PhieuSuaChua phieu = layPhieuKyThuat(taiKhoan, maPhieu);
-        if (!phieu.getKyThuatChinh().equals(taiKhoan.getTenDangNhap())) {
-            throw new SecurityException("Chỉ kỹ thuật viên chính được xác nhận hoàn thành lệnh.");
-        }
-        if (daDoiChieu == null || ketQua == null || daDoiChieu.length != 4 || ketQua.length != 3
-                || ketQua[0] == null || ketQua[0].isBlank()) {
-            throw new IllegalArgumentException("Thông tin kiểm tra cuối chưa đủ.");
-        }
-        for (boolean daChon : daDoiChieu) {
-            if (!daChon) {
-                throw new IllegalArgumentException("Cần đối chiếu và xác nhận đủ bốn điều kiện kiểm tra cuối.");
-            }
-        }
-        if (phieu.getPhatSinh() != null && phieu.getPhatSinh().getTrangThai() == TrangThaiPhatSinh.CHO_DUYET) {
-            throw new IllegalStateException("Phát sinh chưa được duyệt. Tiếp nhận cần ghi nhận phản hồi khách.");
-        }
-        for (ChiTietSuaChua hangMuc : phieu.getDanhSachHangMuc()) {
-            if (hangMuc.getTrangThai() != TrangThaiSuaChua.HOAN_THANH || hangMuc.getKetQua().isBlank()) {
-                throw new IllegalStateException("Còn công việc chưa hoàn thành: " + hangMuc.getTenHangMuc());
-            }
-        }
-        kiemTraThucDung(taiKhoan, phieu);
-        phieu.hoanTat(ketQua, LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
-    }
-
-    /** Mỗi dòng phụ tùng phải có chứng từ thực dùng trước khi chuyển sang chờ thu. */
-    private void kiemTraThucDung(TaiKhoan taiKhoan, PhieuSuaChua phieu) {
-        if (nguonBaoGia == null) {
-            return;
-        }
-        if (nguonThucDung == null) {
-            throw new IllegalStateException("Chưa kết nối nguồn phụ tùng thực dùng.");
-        }
-        List<ChiTietBaoGia> chiTiet = layBaoGia(taiKhoan, phieu.getMaPhieu()).getChiTiet();
-        List<PhuTungSuDung> thucDung = nguonThucDung.docDanhSach(taiKhoan, phieu.getMaPhieu(),
-                TrangThaiSuDung.DA_GHI_NHAN);
-        for (int i = 0; i < chiTiet.size(); i++) {
-            ChiTietBaoGia dong = chiTiet.get(i);
-            if (!"Phụ tùng".equals(dong.getLoai())) {
-                continue;
-            }
-            boolean daGhi = false;
-            for (PhuTungSuDung daDung : thucDung) {
-                if (phieu.getMaPhieu().equals(daDung.getMaLenhSuaChua())
-                        && (phieu.getMaPhieu() + "#" + i).equals(daDung.getHangMuc())
-                        && dong.getMaPhuTung().equals(daDung.getPhuTung().getMaPhuTung())) {
-                    daGhi = true;
-                }
-            }
-            if (!daGhi) {
-                throw new IllegalStateException("Chưa ghi nhận phụ tùng thực dùng ở hạng mục " + (i + 1) + ".");
+        for (int i = 0; i < phuTrach.size(); i++) {
+            if (!cu.getDanhSachHangMuc().get(i).getTaiKhoanThucHien().equals(phuTrach.get(i))) {
+                throw new IllegalStateException("Mã thao tác đã sử dụng cho phân công khác.");
             }
         }
     }
 
-    // Kiểm tra vai trò kỹ thuật, phân công và trạng thái trước mọi thao tác tiến độ.
-    /** Đọc phieu ky thuat từ dữ liệu hiện tại. */
-    private PhieuSuaChua layPhieuKyThuat(TaiKhoan taiKhoan, String maPhieu) {
-        kiemTraVaiTro(taiKhoan);
-        if (taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT) {
-            throw new SecurityException("Thao tác này dành cho nhân viên kỹ thuật.");
-        }
-        PhieuSuaChua phieu = layPhieuNoiBo(taiKhoan, maPhieu);
-        if (phieu.getTrangThai() == TrangThaiSuaChua.HOAN_THANH) {
-            throw new IllegalStateException("Lệnh đã hoàn thành, không cập nhật trực tiếp.");
-        }
-        return phieu;
-    }
-
-    // Tìm bản nội bộ theo mã và từ chối truy cập ngoài phân công.
-    /** Đọc phieu noi bo từ dữ liệu hiện tại. */
-    private PhieuSuaChua layPhieuNoiBo(TaiKhoan taiKhoan, String maPhieu) {
-        for (PhieuSuaChua phieu : danhSachPhieu) {
-            if (phieu.getMaPhieu().equals(maPhieu) && duocXem(taiKhoan, phieu)) {
-                return phieu;
+    // Sinh mã SQL duy nhất cho lệnh hoặc bản ghi phân công.
+    private String taoMa(Connection c, String tienTo) throws SQLException {
+        String bang = "SC".equals(tienTo) ? "PhieuSuaChua" : "PhanCong";
+        String cot = "SC".equals(tienTo) ? "MaPhieu" : "MaPC";
+        while (true) {
+            long so;
+            try (PreparedStatement ps = c.prepareStatement("SELECT NEXT VALUE FOR dbo.SoMaThaoTac");
+                    ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                so = rs.getLong(1);
             }
-        }
-        throw new IllegalArgumentException("Lệnh không còn tồn tại hoặc không thuộc phân công.");
-    }
-
-    // Giới hạn kỹ thuật vào các lệnh được giao chính hoặc phối hợp.
-    /** Thực hiện duoc xem cho thành phần hiện tại. */
-    private boolean duocXem(TaiKhoan taiKhoan, PhieuSuaChua phieu) {
-        return taiKhoan.getVaiTro() == VaiTro.NHAN_VIEN_TIEP_NHAN
-                || taiKhoan.getTenDangNhap().equals(phieu.getKyThuatChinh())
-                || taiKhoan.getTenDangNhap().equals(phieu.getKyThuatPhoiHop());
-    }
-
-    // Chặn các vai trò không thuộc phân hệ sửa chữa.
-    /** Kiểm tra vai tro trước khi xử lý. */
-    private void kiemTraVaiTro(TaiKhoan taiKhoan) {
-        if (taiKhoan != null) {
-            taiKhoan.kiemTraPhien();
-        }
-        if (taiKhoan == null || (taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN
-                && taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_KY_THUAT)) {
-            throw new SecurityException("Chức năng dành cho tiếp nhận và kỹ thuật.");
-        }
-    }
-
-    // Chỉ cho tiếp nhận tạo, sửa phân công hoặc xóa lệnh chưa bắt đầu.
-    /** Kiểm tra tiep nhan trước khi xử lý. */
-    private void kiemTraTiepNhan(TaiKhoan taiKhoan) {
-        kiemTraVaiTro(taiKhoan);
-        if (taiKhoan.getVaiTro() != VaiTro.NHAN_VIEN_TIEP_NHAN) {
-            throw new SecurityException("Thao tác này dành cho nhân viên tiếp nhận.");
-        }
-    }
-
-    // Tạo công việc ban đầu tương ứng với báo giá mẫu trong ZIP.
-    /** Tạo hang muc cho giao diện. */
-    private List<ChiTietSuaChua> taoHangMuc(String nhom, boolean daBatDau) {
-        List<ChiTietSuaChua> ketQua = new ArrayList<ChiTietSuaChua>();
-        ketQua.add(new ChiTietSuaChua("Điều hòa".equals(nhom) ? "Kiểm tra điều hòa" : "Bảo dưỡng dầu / lọc", "NV005",
-                daBatDau ? "Đã thay dầu, kiểm tra rò rỉ" : "",
-                daBatDau ? TrangThaiSuaChua.HOAN_THANH : TrangThaiSuaChua.CHO_SUA_CHUA, false));
-        if (!"Điều hòa".equals(nhom)) {
-            ketQua.add(new ChiTietSuaChua("Vệ sinh phanh trước", "kythuatvu", "Đang vệ sinh và kiểm tra",
-                    TrangThaiSuaChua.DANG_SUA, false));
-        }
-        return ketQua;
-    }
-
-    /** Kiểm tra tham chiếu bằng mã, không phụ thuộc tên dịch vụ hoặc trạng thái duyệt báo giá. */
-    public static boolean daSuDungDichVu(TaiKhoan taiKhoan, String maDichVu) {
-        taiKhoan.kiemTraPhien();
-        if (taiKhoan.getVaiTro() != VaiTro.QUAN_LY) {
-            throw new SecurityException("Chỉ Quản lý được kiểm tra xóa dịch vụ.");
-        }
-        for (BaoGia baoGia : taoDanhSachBaoGia()) {
-            for (ChiTietBaoGia dong : baoGia.getChiTiet()) {
-                if (dong.getMaDichVu().equals(maDichVu)) {
-                    return true;
+            String ma = String.format(Locale.ROOT, "%s-%04d-%04d", tienTo, LocalDateTime.now().getYear(), so);
+            try (PreparedStatement ps = c.prepareStatement("SELECT " + cot + " FROM dbo." + bang + " WHERE " + cot + "=?")) {
+                ps.setString(1, ma);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) {
+                        return ma;
+                    }
                 }
             }
         }
-        return false;
     }
-
-    /** Tạo danh sach bao gia cho giao diện. */
-    private static List<BaoGia> taoDanhSachBaoGia() {
-        List<BaoGia> ketQua = new ArrayList<>();
-        ketQua.add(new BaoGia("BG-2026-0111", "51K-001.23", true, taoChiTietBaoGia(false)));
-        ketQua.add(new BaoGia("BG-2026-0108", "51H-246.80", true, taoChiTietBaoGia(true)));
-        ketQua.add(new BaoGia("BG-2026-0113", "51H-135.79", true, taoChiTietBaoGia(false)));
-        ketQua.add(new BaoGia("BG-2026-0114", "51F-112.34", false, taoChiTietBaoGia(false)));
-        for (int so = 109; so <= 111; so++) {
-            ketQua.add(new BaoGia("BG-MAU-" + so, "51H-246.80", true, taoChiTietBaoGia(true)));
+    // Lấy kết nối đã cấu hình trong ConnectDB.
+    private Connection ketNoi() {
+        try {
+            return ConnectDB.getInstance().getConnection();
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không kết nối được SQL Server.", ex);
         }
-        return new ArrayList<>(ketQua);
     }
 
-    // Tạo chi tiết báo giá mẫu và truyền đúng tham số của constructor.
-    /** Tạo chi tiet bao gia cho giao diện. */
-    private static List<ChiTietBaoGia> taoChiTietBaoGia(boolean baoDuong) {
-        List<ChiTietBaoGia> ketQua = new ArrayList<ChiTietBaoGia>();
-        if (baoDuong) {
-            ketQua.add(new ChiTietBaoGia("DV001", "Bảo dưỡng định kỳ", "Dịch vụ / tiền công", "", 1, 300000L, ""));
-            ketQua.add(new ChiTietBaoGia("DV002", "Vệ sinh phanh trước", "Tiền công", "", 1, 100000L, ""));
-            ketQua.add(new ChiTietBaoGia("Dầu động cơ 5W-30", "Phụ tùng", "lít", 4, 180000L));
-            ketQua.add(new ChiTietBaoGia("Lọc dầu động cơ", "Phụ tùng", "cái", 1, 150000L));
-        } else {
-            ketQua.add(new ChiTietBaoGia("DV003", "Kiểm tra điều hòa", "Dịch vụ / tiền công", "", 1, 300000L, ""));
+    // Hoàn tác các thay đổi trong giao dịch đang xử lý.
+    private void hoanTac(Connection c) {
+        try {
+            c.rollback();
+        } catch (SQLException ex) {
+            try {
+                c.close();
+            } catch (SQLException loi) {
+                ex.addSuppressed(loi);
+            }
+            throw new IllegalStateException("Không hoàn tác được giao dịch.", ex);
         }
-        return ketQua;
     }
 
-    /** Đọc bản sao các lệnh hoàn thành cho nguồn thanh toán dùng chung. */
-    public List<PhieuSuaChua> layLenhHoanThanhNoiBo() {
-        List<PhieuSuaChua> ketQua = new ArrayList<>();
-        for (PhieuSuaChua lenh : danhSachPhieu) {
-            if (lenh.getTrangThai() == TrangThaiSuaChua.HOAN_THANH && lenh.getThoiDiemHoanTat() != null) {
-                ketQua.add(new PhieuSuaChua(lenh));
+    // Bật lại tự động lưu sau khi giao dịch kết thúc.
+    private void batTuDongLuu(Connection c) {
+        try {
+            if (!c.isClosed()) {
+                c.setAutoCommit(true);
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Không khôi phục được kết nối.", ex);
+        }
+    }
+
+    // Kiểm tra vai trò và phiên tài khoản trước khi thao tác dữ liệu.
+    private void kiemTraQuyen(TaiKhoan tk, VaiTro... vaiTro) {
+        if (tk == null || !new TaiKhoanDAO().phienConHopLe(tk)) {
+            throw new SecurityException("Cần phiên đăng nhập còn hiệu lực.");
+        }
+        tk.kiemTraPhien();
+        for (VaiTro role : vaiTro) {
+            if (tk.getVaiTro() == role) {
+                return;
             }
         }
-        return ketQua;
+        throw new SecurityException("Bạn không có quyền thực hiện chức năng này.");
     }
 
-    /** Đọc báo giá liên kết nội bộ, không mở quyền sửa chữa cho Thu ngân. */
-    public BaoGia docBaoGiaNoiBo(String ma) {
-        if (nguonBaoGia != null) {
-            return nguonBaoGia.timNoiBo(ma);
-        }
-        for (BaoGia baoGia : danhSachBaoGia) {
-            if (baoGia.getMaBaoGia().equals(ma)) {
-                return baoGia;
-            }
-        }
-        return null;
+    // Đọc DATETIME2 và giữ giá trị null nếu SQL chưa có thời điểm.
+    private LocalDateTime docThoiGian(ResultSet rs, String cot) throws SQLException {
+        Timestamp t = rs.getTimestamp(cot);
+        return t == null ? null : t.toLocalDateTime();
     }
 
-    /** Tìm chứng từ đã lưu theo mã thao tác để tránh ghi lặp. */
-    private String timLenhDaPhatHanh(String maThaoTac) {
-        for (String[] dong : luotPhatHanh) {
-            if (dong[0].equals(maThaoTac)) {
-                return dong[1];
-            }
-        }
-        return null;
-    }
-
-    /** Đọc bản sao các lệnh để tổng hợp, không cho báo cáo sửa lệnh. */
-    public List<PhieuSuaChua> layLenhBaoCao() {
-        List<PhieuSuaChua> ketQua = new ArrayList<>();
-        for (PhieuSuaChua lenh : danhSachPhieu) {
-            ketQua.add(new PhieuSuaChua(lenh));
-        }
-        return ketQua;
-    }
 }

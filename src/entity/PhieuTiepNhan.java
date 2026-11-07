@@ -6,7 +6,7 @@ import entity.Xe;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/** Phiếu chỉ đọc sau xác nhận; giữ snapshot hồ sơ tại thời điểm tiếp nhận. */
+// Phiếu chỉ đọc sau xác nhận; giữ snapshot hồ sơ tại thời điểm tiếp nhận.
 public final class PhieuTiepNhan {
     private final String maPhieu, bienSo, yeuCau, tinhTrang, taiKhoanKyThuat;
     private final boolean daXacNhan;
@@ -14,7 +14,7 @@ public final class PhieuTiepNhan {
     private final long soKm;
     private final LocalDateTime thoiGianNhan, thoiGianXacNhan;
 
-    /** Giữ nguyên hợp đồng constructor mà DAO kiểm tra của nhóm đang dùng. */
+    // Giữ nguyên hợp đồng constructor mà DAO kiểm tra của nhóm đang dùng.
     public PhieuTiepNhan(String maPhieu, String bienSo, String yeuCau, String tinhTrang, String taiKhoanKyThuat,
             boolean daXacNhan) {
         if (maPhieu == null || bienSo == null || taiKhoanKyThuat == null || yeuCau == null || tinhTrang == null
@@ -39,7 +39,7 @@ public final class PhieuTiepNhan {
         thoiGianXacNhan = null;
     }
 
-    /** Phiếu mới đã được khách xác nhận; tồn tại/quan hệ/quyền được kiểm tra tại DAO. */
+    // Phiếu mới đã được khách xác nhận; tồn tại/quan hệ/quyền được kiểm tra tại DAO.
     public PhieuTiepNhan(String maPhieu, Xe xe, KhachHang khach, long soKm, LocalDateTime thoiGianNhan,
             String tinhTrang, String taiSan, String yeuCau, String nguoiTiepNhan, LocalDateTime thoiGianXacNhan) {
         this.maPhieu = batBuoc(maPhieu, "Mã phiếu");
@@ -80,98 +80,122 @@ public final class PhieuTiepNhan {
         daXacNhan = true;
     }
 
-    /** Trả về ma phieu. */
+    // Khôi phục snapshot đã lưu trong database mà không lấy lại hồ sơ khách hoặc xe hiện tại.
+    public PhieuTiepNhan(String maPhieu, String bienSo, String yeuCau, String tinhTrang,
+            String taiKhoanKyThuat, boolean daXacNhan, String maXe, String maKH,
+            String tenKhach, String soDienThoai, String tenXe, String taiSan,
+            String nguoiTiepNhan, long soKm, LocalDateTime thoiGianNhan,
+            LocalDateTime thoiGianXacNhan) {
+        this.maPhieu = batBuoc(maPhieu, "Mã phiếu");
+        this.bienSo = batBuoc(bienSo, "Biển số");
+        this.yeuCau = batBuoc(yeuCau, "Yêu cầu");
+        this.tinhTrang = batBuoc(tinhTrang, "Tình trạng");
+        this.taiKhoanKyThuat = taiKhoanKyThuat;
+        this.daXacNhan = daXacNhan;
+        this.maXe = maXe;
+        this.maKH = maKH;
+        this.tenKhach = tenKhach;
+        this.soDienThoai = soDienThoai;
+        this.tenXe = tenXe;
+        this.taiSan = taiSan;
+        this.nguoiTiepNhan = nguoiTiepNhan;
+        this.soKm = soKm;
+        this.thoiGianNhan = thoiGianNhan;
+        this.thoiGianXacNhan = thoiGianXacNhan;
+    }
+
+    // Trả về ma phieu.
     public String getMaPhieu() {
         return maPhieu;
     }
 
-    /** Trả về bien so. */
+    // Trả về bien so.
     public String getBienSo() {
         return bienSo;
     }
 
-    /** Trả về yeu cau. */
+    // Trả về yeu cau.
     public String getYeuCau() {
         return yeuCau;
     }
 
-    /** Trả về tinh trang. */
+    // Trả về tinh trang.
     public String getTinhTrang() {
         return tinhTrang;
     }
 
-    /** Trả về tai khoan ky thuat. */
+    // Trả về tai khoan ky thuat.
     public String getTaiKhoanKyThuat() {
         return taiKhoanKyThuat;
     }
 
-    /** Cho biết da xac nhan. */
+    // Cho biết da xac nhan.
     public boolean isDaXacNhan() {
         return daXacNhan;
     }
 
-    /** Trả về ma xe. */
+    // Trả về ma xe.
     public String getMaXe() {
         return maXe;
     }
 
-    /** Trả về ma kh. */
+    // Trả về ma kh.
     public String getMaKH() {
         return maKH;
     }
 
-    /** Trả về ten khach. */
+    // Trả về ten khach.
     public String getTenKhach() {
         return tenKhach;
     }
 
-    /** Trả về so dien thoai. */
+    // Trả về so dien thoai.
     public String getSoDienThoai() {
         return soDienThoai;
     }
 
-    /** Trả về ten xe. */
+    // Trả về ten xe.
     public String getTenXe() {
         return tenXe;
     }
 
-    /** Trả về tai san. */
+    // Trả về tai san.
     public String getTaiSan() {
         return taiSan;
     }
 
-    /** Trả về nguoi tiep nhan. */
+    // Trả về nguoi tiep nhan.
     public String getNguoiTiepNhan() {
         return nguoiTiepNhan;
     }
 
-    /** Trả về so km. */
+    // Trả về so km.
     public long getSoKm() {
         return soKm;
     }
 
-    /** Trả về thoi gian nhan. */
+    // Trả về thoi gian nhan.
     public LocalDateTime getThoiGianNhan() {
         return thoiGianNhan;
     }
 
-    /** Trả về thoi gian xac nhan. */
+    // Trả về thoi gian xac nhan.
     public LocalDateTime getThoiGianXacNhan() {
         return thoiGianXacNhan;
     }
 
-    /** Trả về trang thai. */
+    // Trả về trang thai.
     public TrangThaiTiepNhan getTrangThai() {
         return daXacNhan ? TrangThaiTiepNhan.CHO_KIEM_TRA : TrangThaiTiepNhan.NHAP;
     }
 
-    /** Thực hiện to string cho thành phần hiện tại. */
+    // Thực hiện to string cho thành phần hiện tại.
     @Override
     public String toString() {
         return maPhieu + (daXacNhan ? " · Đã xác nhận" : " · Nháp");
     }
 
-    /** Thực hiện bat buoc cho thành phần hiện tại. */
+    // Thực hiện bat buoc cho thành phần hiện tại.
     private static String batBuoc(String chu, String ten) {
         if (chu == null || chu.isBlank()) {
             throw new IllegalArgumentException(ten + " không được rỗng.");
@@ -189,14 +213,14 @@ public final class PhieuTiepNhan {
         private final String[] deXuatTheoVung;
         private final TrangThaiKiemTra trangThai;
         private final LocalDateTime thoiDiemHoanTat;
-    
-        /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+
+        // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
         public BaoCaoKiemTra(String maBaoCao, PhieuTiepNhan phieu, LocalDate ngayKiemTra, String boPhan, String[] noiDung,
                 TrangThaiKiemTra trangThai, LocalDateTime thoiDiemHoanTat) {
             this(maBaoCao, phieu, ngayKiemTra, boPhan, noiDung, trangThai, thoiDiemHoanTat, new String[] { "", "", "" });
         }
-    
-        /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+
+        // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
         public BaoCaoKiemTra(String maBaoCao, PhieuTiepNhan phieu, LocalDate ngayKiemTra, String boPhan, String[] noiDung,
                 TrangThaiKiemTra trangThai, LocalDateTime thoiDiemHoanTat, String[] deXuatTheoVung) {
             if (maBaoCao == null || phieu == null || ngayKiemTra == null || boPhan == null || noiDung == null
@@ -228,43 +252,43 @@ public final class PhieuTiepNhan {
             this.trangThai = trangThai;
             this.thoiDiemHoanTat = thoiDiemHoanTat;
         }
-    
-        /** Trả về ma bao cao. */
+
+        // Trả về ma bao cao.
         public String getMaBaoCao() {
             return maBaoCao;
         }
-    
-        /** Trả về phieu. */
+
+        // Trả về phieu.
         public PhieuTiepNhan getPhieu() {
             return phieu;
         }
-    
-        /** Trả về ngay kiem tra. */
+
+        // Trả về ngay kiem tra.
         public LocalDate getNgayKiemTra() {
             return ngayKiemTra;
         }
-    
-        /** Trả về bo phan. */
+
+        // Trả về bo phan.
         public String getBoPhan() {
             return boPhan;
         }
-    
-        /** Trả về noi dung. */
+
+        // Trả về noi dung.
         public String[] getNoiDung() {
             return noiDung.clone();
         }
-    
-        /** Trả về de xuat theo vung. */
+
+        // Trả về de xuat theo vung.
         public String[] getDeXuatTheoVung() {
             return deXuatTheoVung.clone();
         }
-    
-        /** Trả về trang thai. */
+
+        // Trả về trang thai.
         public TrangThaiKiemTra getTrangThai() {
             return trangThai;
         }
-    
-        /** Trả về thoi diem hoan tat. */
+
+        // Trả về thoi diem hoan tat.
         public LocalDateTime getThoiDiemHoanTat() {
             return thoiDiemHoanTat;
         }
@@ -272,15 +296,15 @@ public final class PhieuTiepNhan {
 
     public enum TrangThaiKiemTra {
         NHAP("Nháp"), HOAN_TAT("Hoàn tất");
-    
+
         private final String tenHienThi;
-    
-        /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+
+        // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
         TrangThaiKiemTra(String tenHienThi) {
             this.tenHienThi = tenHienThi;
         }
-    
-        /** Trả về ten hien thi. */
+
+        // Trả về ten hien thi.
         public String getTenHienThi() {
             return tenHienThi;
         }
@@ -288,15 +312,15 @@ public final class PhieuTiepNhan {
 
     public enum TrangThaiTiepNhan {
         NHAP("Nháp"), CHO_KIEM_TRA("Chờ kiểm tra");
-    
+
         private final String tenHienThi;
-    
-        /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+
+        // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
         TrangThaiTiepNhan(String tenHienThi) {
             this.tenHienThi = tenHienThi;
         }
-    
-        /** Trả về ten hien thi. */
+
+        // Trả về ten hien thi.
         public String getTenHienThi() {
             return tenHienThi;
         }
