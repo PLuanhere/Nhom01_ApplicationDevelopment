@@ -16,6 +16,7 @@ import java.awt.event.ActionListener;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultCellEditor;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -29,6 +30,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.plaf.basic.BasicButtonUI;
+import javax.swing.plaf.basic.BasicGraphicsUtils;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.plaf.basic.BasicTableHeaderUI;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -85,7 +87,19 @@ public final class GiaoDienKyThuat {
                 super.paintComponent(doHoa);
             }
         };
-        btnNut.setUI(new BasicButtonUI());
+        btnNut.setUI(new BasicButtonUI() {
+            // Vẽ chữ một lần khi nút bị khóa để tránh hiệu ứng chữ nổi chồng nét.
+            @Override
+            protected void paintText(Graphics doHoa, JComponent thanhPhan, Rectangle vungChu, String chu) {
+                if (thanhPhan.isEnabled()) {
+                    super.paintText(doHoa, thanhPhan, vungChu, chu);
+                    return;
+                }
+                doHoa.setColor(GiaoDienKyThuat.CHU_PHU);
+                BasicGraphicsUtils.drawStringUnderlineCharAt(doHoa, chu, -1, vungChu.x,
+                        vungChu.y + doHoa.getFontMetrics().getAscent());
+            }
+        });
         btnNut.setFont(chinh ? GiaoDienKyThuat.CHU_DAM.deriveFont(13.0f) : GiaoDienKyThuat.CHU_THUONG);
         btnNut.setForeground(chinh ? Color.WHITE : GiaoDienKyThuat.CHU);
         btnNut.setBackground(chinh ? GiaoDienKyThuat.XANH : Color.WHITE);
@@ -336,6 +350,15 @@ public final class GiaoDienKyThuat {
                 return this;
             }
         };
+        JTextField txtSuaO = new JTextField();
+        txtSuaO.setFont(GiaoDienKyThuat.CHU_THUONG);
+        txtSuaO.setForeground(GiaoDienKyThuat.CHU);
+        txtSuaO.setCaretColor(GiaoDienKyThuat.CHU);
+        txtSuaO.setBackground(Color.WHITE);
+        txtSuaO.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(GiaoDienKyThuat.XANH),
+                BorderFactory.createEmptyBorder(0, 11, 0, 11)));
+        tblBang.setDefaultEditor(Object.class, new DefaultCellEditor(txtSuaO));
         tblBang.setDefaultRenderer(Object.class, boVe);
         tblBang.getTableHeader().setDefaultRenderer(boVe);
         return tblBang;
@@ -372,16 +395,27 @@ public final class GiaoDienKyThuat {
         return pnlTrangThai;
     }
 
-    // Bọc bảng trong vùng cuộn với chiều cao phù hợp số dòng dữ liệu.
-    /** Thực hiện boc bang cho thành phần hiện tại. */
+    // Bọc bảng và cập nhật chiều cao khi danh sách được nạp hoặc lọc lại.
     public static JScrollPane bocBang(JTable tblBang) {
         JScrollPane scrBang = new JScrollPane(tblBang);
         scrBang.setColumnHeaderView(tblBang.getTableHeader());
         PhuTungUi.dinhDangVungCuon(scrBang);
         scrBang.setBorder(BorderFactory.createEmptyBorder());
-        scrBang.setPreferredSize(new Dimension(0, 39 + Math.max(1, tblBang.getRowCount()) * 52 + 2));
-        scrBang.setMinimumSize(new Dimension(0, 93));
+        capNhatChieuCaoBang(tblBang, scrBang);
+        tblBang.getModel().addTableModelListener(suKien -> capNhatChieuCaoBang(tblBang, scrBang));
         return scrBang;
+    }
+
+    // Hiển thị tối đa tám dòng trước khi cuộn, tránh cắt dòng khi bảng có ít dữ liệu.
+    private static void capNhatChieuCaoBang(JTable tblBang, JScrollPane scrBang) {
+        int soDong = Math.max(1, Math.min(8, tblBang.getRowCount()));
+        int chieuCao = tblBang.getTableHeader().getPreferredSize().height
+                + soDong * tblBang.getRowHeight() + 2;
+        scrBang.setPreferredSize(new Dimension(0, chieuCao));
+        scrBang.setMinimumSize(new Dimension(0, chieuCao));
+        scrBang.setMaximumSize(new Dimension(Integer.MAX_VALUE, chieuCao));
+        scrBang.revalidate();
+        scrBang.repaint();
     }
 
     // Tạo model chỉ đọc cho các danh sách dữ liệu.
