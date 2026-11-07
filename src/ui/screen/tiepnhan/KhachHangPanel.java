@@ -60,7 +60,7 @@ public final class KhachHangPanel extends JPanel {
     };
     private final JTable tblKhachHang = new JTable(model);
     private final JLabel lblKetQua = nhan(" ", 12, false);
-    private final JLabel lblThongBao = nhan("Dữ liệu trong bộ nhớ · chưa lưu lâu dài", 12, false);
+    private final JLabel lblThongBao = nhan("Dữ liệu được lưu trên SQL Server", 12, false);
     private final JTextField txtMa = new JTextField();
     private final JTextField txtHoTen = new JTextField();
     private final JTextField txtDienThoai = new JTextField();
@@ -434,7 +434,7 @@ public final class KhachHangPanel extends JPanel {
                     duLieu.getEmail(), duLieu.getGhiChu());
             maDangSua = daLuu.getMaKH();
             moDanhSach();
-            lblThongBao.setText("Đã lưu " + daLuu.getMaKH() + " · Dữ liệu trong bộ nhớ, chưa lưu lâu dài.");
+            lblThongBao.setText("Đã lưu " + daLuu.getMaKH() + " trên SQL Server.");
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
             lblLoi.setText(e.getMessage());
         } finally {

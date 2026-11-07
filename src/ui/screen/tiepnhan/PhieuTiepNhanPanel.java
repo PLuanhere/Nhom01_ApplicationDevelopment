@@ -256,7 +256,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
         dau.add(loc);
         pnl.add(dau, BorderLayout.NORTH);
         JPanel ds = khung(new BorderLayout(0, 12));
-        ds.add(nhan("Danh sách phiếu tiếp nhận · Dữ liệu trong bộ nhớ", true), BorderLayout.NORTH);
+        ds.add(nhan("Danh sách phiếu tiếp nhận · Dữ liệu từ SQL Server", true), BorderLayout.NORTH);
         ds.add(cuonBang(tblDanhSach));
         JPanel nut = nen(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         nut.add(nut("Xem chi tiết", false, new ActionListener() {
@@ -440,7 +440,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
         });
         chu.add(chkXacNhan);
         chu.add(lblXacNhan);
-        JLabel gioiHan = nhan("<html>Phiếu lưu trong bộ nhớ của phiên.<br>Chưa lưu SQL hoặc phân công kỹ thuật.</html>",
+        JLabel gioiHan = nhan("<html>Phiếu được lưu trên SQL Server.<br>Có thể phân công kiểm tra cho kỹ thuật viên.</html>",
                 false);
         chu.add(gioiHan);
         xacNhan.add(chu, BorderLayout.NORTH);
@@ -678,7 +678,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
             for (Object[] dong : cacDong) {
                 modelDanhSach.addRow(dong);
             }
-            lblDanhSach.setText(modelDanhSach.getRowCount() + " phiếu · Dữ liệu trong bộ nhớ, chưa lưu lâu dài.");
+            lblDanhSach.setText(modelDanhSach.getRowCount() + " phiếu · Dữ liệu từ SQL Server.");
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
             lblDanhSach.setText("Chưa cập nhật được danh sách: " + e.getMessage());
         }
@@ -700,7 +700,7 @@ public final class PhieuTiepNhanPanel extends JPanel {
             txtLoc.setText("");
             cboTrangThai.setSelectedIndex(0);
             moDanhSach();
-            lblDanhSach.setText("Đã lưu " + daLuu.getMaPhieu() + " · Chờ kiểm tra · Dữ liệu trong bộ nhớ.");
+            lblDanhSach.setText("Đã lưu " + daLuu.getMaPhieu() + " · Chờ kiểm tra · Đã lưu SQL Server.");
             xeDoiChieu = null;
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
             lblXacNhan.setText(e.getMessage());
