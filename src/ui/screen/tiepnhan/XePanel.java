@@ -353,7 +353,7 @@ public final class XePanel extends JPanel {
                         khachHangDAO.timTheoMa(phien, xe.getMaKH()).getHoTen(), xe.getHangXe() + " / " + xe.getModel(),
                         xe.getNamSX(), xe.getMauXe() });
             }
-            lblKetQua.setText(ketQua.size() + " xe · Dữ liệu trong bộ nhớ, chưa lưu lâu dài.");
+            lblKetQua.setText(ketQua.size() + " xe · Dữ liệu từ SQL Server.");
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
             lblKetQua.setText(e.getMessage());
         }
@@ -498,7 +498,7 @@ public final class XePanel extends JPanel {
                     txtDong.getText(), nam, txtMau.getText(), txtSoKhung.getText(), txtSoMay.getText());
             maDangSua = xe.getMaXe();
             moDanhSach();
-            lblKetQua.setText("Đã lưu " + xe.getMaXe() + " · Dữ liệu trong bộ nhớ, chưa lưu lâu dài.");
+            lblKetQua.setText("Đã lưu " + xe.getMaXe() + " trên SQL Server.");
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
             lblLoi.setText(e.getMessage());
         } finally {
