@@ -161,7 +161,7 @@ public final class TrangChuTiepNhanPanel extends JPanel {
         noiDung.setAlignmentX(LEFT_ALIGNMENT);
         trang.add(noiDung);
         trang.add(Box.createVerticalStrut(16));
-        trang.add(nhan("Dữ liệu trong bộ nhớ của lần chạy ứng dụng · chưa lưu SQL Server", 12, false));
+        trang.add(nhan("Dữ liệu được tổng hợp từ SQL Server", 12, false));
         trang.add(Box.createVerticalGlue());
         // Cuộn dọc giữ toàn bộ tác vụ truy cập được ở màn hình 960×600.
         JScrollPane cuon = new JScrollPane(trang, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
