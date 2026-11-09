@@ -317,9 +317,8 @@ public final class PhieuSuaChuaDAO {
                     && !tk.getMaNhanVien().equals(ct.getTaiKhoanThucHien())) {
                 throw new SecurityException("Bạn không được cập nhật công việc này.");
             }
-            if (ct.isPhatSinh() && (p.getPhatSinh() == null
-                    || p.getPhatSinh().getTrangThai() != TrangThaiPhatSinh.DA_DUYET)) {
-                throw new IllegalStateException("Phát sinh chưa được duyệt.");
+            if (ct.isPhatSinh()) {
+                PhatSinhDAO.kiemTraHangMuc(c, ma, viTri);
             }
             try (PreparedStatement ps = c.prepareStatement("UPDATE dbo.ChiTietSuaChua "
                     + "SET TrangThai=?,KetQua=? WHERE MaPhieu=? AND ViTri=?")) {
@@ -351,34 +350,8 @@ public final class PhieuSuaChuaDAO {
 
     // Lưu đề xuất phát sinh để chờ phản hồi của khách, không tự phê duyệt.
     public void guiPhatSinh(TaiKhoan tk, String ma, String[] nd) {
-        kiemTraQuyen(tk, VaiTro.NHAN_VIEN_KY_THUAT);
-        PhatSinhSuaChua deXuat = new PhatSinhSuaChua(nd, TrangThaiPhatSinh.CHO_DUYET, "", null);
-        Connection c = ketNoi();
-        try {
-            c.setAutoCommit(false);
-            PhieuSuaChua p = khoaLenh(c, tk, ma);
-            if (p.getPhatSinh() != null) {
-                throw new IllegalStateException("Lệnh đã có đề xuất phát sinh.");
-            }
-            String sql = "INSERT dbo.PhatSinhSuaChua (MaPhieu,HuHong,NguyenNhan,DeXuat,ThoiGianThem,GhiChu,TrangThai) "
-                    + "VALUES (?,?,?,?,?,?,'CHO_DUYET')";
-            try (PreparedStatement ps = c.prepareStatement(sql)) {
-                ps.setString(1, ma);
-                for (int i = 0; i < 5; i++) {
-                    ps.setString(i + 2, deXuat.getNoiDung()[i]);
-                }
-                ps.executeUpdate();
-            }
-            c.commit();
-        } catch (SQLException | RuntimeException ex) {
-            hoanTac(c);
-            if (ex instanceof RuntimeException) {
-                throw (RuntimeException) ex;
-            }
-            throw new IllegalStateException("Không gửi được phát sinh.", ex);
-        } finally {
-            batTuDongLuu(c);
-        }
+        if (nd == null || nd.length < 3) throw new IllegalArgumentException("Thiếu nội dung phát sinh.");
+        new PhatSinhDAO().gui(tk, ma, nd[0], nd[1], nd[2]);
     }
 
     // Hoàn tất khi mọi hạng mục đã xong, đủ thực dùng và không còn phát sinh chờ duyệt.
@@ -400,7 +373,8 @@ public final class PhieuSuaChuaDAO {
                     throw new IllegalArgumentException("Chưa đối chiếu đủ điều kiện kiểm tra cuối.");
                 }
             }
-            if (p.getPhatSinh() != null && p.getPhatSinh().getTrangThai() == TrangThaiPhatSinh.CHO_DUYET) {
+            if (PhatSinhDAO.coChoKhach(c, ma)
+                    || (p.getPhatSinh() != null && p.getPhatSinh().getTrangThai() == TrangThaiPhatSinh.CHO_DUYET)) {
                 throw new IllegalStateException("Còn phát sinh chờ khách duyệt.");
             }
             for (ChiTietSuaChua ct : p.getDanhSachHangMuc()) {
@@ -408,18 +382,22 @@ public final class PhieuSuaChuaDAO {
                     throw new IllegalStateException("Còn công việc chưa hoàn thành.");
                 }
             }
-            String sql = "SELECT c.ViTri FROM dbo.ChiTietBaoGia c WHERE c.MaBaoGia=? AND c.MaPhuTung IS NOT NULL "
-                    + "AND NOT EXISTS (SELECT 1 FROM dbo.PhuTungSuDung s WHERE s.MaLenhSuaChua=? "
-                    + "AND s.ViTriHangMuc=c.ViTri AND s.MaPhuTung=c.MaPhuTung AND s.TrangThai='DA_GHI_NHAN')";
-            try (PreparedStatement ps = c.prepareStatement(sql)) {
-                ps.setString(1, p.getMaBaoGia());
-                ps.setString(2, ma);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        throw new IllegalStateException("Chưa ghi nhận phụ tùng ở hạng mục " + (rs.getInt(1) + 1));
+            for (int i = 0; i < p.getDanhSachHangMuc().size(); i++) {
+                ChiTietBaoGia dong = PhatSinhDAO.docDongDuocDuyet(c, ma, i);
+                if (p.getDanhSachHangMuc().get(i).isPhatSinh()) PhatSinhDAO.kiemTraHangMuc(c, ma, i);
+                if (dong != null && !dong.getMaPhuTung().isEmpty()) {
+                    try (PreparedStatement ps = c.prepareStatement("SELECT 1 FROM dbo.PhuTungSuDung "
+                            + "WHERE MaLenhSuaChua=? AND ViTriHangMuc=? AND MaPhuTung=? AND TrangThai='DA_GHI_NHAN'")) {
+                        ps.setString(1, ma);
+                        ps.setInt(2, i);
+                        ps.setString(3, dong.getMaPhuTung());
+                        try (ResultSet rs = ps.executeQuery()) {
+                            if (!rs.next()) throw new IllegalStateException("Chưa ghi thực dùng ở hạng mục " + (i + 1));
+                        }
                     }
                 }
             }
+            String sql;
             sql = "UPDATE dbo.PhieuSuaChua SET TrangThai='HOAN_THANH',ThoiDiemHoanTat=?,KetQua0=?,KetQua1=?,"
                     + "KetQua2=? WHERE MaPhieu=?";
             try (PreparedStatement ps = c.prepareStatement(sql)) {
@@ -495,6 +473,8 @@ public final class PhieuSuaChuaDAO {
                 }
             }
         }
+        PhatSinhSuaChua tongHop = PhatSinhDAO.docTongHop(c, ma);
+        if (tongHop != null) phatSinh = tongHop;
         String phu = rs.getString("KyThuatPhoiHop");
         return new PhieuSuaChua(ma, rs.getString("MaBaoGia"), rs.getString("BienSo"), rs.getString("KyThuatChinh"),
                 phu == null ? "" : phu, docThoiGian(rs, "HanHoanThanh"), rs.getString("GhiChu"),

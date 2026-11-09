@@ -292,6 +292,25 @@ public final class LenhSuaChuaTiepNhanPanel extends JPanel {
                 LenhSuaChuaTiepNhanPanel.this.xemChiTiet();
             }
         }));
+        tacVu.add(nut("Phát sinh / phản hồi khách", false, new ActionListener() {
+            // Mở phụ lục của lệnh được chọn, không cho tiếp nhận cập nhật tiến độ kỹ thuật.
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int dong = tblDanhSach.getSelectedRow();
+                if (dong < 0) {
+                    lblDanhSach.setText("Chọn một lệnh để xem phát sinh.");
+                    return;
+                }
+                String ma = modelDanhSach.getValueAt(tblDanhSach.convertRowIndexToModel(dong), 0).toString();
+                try {
+                    new ui.dialog.tiepnhan.PhatSinhSuaChuaDialog(SwingUtilities.getWindowAncestor(
+                            LenhSuaChuaTiepNhanPanel.this), phien, ma).setVisible(true);
+                    locDanhSach();
+                } catch (RuntimeException ex) {
+                    lblDanhSach.setText(ex.getMessage());
+                }
+            }
+        }));
         ds.add(tacVu, BorderLayout.SOUTH);
         pnl.add(ds);
         pnl.add(lblDanhSach, BorderLayout.SOUTH);
