@@ -119,8 +119,9 @@ public final class PhuTungSuDungDAO {
             }
             pt.kiemTraSoLuong(so);
             BigDecimal daDung;
-            sql = "SELECT COALESCE(SUM(SoLuong),0) AS Tong FROM dbo.PhuTungSuDung "
-                    + "WHERE MaLenhSuaChua=? AND ViTriHangMuc=? AND MaPhuTung=? AND TrangThai='DA_GHI_NHAN'";
+            sql = "SELECT COALESCE(SUM(x.ConLai),0) AS Tong FROM (SELECT s.SoLuong-"
+                    + HoanPhuTungDAO.sqlDaHoan("s") + " AS ConLai FROM dbo.PhuTungSuDung s "
+                    + "WHERE MaLenhSuaChua=? AND ViTriHangMuc=? AND MaPhuTung=? AND TrangThai='DA_GHI_NHAN') x";
             try (PreparedStatement ps = c.prepareStatement(sql)) {
                 ps.setString(1, maLenh);
                 ps.setInt(2, viTri);
@@ -197,7 +198,11 @@ public final class PhuTungSuDungDAO {
             ps.setString(2, tk.getMaNhanVien());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    PhuTungSuDung s = docHoSo(c, rs);
+                    BigDecimal conLai = HoanPhuTungDAO.docConLai(c, rs.getString("MaGhiNhan"));
+                    if (conLai.signum() == 0) {
+                        continue;
+                    }
+                    PhuTungSuDung s = docHoSo(c, rs, conLai.doubleValue());
                     String chu = s.getMaGhiNhan() + " " + s.getMaLenhSuaChua() + " " + s.getPhuTung();
                     if (chu.toLowerCase(java.util.Locale.ROOT).contains(khoa) && (tt == null || tt == s.getTrangThai())) {
                         ds.add(s);
@@ -223,7 +228,10 @@ public final class PhuTungSuDungDAO {
             ps.setString(1, maLenh);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    ds.add(docHoSo(c, rs));
+                    BigDecimal conLai = HoanPhuTungDAO.docConLai(c, rs.getString("MaGhiNhan"));
+                    if (conLai.signum() > 0) {
+                        ds.add(docHoSo(c, rs, conLai.doubleValue()));
+                    }
                 }
             }
         } catch (SQLException ex) {
@@ -272,8 +280,9 @@ public final class PhuTungSuDungDAO {
     // Tính phần còn được dùng bằng lượng duyệt trừ các chứng từ đã xác nhận.
     public double docLuongConLai(TaiKhoan tk, String maLenh, String maPT) {
         double so = layLuong(docPhamViDuyet(tk, maLenh), maPT);
-        String sql = "SELECT COALESCE(SUM(SoLuong),0) AS Tong FROM dbo.PhuTungSuDung "
-                + "WHERE MaLenhSuaChua=? AND MaPhuTung=? AND TrangThai='DA_GHI_NHAN'";
+        String sql = "SELECT COALESCE(SUM(x.ConLai),0) AS Tong FROM (SELECT s.SoLuong-"
+                    + HoanPhuTungDAO.sqlDaHoan("s") + " AS ConLai FROM dbo.PhuTungSuDung s "
+                + "WHERE MaLenhSuaChua=? AND MaPhuTung=? AND TrangThai='DA_GHI_NHAN') x";
         try (PreparedStatement ps = ketNoi().prepareStatement(sql)) {
             ps.setString(1, maLenh);
             ps.setString(2, maPT);
@@ -356,9 +365,14 @@ public final class PhuTungSuDungDAO {
 
     // Khôi phục chứng từ và vị trí hạng mục từ ResultSet.
     private PhuTungSuDung docHoSo(Connection c, ResultSet rs) throws SQLException {
+        return docHoSo(c, rs, rs.getDouble("SoLuong"));
+    }
+
+    // Tạo dữ liệu thực dùng sau khi trừ các chứng từ hoàn đã ghi nhận.
+    private PhuTungSuDung docHoSo(Connection c, ResultSet rs, double soLuong) throws SQLException {
         String maLenh = rs.getString("MaLenhSuaChua");
         return new PhuTungSuDung(rs.getString("MaGhiNhan"), maLenh,
-                kho.docTheoMa(c, rs.getString("MaPhuTung"), false), rs.getDouble("SoLuong"),
+                kho.docTheoMa(c, rs.getString("MaPhuTung"), false), soLuong,
                 rs.getString("NguoiThucHien"), rs.getString("GhiChu"),
                 TrangThaiSuDung.valueOf(rs.getString("TrangThai")), maLenh + "#" + rs.getInt("ViTriHangMuc"));
     }
