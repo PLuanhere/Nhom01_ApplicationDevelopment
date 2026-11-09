@@ -101,15 +101,9 @@ public final class KyThuatDAO {
         return kiemTraDAO.timTheoPhieu(phien(), phieu);
     }
 
-    // Lưu báo cáo và kiểm tra đủ ba khu vực trước khi hoàn tất.
+    // Lưu báo cáo và kiểm tra các khu vực thực tế trước khi hoàn tất.
     public BaoCaoKiemTra luuBaoCao(BaoCaoKiemTra baoCao, boolean hoanTat) {
-        if (hoanTat) {
-            for (int viTri = 0; viTri < 3; viTri++) {
-                if (baoCao.getNoiDung()[viTri + 3].isBlank() || baoCao.getDeXuatTheoVung()[viTri].isBlank()) {
-                    throw new IllegalArgumentException("Cần đủ kết quả và đề xuất của ba khu vực kiểm tra.");
-                }
-            }
-        }
+        baoCao.kiemTraChiTiet(hoanTat);
         return kiemTraDAO.luu(phien(), baoCao, hoanTat);
     }
 

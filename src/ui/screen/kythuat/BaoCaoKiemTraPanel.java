@@ -7,6 +7,7 @@ import dao.PhieuSuaChuaDAO;
 import entity.PhieuTiepNhan.BaoCaoKiemTra;
 import entity.PhieuTiepNhan.TrangThaiKiemTra;
 import entity.TaiKhoan;
+import entity.ChiTietKiemTra;
 import entity.PhieuTiepNhan;
 
 import java.awt.BorderLayout;
@@ -55,12 +56,12 @@ public final class BaoCaoKiemTraPanel extends TrangKyThuatPanel {
         super(khongGian);
     }
 
-    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+    // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
     public BaoCaoKiemTraPanel(JFrame winChu, TaiKhoan taiKhoan) {
         this(winChu, taiKhoan, new BaoCaoKiemTraDAO());
     }
 
-    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+    // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
     public BaoCaoKiemTraPanel(JFrame winChu, TaiKhoan taiKhoan, BaoCaoKiemTraDAO nguonChung) {
         this(new KhongGianKyThuatPanel(winChu, taiKhoan, new ActionListener() {
             // Constructor xem riêng báo cáo không điều hướng đăng xuất.
@@ -208,34 +209,184 @@ public final class BaoCaoKiemTraPanel extends TrangKyThuatPanel {
         themThanhPhan(pnlCot, taoThongBao("Thông tin gốc từ tiếp nhận: "
                 + khongGian.phieu.getYeuCau() + " · " + khongGian.phieu.getTinhTrang(), false));
         khongGian.modelNhap = new DefaultTableModel(
-                new String[] {"Khu vực", "Kết quả kiểm tra", "Kết luận / đề xuất"}, 0) {
+                new String[] {"Khu vực", "Hạng mục", "Kết quả kiểm tra", "Mức độ", "Đề xuất"}, 0) {
             private static final long serialVersionUID = 1L;
 
-            // Chỉ cho chỉnh sửa kết quả và đề xuất của khu vực.
+            // Cho nhập tên khu vực, kết quả và đề xuất của từng dòng.
             @Override
             public boolean isCellEditable(int dong, int cot) {
-                return cot > 0;
+                return true;
             }
         };
         String[] noiDung = khongGian.baoCao == null
                 ? new String[] {"", "", "", "", "", "", ""} : khongGian.baoCao.getNoiDung();
-        String[] deXuat = khongGian.baoCao == null
-                ? new String[] {"", "", ""} : khongGian.baoCao.getDeXuatTheoVung();
-        String[] khuVuc = {"Phanh", "Khoang máy / dầu", "Điện – điều hòa"};
-        for (int viTri = 0; viTri < 3; viTri++) {
-            khongGian.modelNhap.addRow(new Object[] {khuVuc[viTri], noiDung[viTri + 3], deXuat[viTri]});
+        if (khongGian.baoCao != null) {
+            for (ChiTietKiemTra dong : khongGian.baoCao.getChiTiet()) {
+                khongGian.modelNhap.addRow(new Object[] {dong.getTenKhuVuc(), dong.getTenHangMuc(),
+                        dong.getKetQua(), dong.getMucDo(), dong.getDeXuat()});
+            }
+        }
+        if (khongGian.modelNhap.getRowCount() == 0) {
+            khongGian.modelNhap.addRow(new Object[] {"", "", "", "Chưa đánh giá", ""});
         }
         khongGian.tblNhap = taoBang(khongGian.modelNhap);
+        dinhDangBangNhap();
+        JComboBox<String> cmbMucDo = new JComboBox<>(new String[] {
+                "Chưa đánh giá", "Đang kiểm tra", "Bình thường", "Cần theo dõi", "Cần xử lý"});
+        cmbMucDo.setEditable(true);
+        dinhDangCombo(cmbMucDo);
+        khongGian.tblNhap.getColumnModel().getColumn(3).setCellEditor(new javax.swing.DefaultCellEditor(cmbMucDo));
+        JPanel pnlNutDong = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        pnlNutDong.setOpaque(false);
+        pnlNutDong.add(taoNut("Thêm hạng mục", "", false, new ActionListener() {
+            // Thêm một dòng mới sau khi kết thúc chỉnh sửa ô hiện tại.
+            @Override
+            public void actionPerformed(ActionEvent suKien) {
+                themDongKiemTra();
+            }
+        }));
+        pnlNutDong.add(taoNut("Xóa dòng đã chọn", "", false, new ActionListener() {
+            // Xóa dòng đang chọn khỏi bản nháp trên biểu mẫu.
+            @Override
+            public void actionPerformed(ActionEvent suKien) {
+                xoaDongKiemTra();
+            }
+        }));
+        themThanhPhan(pnlCot, pnlNutDong);
+        themThanhPhan(pnlCot, taoThongBao(
+                "Bấm vào ô có viền để nhập. Mức độ có danh sách chọn; đề xuất có thể để trống nếu không cần sửa.",
+                false));
         themThanhPhan(pnlCot, bocBang(khongGian.tblNhap));
         khongGian.txtLoi = khongGian.taoONhap(noiDung[1]);
         khongGian.txtDeXuat = khongGian.taoONhap(noiDung[2]);
-        themThanhPhan(pnlCot, taoHang(taoTruong("Lỗi phát hiện *", khongGian.txtLoi),
-                taoTruong("Hạng mục đề xuất *", khongGian.txtDeXuat)));
+        themThanhPhan(pnlCot, taoHang(taoTruong("Kết luận sơ bộ *", khongGian.txtLoi),
+                taoTruong("Đề xuất chung (nếu có)", khongGian.txtDeXuat)));
         pnlCot.add(taoHangNut(taoNut("Đối chiếu & lưu báo cáo", "DOI_CHIEU", true, khongGian)));
         themThanhPhan(pnlTrang, taoThe(
                 "Lập báo cáo kiểm tra " + (khongGian.baoCao == null ? "mới" : khongGian.baoCao.getMaBaoCao()),
                 "Tự lấy thông tin tiếp nhận, chỉ nhập kết quả chẩn đoán và hạng mục đề xuất.", pnlCot));
         hienTrang(pnlTrang);
+    }
+
+    // Làm rõ các ô nhập bằng viền, gợi ý và thao tác chỉnh sửa một lần bấm.
+    private void dinhDangBangNhap() {
+        javax.swing.DefaultCellEditor boSua = (javax.swing.DefaultCellEditor)
+                khongGian.tblNhap.getDefaultEditor(Object.class);
+        boSua.setClickCountToStart(1);
+        JTextField txtSua = (JTextField) boSua.getComponent();
+        txtSua.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5),
+                BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x2264A6)),
+                        BorderFactory.createEmptyBorder(0, 9, 0, 9))));
+        khongGian.tblNhap.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+        khongGian.tblNhap.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+            private static final long serialVersionUID = 1L;
+            private final String[] goiY = {"Nhập khu vực...", "Nhập tên hạng mục...", "Nhập kết quả kiểm tra...",
+                    "Chọn mức độ", "Đề xuất (nếu có)..."};
+
+            private final javax.swing.Icon muiTen = new javax.swing.Icon() {
+                // Vẽ mũi tên bằng hình học để không phụ thuộc ký tự của font.
+                @Override
+                public void paintIcon(java.awt.Component thanhPhan, java.awt.Graphics ve, int x, int y) {
+                    ve.setColor(new Color(0x647489));
+                    ve.fillPolygon(new int[] {x, x + 8, x + 4}, new int[] {y, y, y + 5}, 3);
+                }
+
+                // Trả chiều rộng biểu tượng mũi tên.
+                @Override
+                public int getIconWidth() {
+                    return 8;
+                }
+
+                // Trả chiều cao biểu tượng mũi tên.
+                @Override
+                public int getIconHeight() {
+                    return 5;
+                }
+            };
+
+            // Vẽ gợi ý khi ô trống mà không đưa chữ gợi ý vào dữ liệu lưu.
+            @Override
+            public java.awt.Component getTableCellRendererComponent(JTable bang, Object giaTri, boolean chon,
+                    boolean tieuDiem, int dong, int cot) {
+                super.getTableCellRendererComponent(bang, giaTri, chon, tieuDiem, dong, cot);
+                boolean trong = giaTri == null || giaTri.toString().isBlank();
+                setText(trong ? goiY[cot] : giaTri.toString());
+                setIcon(cot == 3 ? muiTen : null);
+                setHorizontalTextPosition(javax.swing.SwingConstants.LEADING);
+                setIconTextGap(8);
+                setFont(CHU_THUONG);
+                setForeground(trong ? new Color(0x647489) : new Color(0x202D3D));
+                setBackground(chon ? new Color(0xEEF4FA) : Color.WHITE);
+                setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5),
+                        BorderFactory.createCompoundBorder(
+                                BorderFactory.createLineBorder(tieuDiem ? new Color(0x2264A6) : new Color(0xCBD5E1)),
+                                BorderFactory.createEmptyBorder(0, 9, 0, 9))));
+                setToolTipText(cot == 3 ? "Bấm để chọn mức độ" : "Bấm để nhập: " + bang.getColumnName(cot));
+                return this;
+            }
+        });
+        khongGian.modelNhap.addTableModelListener(new javax.swing.event.TableModelListener() {
+            // Tính lại cả thẻ bên ngoài để bảng thêm dòng không bị giữ chiều cao một dòng.
+            @Override
+            public void tableChanged(javax.swing.event.TableModelEvent suKien) {
+                javax.swing.SwingUtilities.invokeLater(new Runnable() {
+                    // Đợi JTable nhận dữ liệu mới rồi cập nhật bố cục các vùng chứa.
+                    @Override
+                    public void run() {
+                        capNhatBoCucBangNhap();
+                    }
+                });
+            }
+        });
+    }
+
+    // Làm mới kích thước các vùng chứa để nhìn thấy đủ dòng mới thêm.
+    private void capNhatBoCucBangNhap() {
+        java.awt.Container cha = khongGian.tblNhap.getParent();
+        while (cha != null) {
+            cha.invalidate();
+            if (cha instanceof javax.swing.JComponent) ((javax.swing.JComponent) cha).revalidate();
+            cha = cha.getParent();
+        }
+        khongGian.tblNhap.repaint();
+    }
+
+    // Thêm hạng mục chưa đánh giá; không tạo dữ liệu SQL cho tới khi lưu báo cáo.
+    private void themDongKiemTra() {
+        if (khongGian.tblNhap.isEditing() && !khongGian.tblNhap.getCellEditor().stopCellEditing()) {
+            return;
+        }
+        khongGian.modelNhap.addRow(new Object[] {"", "", "", "Chưa đánh giá", ""});
+        int dong = khongGian.modelNhap.getRowCount() - 1;
+        khongGian.tblNhap.setRowSelectionInterval(dong, dong);
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            // Chuyển con trỏ vào ô đầu của dòng mới sau khi bố cục cập nhật.
+            @Override
+            public void run() {
+                capNhatBoCucBangNhap();
+                khongGian.tblNhap.scrollRectToVisible(khongGian.tblNhap.getCellRect(dong, 0, true));
+                if (khongGian.tblNhap.editCellAt(dong, 0)) {
+                    khongGian.tblNhap.getEditorComponent().requestFocusInWindow();
+                }
+            }
+        });
+    }
+
+    // Xóa dòng được chọn; dữ liệu đã lưu chỉ thay đổi sau khi người dùng lưu lại.
+    private void xoaDongKiemTra() {
+        if (khongGian.tblNhap.isEditing() && !khongGian.tblNhap.getCellEditor().stopCellEditing()) {
+            return;
+        }
+        int dong = khongGian.tblNhap.getSelectedRow();
+        if (dong >= 0) {
+            khongGian.modelNhap.removeRow(khongGian.tblNhap.convertRowIndexToModel(dong));
+        }
+    }
+
+    // Đọc ô bảng và chuyển ô trống thành chuỗi rỗng, không ghi chữ null vào SQL.
+    private String docO(int dong, int cot) {
+        Object giaTri = khongGian.modelNhap.getValueAt(dong, cot);
+        return giaTri == null ? "" : giaTri.toString().trim();
     }
 
     // Lưu bản nháp từ biểu mẫu rồi chuyển sang trang đối chiếu.
@@ -245,15 +396,22 @@ public final class BaoCaoKiemTraPanel extends TrangKyThuatPanel {
         }
         String[] noiDung = {khongGian.txtLoi.getText(), khongGian.txtLoi.getText(),
                 khongGian.txtDeXuat.getText(), "", "", "", ""};
-        String[] deXuat = new String[3];
-        for (int viTri = 0; viTri < 3; viTri++) {
-            noiDung[viTri + 3] = String.valueOf(khongGian.modelNhap.getValueAt(viTri, 1)).trim();
-            deXuat[viTri] = String.valueOf(khongGian.modelNhap.getValueAt(viTri, 2)).trim();
+        List<ChiTietKiemTra> chiTiet = new ArrayList<>();
+        for (int viTri = 0; viTri < khongGian.modelNhap.getRowCount(); viTri++) {
+            String ten = docO(viTri, 0);
+            String hangMuc = docO(viTri, 1);
+            String ketQua = docO(viTri, 2);
+            String mucDo = docO(viTri, 3);
+            String deXuat = docO(viTri, 4);
+            if (!ten.isBlank() || !hangMuc.isBlank() || !ketQua.isBlank() || !deXuat.isBlank()) {
+                chiTiet.add(new ChiTietKiemTra(ten, hangMuc, ketQua, mucDo, deXuat));
+            }
         }
         BaoCaoKiemTra nhap = new BaoCaoKiemTra(
                 khongGian.baoCao == null ? "" : khongGian.baoCao.getMaBaoCao(), khongGian.phieu,
-                khongGian.baoCao == null ? LocalDate.now() : khongGian.baoCao.getNgayKiemTra(),
-                "Tổng hợp", noiDung, TrangThaiKiemTra.NHAP, null, deXuat);
+                khongGian.baoCao == null ? LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                        : khongGian.baoCao.getNgayKiemTra(),
+                "Tổng hợp", noiDung, TrangThaiKiemTra.NHAP, null, chiTiet);
         khongGian.baoCao = khongGian.dao.luuBaoCao(nhap, false);
         khongGian.batDauTrang("KIEM_TRA");
         hienDoiChieu();
@@ -268,13 +426,16 @@ public final class BaoCaoKiemTraPanel extends TrangKyThuatPanel {
         themThanhPhan(pnlTrai, taoHang(taoGiaTri("Phiếu tiếp nhận", khongGian.phieu.getMaPhieu()),
                 taoGiaTri("Biển số", khongGian.phieu.getBienSo()),
                 taoGiaTri("Người kiểm tra", khongGian.taiKhoan.getTenDangNhap())));
-        DefaultTableModel model = taoModel("Khu vực", "Kết quả kiểm tra", "Đề xuất");
-        String[] ten = {"Hệ thống phanh", "Khoang máy / dầu", "Điện / điều hòa"};
-        for (int viTri = 0; viTri < 3; viTri++) {
-            model.addRow(new Object[] {ten[viTri], khongGian.baoCao.getNoiDung()[viTri + 3],
-                    khongGian.baoCao.getDeXuatTheoVung()[viTri]});
+        DefaultTableModel model = taoModel("Khu vực", "Hạng mục", "Kết quả", "Mức độ", "Đề xuất",
+                "Người ghi", "Thời điểm ghi");
+        for (ChiTietKiemTra dong : khongGian.baoCao.getChiTiet()) {
+            model.addRow(new Object[] {dong.getTenKhuVuc(), dong.getTenHangMuc(), dong.getKetQua(),
+                    dong.getMucDo(), dong.getDeXuat(), dong.getNguoiGhi(),
+                    dong.getThoiDiemGhi() == null ? "" : dong.getThoiDiemGhi().format(
+                            java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))});
         }
-        themThanhPhan(pnlTrai, bocBang(taoBang(model)));
+        themThanhPhan(pnlTrang, taoThe("Các hạng mục đã kiểm tra", "Kết quả, đề xuất và người ghi từng dòng.",
+                bocBang(taoBang(model))));
         pnlTrai.add(taoThongBao(
                 "Đề xuất là cơ sở để tiếp nhận lập báo giá; chưa cho phép sửa khi khách chưa duyệt.", true));
         JPanel pnlPhai = taoCot();
@@ -325,7 +486,7 @@ public final class BaoCaoKiemTraPanel extends TrangKyThuatPanel {
         khongGian.baoCao = khongGian.dao.luuBaoCao(new BaoCaoKiemTra(
                 khongGian.baoCao.getMaBaoCao(), khongGian.phieu, khongGian.baoCao.getNgayKiemTra(),
                 khongGian.baoCao.getBoPhan(), noiDung, TrangThaiKiemTra.NHAP,
-                null, khongGian.baoCao.getDeXuatTheoVung()), true);
+                null, khongGian.baoCao.getChiTiet()), true);
         khongGian.batDauTrang("KIEM_TRA");
         hienDoiChieu();
     }
