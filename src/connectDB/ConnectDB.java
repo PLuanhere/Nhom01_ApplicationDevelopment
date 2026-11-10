@@ -15,6 +15,8 @@ public final class ConnectDB {
     private static final String URL_MAC_DINH =
             "jdbc:sqlserver://localhost:1433;databaseName=QuanLiGarage;"
                     + "encrypt=true;trustServerCertificate=true;";
+    private static final String USER_MAC_DINH = "sa";
+    private static final String PASSWORD_MAC_DINH = "123456";
 
     private static final ConnectDB INSTANCE = new ConnectDB();
 
@@ -38,13 +40,8 @@ public final class ConnectDB {
         }
 
         String url = docBienMoiTruong(TEN_BIEN_URL, URL_MAC_DINH);
-        String user = docBienMoiTruong(TEN_BIEN_USER, "");
-        String password = docBienMoiTruong(TEN_BIEN_PASSWORD, "");
-
-        if (user.isEmpty() || password.isEmpty()) {
-            throw new SQLException(
-                    "Thiếu GARAGE_DB_USER hoặc GARAGE_DB_PASSWORD trong biến môi trường.");
-        }
+        String user = docBienMoiTruong(TEN_BIEN_USER, USER_MAC_DINH);
+        String password = docBienMoiTruong(TEN_BIEN_PASSWORD, PASSWORD_MAC_DINH);
 
         ketNoi = DriverManager.getConnection(url, user, password);
         ketNoiTheoLuong.set(ketNoi);
