@@ -3,6 +3,7 @@ package ui;
 import dao.DuLieuGarageDAO;
 import dao.TaiKhoanDAO;
 import entity.TaiKhoan;
+import session.SessionManager;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -352,10 +353,12 @@ public final class LoginFrame extends JFrame {
         txtMatKhau.setText("");
         chkHienMatKhau.setSelected(false);
         txtMatKhau.setEchoChar('•');
+        SessionManager.batDauPhien(taiKhoan);
         MainFrame winChinh = new MainFrame(taiKhoan, new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
             @Override
             public void actionPerformed(ActionEvent event) {
+                SessionManager.ketThucPhien();
                 new LoginFrame(duLieuChung).setVisible(true);
             }
         }, duLieuChung);

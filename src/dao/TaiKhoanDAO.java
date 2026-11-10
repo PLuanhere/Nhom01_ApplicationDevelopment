@@ -13,24 +13,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
+import utils.PasswordHashUtil;
+import utils.PasswordHashUtil.ThongTinBam;
 
 /** Đọc và cập nhật tài khoản nhân viên trong SQL Server. */
 public final class TaiKhoanDAO {
-    private static final String THUAT_TOAN = "PBKDF2-HMAC-SHA256";
-    private static final int SO_VONG = 600_000;
-    private static final int DO_DAI_HASH_BIT = 256;
-    private static final SecureRandom NGAU_NHIEN = new SecureRandom();
 
     /** Đăng nhập bằng mã nhân viên và mật khẩu được cấp. */
     public TaiKhoan dangNhap(String maNhanVien, char[] matKhau) {
@@ -181,7 +172,7 @@ public final class TaiKhoanDAO {
         Connection ketNoi = ketNoi();
         try {
             ketNoi.setAutoCommit(false);
-            ThongTinBam baoMat = bamMatKhau(matKhau);
+            ThongTinBam baoMat = PasswordHashUtil.bamMatKhau(matKhau);
             String sql = "INSERT dbo.TaiKhoan "
                     + "(MaNhanVien,MatKhau,VaiTro,HoatDong,NgayTao,BuocDoiMatKhau) "
                     + "VALUES (?,?,?,?,SYSDATETIME(),1)";
@@ -197,10 +188,10 @@ public final class TaiKhoanDAO {
                     "INSERT dbo.TaiKhoanThongTinBaoMat(MaNhanVien,ThuatToan,Muoi,GiaTriBam,SoVong) "
                             + "VALUES(?,?,?,?,?)")) {
                 lenh.setString(1, thongTin.getMaNhanVien());
-                lenh.setString(2, THUAT_TOAN);
-                lenh.setBytes(3, baoMat.muoi);
-                lenh.setBytes(4, baoMat.hash);
-                lenh.setInt(5, SO_VONG);
+                lenh.setString(2, PasswordHashUtil.THUAT_TOAN);
+                lenh.setBytes(3, baoMat.getMuoi());
+                lenh.setBytes(4, baoMat.getHash());
+                lenh.setInt(5, PasswordHashUtil.SO_VONG_MAC_DINH);
                 lenh.executeUpdate();
             }
             TaiKhoan moi = timTaiKhoan(thongTin.getMaNhanVien(), ketNoi);
@@ -284,14 +275,14 @@ public final class TaiKhoanDAO {
         Connection ketNoi = ketNoi();
         try {
             ketNoi.setAutoCommit(false);
-            ThongTinBam baoMat = bamMatKhau(matKhau);
+            ThongTinBam baoMat = PasswordHashUtil.bamMatKhau(matKhau);
             try (PreparedStatement lenh = ketNoi.prepareStatement(
                     "EXEC dbo.usp_DatMatKhauBam ?,?,?,?,?")) {
                 lenh.setString(1, banDau.getMaNhanVien());
                 lenh.setString(2, nguoiDung.getMaNhanVien());
-                lenh.setBytes(3, baoMat.muoi);
-                lenh.setBytes(4, baoMat.hash);
-                lenh.setInt(5, SO_VONG);
+                lenh.setBytes(3, baoMat.getMuoi());
+                lenh.setBytes(4, baoMat.getHash());
+                lenh.setInt(5, PasswordHashUtil.SO_VONG_MAC_DINH);
                 lenh.execute();
             }
             ghiNhatKy(ketNoi, nguoiDung, banDau, "Ghi nhận lý do đặt lại mật khẩu", lyDoHopLe);
@@ -315,7 +306,7 @@ public final class TaiKhoanDAO {
 
         try {
             ketNoi.setAutoCommit(false);
-            ThongTinBam baoMat = bamMatKhau(matKhauMoi);
+            ThongTinBam baoMat = PasswordHashUtil.bamMatKhau(matKhauMoi);
 
             try (PreparedStatement lenh = ketNoi.prepareStatement(
                     "UPDATE dbo.TaiKhoan SET MatKhau=?,BuocDoiMatKhau=0,PhienBan=PhienBan+1 "
@@ -332,10 +323,10 @@ public final class TaiKhoanDAO {
             try (PreparedStatement lenh = ketNoi.prepareStatement(
                     "UPDATE dbo.TaiKhoanThongTinBaoMat SET ThuatToan=?,Muoi=?,GiaTriBam=?,"
                             + "SoVong=?,NgayCapNhat=SYSDATETIME() WHERE MaNhanVien=?")) {
-                lenh.setString(1, THUAT_TOAN);
-                lenh.setBytes(2, baoMat.muoi);
-                lenh.setBytes(3, baoMat.hash);
-                lenh.setInt(4, SO_VONG);
+                lenh.setString(1, PasswordHashUtil.THUAT_TOAN);
+                lenh.setBytes(2, baoMat.getMuoi());
+                lenh.setBytes(3, baoMat.getHash());
+                lenh.setInt(4, PasswordHashUtil.SO_VONG_MAC_DINH);
                 lenh.setString(5, taiKhoan.getMaNhanVien());
 
                 if (lenh.executeUpdate() != 1) {
@@ -472,51 +463,9 @@ public final class TaiKhoanDAO {
         if (hashDaLuu != null && muoi != null) {
             String thuatToan = ketQua.getString("ThuatToan");
             int soVong = ketQua.getInt("SoVong");
-            if (!THUAT_TOAN.equals(thuatToan) || soVong < SO_VONG || hashDaLuu.length != 32) {
-                throw new SecurityException("Thông tin bảo mật tài khoản không hợp lệ; cần Quản lý đặt lại mật khẩu.");
-            }
-            byte[] hashNhap = taoHash(matKhau, muoi, soVong);
-            try {
-                return MessageDigest.isEqual(hashDaLuu, hashNhap);
-            } finally {
-                Arrays.fill(hashNhap, (byte) 0);
-            }
+            return PasswordHashUtil.xacThucMatKhau(matKhau, muoi, hashDaLuu, soVong, thuatToan);
         }
-        byte[] nhap = new String(matKhau).getBytes(StandardCharsets.UTF_8);
-        byte[] cu = ketQua.getString("MatKhau").getBytes(StandardCharsets.UTF_8);
-        try {
-            return MessageDigest.isEqual(cu, nhap);
-        } finally {
-            Arrays.fill(nhap, (byte) 0);
-            Arrays.fill(cu, (byte) 0);
-        }
-    }
-
-    private static ThongTinBam bamMatKhau(char[] matKhau) {
-        byte[] muoi = new byte[16];
-        NGAU_NHIEN.nextBytes(muoi);
-        return new ThongTinBam(muoi, taoHash(matKhau, muoi, SO_VONG));
-    }
-
-    private static byte[] taoHash(char[] matKhau, byte[] muoi, int soVong) {
-        PBEKeySpec dacTa = new PBEKeySpec(matKhau, muoi, soVong, DO_DAI_HASH_BIT);
-        try {
-            return SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(dacTa).getEncoded();
-        } catch (GeneralSecurityException ex) {
-            throw new IllegalStateException("Máy chạy không hỗ trợ PBKDF2-HMAC-SHA256.", ex);
-        } finally {
-            dacTa.clearPassword();
-        }
-    }
-
-    private static final class ThongTinBam {
-        private final byte[] muoi;
-        private final byte[] hash;
-
-        private ThongTinBam(byte[] muoi, byte[] hash) {
-            this.muoi = muoi;
-            this.hash = hash;
-        }
+        return PasswordHashUtil.xacThucPlainTextLegacy(matKhau, ketQua.getString("MatKhau"));
     }
 
     /** Kiểm tra lý do thay đổi. */

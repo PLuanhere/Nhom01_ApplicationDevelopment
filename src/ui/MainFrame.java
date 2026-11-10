@@ -16,6 +16,7 @@ import dao.HoaDonDAO.PhieuChoThu;
 import entity.HoaDon.HinhThucThanhToan;
 import entity.TaiKhoan;
 import entity.TaiKhoan.VaiTro;
+import session.SessionManager;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -148,6 +149,9 @@ public final class MainFrame extends JFrame implements ActionListener {
 
         taiKhoanDangNhap = taiKhoan;
         taiKhoanDangNhap.kiemTraPhien();
+        if (!SessionManager.isDangDangNhap()) {
+            SessionManager.batDauPhien(taiKhoan);
+        }
 
         if (khiDangXuat == null) {
             throw new NullPointerException("Cần thao tác quay lại trang đăng nhập.");
@@ -304,6 +308,7 @@ public final class MainFrame extends JFrame implements ActionListener {
         if (taiKhoanDangNhap != null && choPhepRoiNhanVien() && choPhepRoiTaiKhoan()
                 && choPhepRoiDichVu() && choPhepRoiKho() && choPhepRoiTiepNhan()
                 && choPhepRoiKyThuat()) {
+            SessionManager.ketThucPhien();
             taiKhoanDAO.dangXuat(taiKhoanDangNhap);
             taiKhoanDangNhap = null;
             dispose();
