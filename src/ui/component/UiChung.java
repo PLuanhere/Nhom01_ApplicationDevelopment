@@ -156,7 +156,7 @@ public final class UiChung {
 
     /** Tạo vùng cuộn dọc, giữ nội dung bám chiều rộng cửa sổ. */
     public static JScrollPane taoVungCuon(JPanel noiDung) {
-        JPanel pnlBoc = new NoiDungCuon();
+        JPanel pnlBoc = new ScrollablePanel();
         pnlBoc.add(noiDung, BorderLayout.NORTH);
         JScrollPane scr = new JScrollPane(pnlBoc);
         scr.setBorder(BorderFactory.createEmptyBorder());
@@ -164,46 +164,6 @@ public final class UiChung {
         scr.getViewport().setBackground(UiTheme.APP_BACKGROUND);
         scr.getVerticalScrollBar().setUnitIncrement(24);
         return scr;
-    }
-
-    private static final class NoiDungCuon extends JPanel implements Scrollable {
-        private static final long serialVersionUID = 1L;
-
-        /** Tạo panel nội dung bám chiều rộng vùng cuộn. */
-        private NoiDungCuon() {
-            super(new BorderLayout());
-            setOpaque(false);
-        }
-
-        /** Lấy kích thước ban đầu của nội dung trong vùng cuộn. */
-        @Override
-        public Dimension getPreferredScrollableViewportSize() {
-            return getPreferredSize();
-        }
-
-        /** Xác định số pixel dịch chuyển cho một bước cuộn. */
-        @Override
-        public int getScrollableUnitIncrement(Rectangle r, int huong, int chieu) {
-            return 24;
-        }
-
-        /** Xác định khoảng dịch chuyển khi cuộn theo trang. */
-        @Override
-        public int getScrollableBlockIncrement(Rectangle r, int huong, int chieu) {
-            return r.height - 24;
-        }
-
-        /** Cho nội dung bám theo chiều rộng của vùng cuộn. */
-        @Override
-        public boolean getScrollableTracksViewportWidth() {
-            return true;
-        }
-
-        /** Giữ chiều cao nội dung để có thể cuộn đến hết biểu mẫu. */
-        @Override
-        public boolean getScrollableTracksViewportHeight() {
-            return false;
-        }
     }
 
     /** Định dạng số để hiển thị với dấu phân cách theo cách viết Việt Nam. */

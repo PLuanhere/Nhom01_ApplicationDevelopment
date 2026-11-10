@@ -35,11 +35,11 @@ import javax.swing.SwingConstants;
 import javax.swing.Timer;
 
 import ui.component.AppHeaderPanel;
-import ui.component.KyThuatNavigationPanel;
-import ui.component.QuanLyNavigationPanel;
+import ui.screen.kythuat.KyThuatNavigationPanel;
+import ui.screen.quanly.QuanLyNavigationPanel;
 import ui.component.SidebarPanel;
-import ui.component.ThuNganNavigationPanel;
-import ui.component.TiepNhanNavigationPanel;
+import ui.screen.thungan.ThuNganNavigationPanel;
+import ui.screen.tiepnhan.TiepNhanNavigationPanel;
 import ui.component.UiTheme;
 import ui.component.WindowMouseHandler;
 import ui.screen.kythuat.BaoCaoKiemTraPanel;
@@ -849,7 +849,9 @@ public final class MainFrame extends JFrame implements ActionListener {
     /** Mở màn Thu ngân theo mục sidebar được chọn; tái dùng panel như các vai trò khác. */
     private void dieuHuongThuNgan(String muc) {
         getTaiKhoanDangNhap().kiemTraQuyenThuNgan();
-        pnlDieuHuongThuNgan.chonMuc(muc);
+        if (!"Đối chiếu chi phí".equals(muc)) {
+            pnlDieuHuongThuNgan.chonMuc(muc);
+        }
 
         if ("Trung tâm thanh toán".equals(muc)) {
             if (pnlTrungTamThanhToan == null) {

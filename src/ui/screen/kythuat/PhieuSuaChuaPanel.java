@@ -20,7 +20,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
-import static ui.component.GiaoDienKyThuat.*;
+import static ui.screen.kythuat.GiaoDienKyThuat.*;
 
 // Hiển thị danh sách công việc được phân công cho kỹ thuật viên.
 public final class PhieuSuaChuaPanel extends TrangKyThuatPanel {

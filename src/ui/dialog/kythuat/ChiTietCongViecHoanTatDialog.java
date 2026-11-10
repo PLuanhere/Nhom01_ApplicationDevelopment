@@ -24,7 +24,7 @@ import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
-import ui.component.KyThuatUi;
+import ui.screen.kythuat.KyThuatUi;
 import ui.component.UiTheme;
 
 // Hiển thị chi tiết công việc hoàn tất theo ngày; không truy vấn hoặc cập nhật dữ liệu.

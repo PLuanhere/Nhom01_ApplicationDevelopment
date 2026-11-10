@@ -1,4 +1,4 @@
-package ui.component;
+package ui.screen.quanly;
 
 import java.awt.Color;
 import java.awt.Cursor;
@@ -14,6 +14,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 import javax.swing.JPanel;
+
+import ui.component.UiChung;
+import ui.component.UiTheme;
 
 /** Biểu đồ bảy ngày, rê chuột xem tiền và bấm cột để mở chi tiết ngày đó. */
 public final class BieuDoDoanhThuPanel extends JPanel implements MouseListener, MouseMotionListener {

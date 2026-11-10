@@ -29,7 +29,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
-import static ui.component.GiaoDienKyThuat.*;
+import static ui.screen.kythuat.GiaoDienKyThuat.*;
 
 // Hiển thị danh sách, lập báo cáo và đối chiếu kết quả kiểm tra.
 public final class BaoCaoKiemTraPanel extends TrangKyThuatPanel {

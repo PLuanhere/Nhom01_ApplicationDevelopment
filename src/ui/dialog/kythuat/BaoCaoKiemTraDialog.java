@@ -8,7 +8,7 @@ import entity.ChiTietKiemTra;
 import java.util.ArrayList;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
-import ui.component.GiaoDienKyThuat;
+import ui.screen.kythuat.GiaoDienKyThuat;
 import entity.PhieuTiepNhan;
 
 import java.awt.BorderLayout;
@@ -38,7 +38,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-import ui.component.KiemTraUi;
+import ui.screen.kythuat.KiemTraUi;
 import ui.component.UiTheme;
 
 // Biểu mẫu thêm, sửa và xem báo cáo; lưu qua DAO và giữ nội dung khi lưu thất bại.

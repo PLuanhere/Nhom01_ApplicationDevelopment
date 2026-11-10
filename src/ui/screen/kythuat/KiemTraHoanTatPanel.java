@@ -11,9 +11,8 @@ import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 
-import ui.component.PhuTungUi;
 
-import static ui.component.GiaoDienKyThuat.*;
+import static ui.screen.kythuat.GiaoDienKyThuat.*;
 
 // Hiển thị kiểm tra cuối và xử lý hoàn tất lệnh sửa chữa.
 public final class KiemTraHoanTatPanel extends TrangKyThuatPanel {

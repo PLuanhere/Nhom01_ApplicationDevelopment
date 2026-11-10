@@ -7,7 +7,7 @@ import java.awt.event.*;
 import java.util.UUID;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import ui.component.GiaoDienKyThuat;
+import ui.screen.kythuat.GiaoDienKyThuat;
 
 // Hiển thị lần xuất gốc, chứng từ hoàn và biểu mẫu xác nhận phụ tùng thực tế đã trả kho.
 public final class HoanPhuTungDialog extends JDialog implements ActionListener {

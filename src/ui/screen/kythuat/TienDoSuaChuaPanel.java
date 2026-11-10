@@ -13,7 +13,7 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
-import static ui.component.GiaoDienKyThuat.*;
+import static ui.screen.kythuat.GiaoDienKyThuat.*;
 
 // Hiển thị tiến độ và kết quả thực hiện của từng hạng mục.
 public final class TienDoSuaChuaPanel extends TrangKyThuatPanel {

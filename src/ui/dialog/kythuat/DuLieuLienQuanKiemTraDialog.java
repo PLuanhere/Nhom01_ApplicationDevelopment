@@ -17,7 +17,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 
-import ui.component.KiemTraUi;
+import ui.screen.kythuat.KiemTraUi;
 import ui.component.UiTheme;
 
 // Chi tiết trả yêu cầu xóa để màn hình kiểm tra quyền và trạng thái.

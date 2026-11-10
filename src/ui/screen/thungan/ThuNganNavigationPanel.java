@@ -1,4 +1,4 @@
-package ui.component;
+package ui.screen.thungan;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -16,10 +16,11 @@ import javax.swing.ButtonGroup;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 
+import ui.component.UiTheme;
+
 /**
  * Điều hướng vai trò Thu ngân theo thiết kế Page 3.
- * Các mục: Trang chủ, Trung tâm thanh toán, Phiếu chờ thu,
- * Đối chiếu chi phí, Hoá đơn đã thanh toán.
+ * Các mục: Trung tâm thanh toán, Phiếu chờ thu, Hoá đơn đã thanh toán.
  * Báo mục được chọn để shell/MainFrame mở màn hình tương ứng.
  */
 public final class ThuNganNavigationPanel extends JPanel {

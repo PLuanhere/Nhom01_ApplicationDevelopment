@@ -14,7 +14,7 @@ import javax.swing.table.DefaultTableModel;
 
 import ui.dialog.tiepnhan.PhatSinhSuaChuaDialog;
 
-import static ui.component.GiaoDienKyThuat.*;
+import static ui.screen.kythuat.GiaoDienKyThuat.*;
 
 // Hiển thị lịch sử phát sinh của một lệnh và biểu mẫu gửi đề xuất mới.
 public final class BaoHuHongPhatSinhPanel extends TrangKyThuatPanel {

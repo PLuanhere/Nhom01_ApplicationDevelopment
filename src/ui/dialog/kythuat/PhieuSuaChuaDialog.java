@@ -29,7 +29,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-import ui.component.SuaChuaUi;
+import ui.screen.kythuat.SuaChuaUi;
 import ui.component.UiTheme;
 
 public final class PhieuSuaChuaDialog extends JDialog implements ActionListener {
