@@ -5,16 +5,19 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+
 import static ui.component.GiaoDienKyThuat.*;
 
-// Chia sẻ bố cục và thanh bước giữa các màn hình kỹ thuật.
+// Chia sẻ bố cục nội dung và thanh bước giữa các màn hình kỹ thuật.
 abstract class TrangKyThuatPanel extends JPanel {
+
     private static final long serialVersionUID = 1L;
     protected final KhongGianKyThuatPanel khongGian;
 
@@ -23,40 +26,57 @@ abstract class TrangKyThuatPanel extends JPanel {
         this.khongGian = khongGian;
     }
 
-    // Gắn nội dung màn hình vào không gian kỹ thuật.
+    // Gửi nội dung trang về vùng hiển thị chung của MainFrame.
     protected void hienTrang(JPanel pnlTrang) {
         khongGian.hienTrang(this, pnlTrang);
     }
 
-    // Tạo breadcrumb, tiêu đề, mô tả và nút đầu trang.
-    protected JPanel taoTrang(String tieuDe, String moTa, String nut, String lenh) {
+    // Tạo breadcrumb, tiêu đề, mô tả và nút thao tác đầu trang.
+    protected JPanel taoTrang(
+            String tieuDe, String moTa, String nut, String lenh) {
+
         JPanel pnlCot = taoCot();
-        pnlCot.setBorder(BorderFactory.createEmptyBorder(23, 26, 24, 26));
-        JLabel lblBreadcrumb = taoNhan("Kỹ thuật viên / "
-                + ("TONG_QUAN".equals(khongGian.trang) ? "Hệ thống / " : "Nghiệp vụ / ") + tieuDe, false);
+        pnlCot.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+
+        JLabel lblBreadcrumb = taoNhan(
+                "Kỹ thuật viên / "
+                        + ("TONG_QUAN".equals(khongGian.trang)
+                                ? "Hệ thống / " : "Nghiệp vụ / ")
+                        + tieuDe,
+                false);
+
         lblBreadcrumb.setFont(CHU_NHO);
         lblBreadcrumb.setForeground(CHU_PHU);
         lblBreadcrumb.setPreferredSize(new Dimension(0, 18));
         themThanhPhan(pnlCot, lblBreadcrumb);
+
         JPanel pnlDau = new JPanel(new BorderLayout(12, 0));
         pnlDau.setOpaque(false);
+
         JPanel pnlChu = taoCot();
+
         JLabel lblTen = taoNhan(tieuDe, true);
         lblTen.setFont(TIEU_DE);
         lblTen.setPreferredSize(new Dimension(lblTen.getPreferredSize().width, 30));
         pnlChu.add(lblTen);
         pnlChu.add(Box.createVerticalStrut(5));
+
         JLabel lblMoTa = taoNhan(moTa, false);
         lblMoTa.setForeground(CHU_PHU);
         lblMoTa.setPreferredSize(new Dimension(lblMoTa.getPreferredSize().width, 20));
         pnlChu.add(lblMoTa);
+
         pnlDau.add(pnlChu, BorderLayout.CENTER);
+
         if (nut != null) {
             JPanel pnlNutDau = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
             pnlNutDau.setOpaque(false);
-            pnlNutDau.add(taoNut(nut, lenh, "TAO_BAO_CAO".equals(lenh), khongGian));
+            pnlNutDau.add(
+                    taoNut(nut, lenh, "TAO_BAO_CAO".equals(lenh), khongGian));
+
             pnlDau.add(pnlNutDau, BorderLayout.EAST);
         }
+
         themThanhPhan(pnlCot, pnlDau);
         return pnlCot;
     }
@@ -65,9 +85,11 @@ abstract class TrangKyThuatPanel extends JPanel {
     protected JPanel taoHang(JComponent... cacCot) {
         JPanel pnlHang = new JPanel(new GridLayout(1, cacCot.length, 14, 0));
         pnlHang.setOpaque(false);
+
         for (JComponent cot : cacCot) {
             pnlHang.add(cot);
         }
+
         return pnlHang;
     }
 
@@ -75,17 +97,25 @@ abstract class TrangKyThuatPanel extends JPanel {
     protected JPanel taoHaiCot(JComponent trai, JComponent phai) {
         JPanel pnlHaiCot = new JPanel(new java.awt.GridBagLayout());
         pnlHaiCot.setOpaque(false);
+
         JComponent[] cacCot = {trai, phai};
+
         for (int viTri = 0; viTri < cacCot.length; viTri++) {
             java.awt.GridBagConstraints rangBuoc = new java.awt.GridBagConstraints();
+
             rangBuoc.gridx = viTri;
             rangBuoc.weightx = viTri == 0 ? 0.59 : 0.41;
             rangBuoc.fill = java.awt.GridBagConstraints.HORIZONTAL;
             rangBuoc.anchor = java.awt.GridBagConstraints.NORTH;
-            rangBuoc.insets = new java.awt.Insets(0, viTri == 0 ? 0 : 7, 0, viTri == 0 ? 7 : 0);
-            cacCot[viTri].setPreferredSize(new Dimension(0, cacCot[viTri].getPreferredSize().height));
+            rangBuoc.insets = new java.awt.Insets(
+                    0, viTri == 0 ? 0 : 7, 0, viTri == 0 ? 7 : 0);
+
+            cacCot[viTri].setPreferredSize(
+                    new Dimension(0, cacCot[viTri].getPreferredSize().height));
+
             pnlHaiCot.add(cacCot[viTri], rangBuoc);
         }
+
         return pnlHaiCot;
     }
 
@@ -99,41 +129,57 @@ abstract class TrangKyThuatPanel extends JPanel {
         JPanel pnlBuoc = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         pnlBuoc.setOpaque(false);
         pnlBuoc.setBorder(BorderFactory.createEmptyBorder(2, 0, 8, 0));
-        int buocHienTai = "TIEN_DO".equals(khongGian.trang) || "KIEM_TRA".equals(khongGian.trang) ? 1 : 0;
+
+        int buocHienTai = "TIEN_DO".equals(khongGian.trang)
+                || "KIEM_TRA".equals(khongGian.trang) ? 1 : 0;
+
         Color mauChuPhu = new Color(0x7789A3);
         Color mauDuong = new Color(0xDCE5EF);
+
         for (int viTri = 0; viTri < tenBuoc.length; viTri++) {
             final boolean dangChon = viTri == buocHienTai;
+
             JPanel pnlMuc = new JPanel(new BorderLayout(8, 0));
             pnlMuc.setOpaque(false);
-            JLabel lblSo = new JLabel(String.valueOf(viTri + 1), SwingConstants.CENTER) {
+
+            JLabel lblSo = new JLabel(
+                    String.valueOf(viTri + 1), SwingConstants.CENTER) {
+
                 private static final long serialVersionUID = 1L;
 
-                // Vẽ vòng tròn và màu nền cho số thứ tự.
+                // Vẽ vòng tròn và màu nền của số thứ tự.
                 @Override
                 protected void paintComponent(java.awt.Graphics doHoa) {
                     java.awt.Graphics2D ve = (java.awt.Graphics2D) doHoa.create();
-                    ve.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+
+                    ve.setRenderingHint(
+                            java.awt.RenderingHints.KEY_ANTIALIASING,
                             java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
                     ve.setColor(dangChon ? new Color(0xEAF4FF) : NEN);
                     ve.fillOval(1, 1, getWidth() - 3, getHeight() - 3);
                     ve.setColor(dangChon ? new Color(0xA8CCEF) : mauDuong);
                     ve.setStroke(new java.awt.BasicStroke(1.5f));
                     ve.drawOval(1, 1, getWidth() - 3, getHeight() - 3);
                     ve.dispose();
+
                     super.paintComponent(doHoa);
                 }
             };
+
             lblSo.setOpaque(false);
             lblSo.setFont((dangChon ? CHU_DAM : CHU_THUONG).deriveFont(14.0f));
             lblSo.setForeground(dangChon ? XANH : mauChuPhu);
             lblSo.setPreferredSize(new Dimension(28, 28));
+
             JLabel lblTen = taoNhan(tenBuoc[viTri], dangChon);
             lblTen.setFont((dangChon ? CHU_DAM : CHU_THUONG).deriveFont(14.0f));
             lblTen.setForeground(dangChon ? XANH : mauChuPhu);
+
             pnlMuc.add(lblSo, BorderLayout.WEST);
             pnlMuc.add(lblTen, BorderLayout.CENTER);
             pnlBuoc.add(pnlMuc);
+
             if (viTri + 1 < tenBuoc.length) {
                 JPanel pnlDuong = new JPanel() {
                     private static final long serialVersionUID = 1L;
@@ -146,11 +192,13 @@ abstract class TrangKyThuatPanel extends JPanel {
                         doHoa.fillRect(0, getHeight() / 2, getWidth(), 1);
                     }
                 };
+
                 pnlDuong.setOpaque(false);
                 pnlDuong.setPreferredSize(new Dimension(64, 28));
                 pnlBuoc.add(pnlDuong);
             }
         }
+
         return pnlBuoc;
     }
 }
