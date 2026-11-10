@@ -36,7 +36,7 @@ import ui.component.UiTheme;
  * mỗi nhóm trong card xếp bằng {@code GridBagLayout} dồn lên NORTH,
  * đảm bảo mọi thứ giãn full chiều ngang.</p>
  */
-public final class CashPaymentConfirmPanel extends JPanel {
+public final class XacNhanThanhToanTienMatPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
     private static final Color BORDER_CLR = new Color(0xD9E3ED);
@@ -54,7 +54,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
     private final JLabel message;
 
     /** Tạo màn hình xem trước không cần DAO hay tài khoản thực. */
-    public CashPaymentConfirmPanel() {
+    public XacNhanThanhToanTienMatPanel() {
         this(null, null, null, () -> {}, maHoaDon -> {});
     }
 
@@ -67,7 +67,7 @@ public final class CashPaymentConfirmPanel extends JPanel {
      * @param onBack    callback quay về danh sách / màn hình trước
      * @param onConfirm callback sau khi xác nhận thu tiền thành công, nhận mã hóa đơn
      */
-    public CashPaymentConfirmPanel(HoaDonDAO dao, PhieuChoThu phieu,
+    public XacNhanThanhToanTienMatPanel(HoaDonDAO dao, PhieuChoThu phieu,
             TaiKhoan taiKhoan, Runnable onBack, Consumer<String> onConfirm) {
         this.dao      = dao   != null ? dao   : new HoaDonDAO();
         this.phieu    = phieu != null ? phieu : placeholderPhieu();

@@ -56,13 +56,13 @@ import ui.screen.quanly.DichVuPanel;
 import ui.screen.quanly.NhanVienPanel;
 import ui.screen.quanly.PhuTungPanel;
 import ui.screen.quanly.TaiKhoanPanel;
-import ui.screen.thungan.CashPaymentConfirmPanel;
-import ui.screen.thungan.BankTransferPaymentPanel;
+import ui.screen.thungan.XacNhanThanhToanTienMatPanel;
+import ui.screen.thungan.ThanhToanChuyenKhoanPanel;
 import ui.screen.thungan.DoiChieuChiPhiPanel;
-import ui.screen.thungan.PaidInvoicesPanel;
-import ui.screen.thungan.PaidInvoiceDetailPanel;
-import ui.screen.thungan.PaymentCenterPanel;
-import ui.screen.thungan.PendingCollectionPanel;
+import ui.screen.thungan.HoaDonDaThuPanel;
+import ui.screen.thungan.ChiTietHoaDonPanel;
+import ui.screen.thungan.TrungTamThanhToanPanel;
+import ui.screen.thungan.PhieuChoThuPanel;
 import ui.screen.tiepnhan.BanGiaoXePanel;
 import ui.screen.tiepnhan.BaoGiaPanel;
 import ui.screen.tiepnhan.KhachHangPanel;
@@ -101,9 +101,9 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     private HoaDonDAO thuNganDAO;
     private ThuNganNavigationPanel pnlDieuHuongThuNgan;
-    private PaymentCenterPanel pnlTrungTamThanhToan;
-    private PendingCollectionPanel pnlPhieuChoThu;
-    private PaidInvoicesPanel pnlHoaDonDaThu;
+    private TrungTamThanhToanPanel pnlTrungTamThanhToan;
+    private PhieuChoThuPanel pnlPhieuChoThu;
+    private HoaDonDaThuPanel pnlHoaDonDaThu;
     private String mucThuNganDangMo = "Trung tâm thanh toán";
 
     private KhachHangDAO khachHangDAO;
@@ -861,10 +861,10 @@ public final class MainFrame extends JFrame implements ActionListener {
             setStatus("Trung tâm thanh toán");
         } else if ("Phiếu chờ thu".equals(muc)) {
             if (pnlPhieuChoThu == null) {
-                pnlPhieuChoThu = new PendingCollectionPanel(thuNganDAO, getTaiKhoanDangNhap(), this);
+                pnlPhieuChoThu = new PhieuChoThuPanel(thuNganDAO, getTaiKhoanDangNhap(), this);
             } else if (!"Phiếu chờ thu".equals(mucThuNganDangMo)
                     && !"Đối chiếu chi phí".equals(mucThuNganDangMo)) {
-                pnlPhieuChoThu = new PendingCollectionPanel(thuNganDAO, getTaiKhoanDangNhap(), this);
+                pnlPhieuChoThu = new PhieuChoThuPanel(thuNganDAO, getTaiKhoanDangNhap(), this);
             }
 
             setScreen(pnlPhieuChoThu);
@@ -872,7 +872,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             setStatus("Phiếu chờ thu");
         } else if ("Đối chiếu chi phí".equals(muc)) {
             if (pnlPhieuChoThu == null) {
-                pnlPhieuChoThu = new PendingCollectionPanel(thuNganDAO, getTaiKhoanDangNhap(), this);
+                pnlPhieuChoThu = new PhieuChoThuPanel(thuNganDAO, getTaiKhoanDangNhap(), this);
             }
 
             setScreen(pnlPhieuChoThu);
@@ -881,7 +881,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             pnlDieuHuongThuNgan.chonMuc("Phiếu chờ thu");
         } else if ("Hoá đơn đã thanh toán".equals(muc)) {
             if (pnlHoaDonDaThu == null) {
-                pnlHoaDonDaThu = new PaidInvoicesPanel(
+                pnlHoaDonDaThu = new HoaDonDaThuPanel(
                         thuNganDAO, getTaiKhoanDangNhap(), new ActionListener() {
                             /** Xem/in đúng hóa đơn người dùng chọn trong bảng. */
                             @Override
@@ -890,7 +890,7 @@ public final class MainFrame extends JFrame implements ActionListener {
                             }
                         });
             } else if (!"Hoá đơn đã thanh toán".equals(mucThuNganDangMo)) {
-                pnlHoaDonDaThu = new PaidInvoicesPanel(
+                pnlHoaDonDaThu = new HoaDonDaThuPanel(
                         thuNganDAO, getTaiKhoanDangNhap(), new ActionListener() {
                             /** Xem/in đúng hóa đơn người dùng chọn trong bảng. */
                             @Override
@@ -909,8 +909,8 @@ public final class MainFrame extends JFrame implements ActionListener {
     }
 
     /** Trung tâm thanh toán dựng một lần; các callback trỏ về MainFrame nên không cần tạo lại. */
-    private PaymentCenterPanel taoTrungTamThanhToan() {
-        PaymentCenterPanel.Navigation nav = new PaymentCenterPanel.Navigation();
+    private TrungTamThanhToanPanel taoTrungTamThanhToan() {
+        TrungTamThanhToanPanel.Navigation nav = new TrungTamThanhToanPanel.Navigation();
 
         nav.costReconciliation = new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
@@ -974,7 +974,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             }
         };
 
-        return new PaymentCenterPanel(thuNganDAO, getTaiKhoanDangNhap(), nav);
+        return new TrungTamThanhToanPanel(thuNganDAO, getTaiKhoanDangNhap(), nav);
     }
 
     /** Đối chiếu đúng mã được chọn; không tự thay bằng phiếu đầu danh sách. */
@@ -1018,7 +1018,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             return;
         }
 
-        setScreen(new BankTransferPaymentPanel(
+        setScreen(new ThanhToanChuyenKhoanPanel(
                 thuNganDAO, phieu, getTaiKhoanDangNhap(),
                 () -> moDoiChieuChiPhi(maPhieu),
                 maHoaDon -> moChiTietHoaDonSauThanhToan(maHoaDon)));
@@ -1047,7 +1047,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             return;
         }
 
-        setScreen(new CashPaymentConfirmPanel(
+        setScreen(new XacNhanThanhToanTienMatPanel(
                 thuNganDAO, phieu, taiKhoanDangNhap,
                 () -> dieuHuongThuNgan("Trung tâm thanh toán"),
                 maHoaDon -> moChiTietHoaDonSauThanhToan(maHoaDon)));
@@ -1064,7 +1064,7 @@ public final class MainFrame extends JFrame implements ActionListener {
 
         pnlDieuHuongThuNgan.chonMuc("Hoá đơn đã thanh toán");
 
-        setScreen(new PaidInvoiceDetailPanel(
+        setScreen(new ChiTietHoaDonPanel(
                 thuNganDAO, getTaiKhoanDangNhap(), ma,
                 suKien -> dieuHuongThuNgan("Hoá đơn đã thanh toán")));
 
@@ -1080,7 +1080,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             }
             pnlDieuHuongThuNgan.chonMuc("Hoá đơn đã thanh toán");
             System.out.println("[UI] Mở chi tiết hóa đơn: " + ma);
-            setScreen(new PaidInvoiceDetailPanel(
+            setScreen(new ChiTietHoaDonPanel(
                     thuNganDAO, getTaiKhoanDangNhap(), ma,
                     suKien -> dieuHuongThuNgan("Hoá đơn đã thanh toán")));
             setStatus("Đã thanh toán · Chi tiết hóa đơn " + ma);

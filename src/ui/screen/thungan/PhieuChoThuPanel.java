@@ -30,7 +30,7 @@ import entity.TaiKhoan;
 import ui.component.UiTheme;
 
 /** Content panel for the cashier's "Phiếu chờ thu" screen. */
-public class PendingCollectionPanel extends JPanel {
+public class PhieuChoThuPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
@@ -56,7 +56,7 @@ public class PendingCollectionPanel extends JPanel {
     private final Consumer<String> onCreateInvoice;
     private final Runnable onViewDetails;
 
-    public PendingCollectionPanel() {
+    public PhieuChoThuPanel() {
         this((HoaDonDAO) null, (Consumer<String>) null, (Runnable) null);
     }
 
@@ -65,12 +65,12 @@ public class PendingCollectionPanel extends JPanel {
      * @param onCreateInvoice callback nhận mã phiếu đang chọn; null = no-op
      * @param onViewDetails   callback xem chi tiết; null = no-op
      */
-    public PendingCollectionPanel(HoaDonDAO dao, TaiKhoan taiKhoan, ui.MainFrame mainFrame) {
+    public PhieuChoThuPanel(HoaDonDAO dao, TaiKhoan taiKhoan, ui.MainFrame mainFrame) {
         this(dao, ma -> mainFrame.moDoiChieuChiPhi(ma), () -> {});
         this.taiKhoan = taiKhoan;
     }
 
-    private PendingCollectionPanel(HoaDonDAO dao, Consumer<String> onCreateInvoice, Runnable onViewDetails) {
+    private PhieuChoThuPanel(HoaDonDAO dao, Consumer<String> onCreateInvoice, Runnable onViewDetails) {
         this.dao = dao != null ? dao : new HoaDonDAO();
         this.taiKhoan = new TaiKhoan("NV007", TaiKhoan.VaiTro.THU_NGAN);
         this.doiChieuDAO = new DoiChieuChiPhiDAO();

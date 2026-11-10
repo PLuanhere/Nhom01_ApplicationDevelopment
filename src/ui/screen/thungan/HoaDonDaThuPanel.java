@@ -30,7 +30,7 @@ import java.awt.event.ActionListener;
 import entity.HoaDon;
 
 /** Read-only list of issued and paid invoices — dung entity HoaDon thuc. */
-public class PaidInvoicesPanel extends JPanel {
+public class HoaDonDaThuPanel extends JPanel {
     private static final Color PAGE = new Color(244, 246, 249);
     private static final Color WHITE = Color.WHITE;
     private static final Color INK = new Color(32, 45, 61);
@@ -47,7 +47,7 @@ public class PaidInvoicesPanel extends JPanel {
     private final Consumer<String> onViewInvoice;
     private final TaiKhoan taiKhoan;
 
-    public PaidInvoicesPanel(HoaDonDAO dao, Consumer<String> onViewInvoice) {
+    public HoaDonDaThuPanel(HoaDonDAO dao, Consumer<String> onViewInvoice) {
         this.dao = dao;
         this.taiKhoan = new TaiKhoan("NV007", TaiKhoan.VaiTro.THU_NGAN);
         this.onViewInvoice = onViewInvoice;
@@ -133,18 +133,18 @@ public class PaidInvoicesPanel extends JPanel {
         searchField.addActionListener(e -> taiDuLieu());
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() == 2 && table.getSelectedRow() >= 0 && PaidInvoicesPanel.this.onViewInvoice != null) {
+                if (e.getClickCount() == 2 && table.getSelectedRow() >= 0 && HoaDonDaThuPanel.this.onViewInvoice != null) {
                     int row = table.getSelectedRow();
                     int modelRow = table.convertRowIndexToModel(row);
                     String maHoaDon = String.valueOf(model.getValueAt(modelRow, 0));
-                    PaidInvoicesPanel.this.onViewInvoice.accept(maHoaDon);
+                    HoaDonDaThuPanel.this.onViewInvoice.accept(maHoaDon);
                 }
             }
         });
         taiDuLieu();
     }
 
-    public PaidInvoicesPanel(HoaDonDAO dao, TaiKhoan taiKhoan, ActionListener onViewInvoice) {
+    public HoaDonDaThuPanel(HoaDonDAO dao, TaiKhoan taiKhoan, ActionListener onViewInvoice) {
         this.dao = dao != null ? dao : new HoaDonDAO();
         this.taiKhoan = taiKhoan != null ? taiKhoan : new TaiKhoan("NV007", TaiKhoan.VaiTro.THU_NGAN);
         this.onViewInvoice = ma -> {
