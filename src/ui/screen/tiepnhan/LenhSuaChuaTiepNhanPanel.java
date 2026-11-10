@@ -10,6 +10,7 @@ import entity.TaiKhoan.VaiTro;
 import entity.PhieuSuaChua.ChiTietSuaChua;
 import entity.PhieuSuaChua;
 import entity.PhieuTiepNhan;
+import ui.component.KiemTraRoiTrang;
 import ui.component.ScrollablePanel;
 
 import java.awt.BorderLayout;
@@ -63,8 +64,13 @@ import javax.swing.text.JTextComponent;
 import ui.component.UiTheme;
 
 /** Màn tiếp nhận dùng kho lệnh hiện có; không chứa thao tác cập nhật tiến độ của kỹ thuật. */
-public final class LenhSuaChuaTiepNhanPanel extends JPanel {
+public final class LenhSuaChuaTiepNhanPanel extends JPanel implements KiemTraRoiTrang {
     private static final long serialVersionUID = 1L;
+
+    @Override
+    public boolean choPhepRoiTrang() {
+        return choPhepRoiManHinh();
+    }
     private static final DateTimeFormatter NGAY = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm", Locale.ROOT)
             .withResolverStyle(ResolverStyle.STRICT);
     private final PhieuSuaChuaDAO dao;

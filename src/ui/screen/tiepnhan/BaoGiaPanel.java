@@ -10,6 +10,7 @@ import entity.PhieuTiepNhan.BaoCaoKiemTra;
 import entity.TaiKhoan;
 import entity.TaiKhoan.VaiTro;
 import entity.PhieuTiepNhan;
+import ui.component.KiemTraRoiTrang;
 import ui.component.ScrollablePanel;
 
 import java.awt.BorderLayout;
@@ -63,8 +64,13 @@ import ui.component.UiTheme;
 import ui.dialog.tiepnhan.HangMucBaoGiaDialog;
 
 /** Quản lý báo giá trong phiên; nội dung và chuyển trạng thái được kiểm tra tại DAO. */
-public final class BaoGiaPanel extends JPanel {
+public final class BaoGiaPanel extends JPanel implements KiemTraRoiTrang {
     private static final long serialVersionUID = 1L;
+
+    @Override
+    public boolean choPhepRoiTrang() {
+        return choPhepRoiManHinh();
+    }
     private static final DateTimeFormatter NGAY = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm", Locale.ROOT)
             .withResolverStyle(ResolverStyle.STRICT);
     private final TaiKhoan phien;

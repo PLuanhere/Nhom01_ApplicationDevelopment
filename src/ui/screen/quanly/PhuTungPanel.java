@@ -26,11 +26,12 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 
+import ui.component.KiemTraRoiTrang;
 import ui.component.UiChung;
 import ui.component.UiTheme;
 
 /** Hiển thị danh mục phụ tùng và điều hướng nhập kho, đối soát, nhật ký. */
-public final class PhuTungPanel extends JPanel implements DocumentListener, ActionListener {
+public final class PhuTungPanel extends JPanel implements DocumentListener, ActionListener, KiemTraRoiTrang {
     private static final long serialVersionUID = 1L;
     private final TaiKhoan taiKhoan;
     private final PhuTungDAO dao;

@@ -45,11 +45,17 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 
+import ui.component.KiemTraRoiTrang;
 import ui.component.UiTheme;
 
 /** Danh sách, form và lối tra cứu lịch sử xe; chỉ thao tác kho trong phiên hiện tại. */
-public final class XePanel extends JPanel {
+public final class XePanel extends JPanel implements KiemTraRoiTrang {
     private static final long serialVersionUID = 1L;
+
+    @Override
+    public boolean choPhepRoiTrang() {
+        return choPhepRoiManHinh();
+    }
     private static final DateTimeFormatter NGAY = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm");
     private final XeDAO dao;
     private final PhieuTiepNhanDAO phieuDAO;

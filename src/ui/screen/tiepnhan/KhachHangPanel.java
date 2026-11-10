@@ -37,12 +37,18 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
+import ui.component.KiemTraRoiTrang;
 import ui.component.UiTheme;
 
 /** Danh sách và form hồ sơ dùng chung một kho trong phiên tiếp nhận. */
-public final class KhachHangPanel extends JPanel {
+public final class KhachHangPanel extends JPanel implements KiemTraRoiTrang {
     private static final long serialVersionUID = 1L;
     private final KhachHangDAO dao;
+
+    @Override
+    public boolean choPhepRoiTrang() {
+        return choPhepRoiManHinh();
+    }
     private final XeDAO demSoXe;
     private final TaiKhoan phien;
     private final CardLayout boCuc = new CardLayout();

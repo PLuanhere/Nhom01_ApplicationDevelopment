@@ -28,11 +28,12 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 
+import ui.component.KiemTraRoiTrang;
 import ui.component.UiChung;
 import ui.component.UiTheme;
 
 /** Hiển thị danh sách nhân viên và điều hướng đến biểu mẫu hồ sơ. */
-public final class NhanVienPanel extends JPanel implements ActionListener {
+public final class NhanVienPanel extends JPanel implements ActionListener, KiemTraRoiTrang {
 
     private static final long serialVersionUID = 1L;
 

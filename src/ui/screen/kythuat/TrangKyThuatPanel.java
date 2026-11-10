@@ -13,10 +13,12 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
+import ui.component.KiemTraRoiTrang;
+
 import static ui.screen.kythuat.GiaoDienKyThuat.*;
 
 // Chia sẻ bố cục nội dung và thanh bước giữa các màn hình kỹ thuật.
-abstract class TrangKyThuatPanel extends JPanel {
+abstract class TrangKyThuatPanel extends JPanel implements KiemTraRoiTrang {
 
     private static final long serialVersionUID = 1L;
     protected final KhongGianKyThuatPanel khongGian;
@@ -24,6 +26,11 @@ abstract class TrangKyThuatPanel extends JPanel {
     TrangKyThuatPanel(KhongGianKyThuatPanel khongGian) {
         super(new BorderLayout());
         this.khongGian = khongGian;
+    }
+
+    @Override
+    public boolean choPhepRoiTrang() {
+        return khongGian == null || khongGian.choPhepRoiTrang();
     }
 
     // Gửi nội dung trang về vùng hiển thị chung của MainFrame.
