@@ -23,6 +23,11 @@ import java.util.List;
 /** Đọc và ghi hóa đơn Thu ngân trong SQL Server theo schema QuanLiGarage_v2. */
 public final class HoaDonDAO {
 
+    private static final String DANH_DAU_PHIEU_DA_THANH_TOAN =
+            "UPDATE dbo.PhieuSuaChua SET DaThanhToan = 1, ThoiDiemThanhToan = ? "
+                    + "WHERE MaPhieu = ? AND TrangThai = 'HOAN_THANH' AND DaThanhToan = 0";
+
+
     /** Tạo DAO dùng nguồn SQL Server. */
     public HoaDonDAO() {
     }
@@ -129,11 +134,20 @@ public final class HoaDonDAO {
                 maGiaoDich);
     }
 
+    /** Chặn thao tác nếu phiên hết hiệu lực hoặc người dùng không phải Thu ngân. */
+    private static void kiemTraThuNgan(TaiKhoan taiKhoan) {
+        if (taiKhoan == null) {
+            throw new SecurityException("Cần phiên đăng nhập Thu ngân.");
+        }
+        taiKhoan.kiemTraQuyenThuNgan();
+    }
+
     /** Khóa lệnh, kiểm tra chưa thu, chụp báo giá và ghi hóa đơn trong một transaction. */
     private String ghiThanhToan(TaiKhoan taiKhoan, String maPhieu, long soTienNhan,
             HinhThucThanhToan hinhThuc, String maGiaoDich) {
         kiemTraThuNgan(taiKhoan);
         String maLenh = batBuoc(maPhieu, "Mã phiếu");
+        String nguoiThu = taiKhoan.getMaNhanVien();
 
         Connection ketNoi = ketNoi();
         try {
@@ -146,13 +160,14 @@ public final class HoaDonDAO {
             int soThuTu = docSoHoaDonTiepTheo(ketNoi, LocalDate.now().getYear());
             String maHoaDon = HoaDon.taoMa(LocalDate.now().getYear(), soThuTu);
             LocalDateTime thoiDiem = LocalDateTime.now();
-            themHoaDon(ketNoi, maHoaDon, phieu, hinhThuc, thoiDiem, taiKhoan.getMaNhanVien(),
+            themHoaDon(ketNoi, maHoaDon, phieu, hinhThuc, thoiDiem, nguoiThu,
                     thamChieu);
             int soDong = chupChiTietHoaDon(ketNoi, maHoaDon, maLenh);
             if (soDong == 0) {
                 throw new IllegalStateException("Phiếu chưa có chi tiết báo giá để lập hóa đơn.");
             }
             HoaDon.kiemTraTongChiTiet(phieu.getTongTien(), docChiTietHoaDon(ketNoi, maHoaDon));
+            danhDauPhieuDaThanhToan(ketNoi, maLenh, thoiDiem);
             ketNoi.commit();
             return maHoaDon;
         } catch (SQLException ex) {
@@ -234,7 +249,6 @@ public final class HoaDonDAO {
 
     /** Đọc chi tiết báo giá của phiếu còn chờ thu. */
     public List<ChiTietBaoGia> layChiTietDoiChieu(TaiKhoan taiKhoan, String maPhieu) {
-        kiemTraThuNgan(taiKhoan);
         if (timPhieuTheoMa(taiKhoan, maPhieu) == null) {
             throw new IllegalArgumentException("Phiếu không còn chờ thu.");
         }
@@ -290,7 +304,7 @@ public final class HoaDonDAO {
                 + "JOIN dbo.BaoCaoKiemTra kt ON kt.MaBaoCao = nbg.MaBaoCao "
                 + "JOIN dbo.PhieuTiepNhan tn ON tn.MaPhieu = kt.MaPhieuTiepNhan "
                 + "JOIN dbo.ChiTietBaoGia ct ON ct.MaBaoGia = bg.MaBaoGia "
-                + "WHERE sc.MaPhieu = ? AND sc.TrangThai = 'HOAN_THANH' "
+                + "WHERE sc.MaPhieu = ? AND sc.TrangThai = 'HOAN_THANH' AND sc.DaThanhToan = 0 "
                 + "AND NOT EXISTS (SELECT 1 FROM dbo.HoaDon hd WITH (UPDLOCK, HOLDLOCK) "
                 + "WHERE hd.MaPhieuSuaChua = sc.MaPhieu) "
                 + "GROUP BY sc.MaPhieu, tn.TenKhach, sc.BienSo, sc.ThoiDiemHoanTat";
@@ -405,6 +419,32 @@ public final class HoaDonDAO {
         return ketQua;
     }
 
+    /**
+     * Chuyển phiếu sang trạng thái đã thanh toán trong cùng transaction ghi hóa đơn.
+     *
+     * <p>Quy định 3.2 yêu cầu phương thức nghiệp vụ trong DAO phải "lưu hóa đơn/chi tiết và cập
+     * nhật phiếu trong cùng transaction". Bộ lọc {@code TrangThai = 'HOAN_THANH' AND DaThanhToan = 0}
+     * giữ nguyên tính chống trùng của điều kiện {@code NOT EXISTS} trước đây: lần thu thứ hai cập
+     * nhật 0 dòng và bị coi là lỗi.
+     *
+     * @param ketNoi kết nối đang mở transaction của bên gọi
+     * @param maPhieu mã lệnh sửa chữa vừa lập hóa đơn
+     * @param thoiDiem thời điểm thanh toán, cùng mốc ghi trên hóa đơn
+     * @throws SQLException nếu câu lệnh thất bại
+     * @throws IllegalStateException nếu phiếu không còn ở trạng thái chờ thu
+     */
+    private static void danhDauPhieuDaThanhToan(Connection ketNoi, String maPhieu,
+            LocalDateTime thoiDiem) throws SQLException {
+        try (PreparedStatement lenh = ketNoi.prepareStatement(DANH_DAU_PHIEU_DA_THANH_TOAN)) {
+            lenh.setTimestamp(1, Timestamp.valueOf(thoiDiem));
+            lenh.setString(2, maPhieu);
+            if (lenh.executeUpdate() != 1) {
+                throw new IllegalStateException(
+                        "Phiếu đã được thanh toán hoặc chưa hoàn thành sửa chữa.");
+            }
+        }
+    }
+
     private static void themHoaDon(Connection ketNoi, String maHoaDon, PhieuChoThu phieu,
             HinhThucThanhToan hinhThuc, LocalDateTime thoiDiem, String nguoiThu, String maGiaoDich)
             throws SQLException {
@@ -496,12 +536,6 @@ public final class HoaDonDAO {
         return new IllegalStateException(thongBao + " " + ex.getMessage(), ex);
     }
 
-    private static void kiemTraThuNgan(TaiKhoan taiKhoan) {
-        if (taiKhoan == null || taiKhoan.getVaiTro() != VaiTro.THU_NGAN) {
-            throw new SecurityException("Chỉ Thu ngân được thao tác hóa đơn và thanh toán.");
-        }
-        taiKhoan.kiemTraPhien();
-    }
 
     /** Dữ liệu chỉ đọc của một lệnh đã hoàn thành đang chờ thu. */
     public static final class PhieuChoThu {
