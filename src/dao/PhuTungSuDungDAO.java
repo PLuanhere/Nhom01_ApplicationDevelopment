@@ -106,25 +106,13 @@ public final class PhuTungSuDungDAO {
                     && !ct.getTaiKhoanThucHien().equals(tk.getMaNhanVien())) {
                 throw new SecurityException("Hạng mục không thuộc phân công của bạn.");
             }
-            if (ct.isPhatSinh() && (p.getPhatSinh() == null
-                    || p.getPhatSinh().getTrangThai() != TrangThaiPhatSinh.DA_DUYET)) {
-                throw new IllegalStateException("Hạng mục phát sinh chưa được duyệt.");
+            if (ct.isPhatSinh()) PhatSinhDAO.kiemTraHangMuc(c, maLenh, viTri);
+            entity.BaoGia.ChiTietBaoGia dongDuyet = PhatSinhDAO.docDongDuocDuyet(c, maLenh, viTri);
+            if (dongDuyet == null || !dongDuyet.getMaPhuTung().equals(maPT)) {
+                throw new IllegalArgumentException("Phụ tùng không thuộc hạng mục đã được khách duyệt.");
             }
-            BigDecimal duyet;
-            String sql = "SELECT ct.SoLuong FROM dbo.ChiTietBaoGia ct JOIN dbo.BaoGia bg "
-                    + "ON bg.MaBaoGia=ct.MaBaoGia WHERE ct.MaBaoGia=? AND ct.ViTri=? AND ct.MaPhuTung=? "
-                    + "AND bg.TrangThai='DA_DONG_Y'";
-            try (PreparedStatement ps = c.prepareStatement(sql)) {
-                ps.setString(1, p.getMaBaoGia());
-                ps.setInt(2, viTri);
-                ps.setString(3, maPT);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        throw new IllegalArgumentException("Phụ tùng không thuộc dòng báo giá đã duyệt.");
-                    }
-                    duyet = rs.getBigDecimal("SoLuong");
-                }
-            }
+            BigDecimal duyet = BigDecimal.valueOf(dongDuyet.getSoLuong());
+            String sql;
             PhuTung pt = kho.docTheoMa(c, maPT, true);
             if (!pt.isHoatDong()) {
                 throw new IllegalStateException("Phụ tùng đã ngừng áp dụng.");
@@ -261,11 +249,15 @@ public final class PhuTungSuDungDAO {
             throw new SecurityException("Lệnh không thuộc phân công.");
         }
         List<LuongPhuTung> ds = new ArrayList<>();
-        String sql = "SELECT ct.MaPhuTung,SUM(ct.SoLuong) AS Tong FROM dbo.ChiTietBaoGia ct "
-                + "JOIN dbo.PhieuSuaChua p ON p.MaBaoGia=ct.MaBaoGia WHERE p.MaPhieu=? "
-                + "AND ct.MaPhuTung IS NOT NULL GROUP BY ct.MaPhuTung";
+        String sql = "SELECT MaPhuTung,SUM(SoLuong) AS Tong FROM ("
+                + "SELECT ct.MaPhuTung,ct.SoLuong FROM dbo.ChiTietBaoGia ct JOIN dbo.PhieuSuaChua p "
+                + "ON p.MaBaoGia=ct.MaBaoGia WHERE p.MaPhieu=? AND ct.MaPhuTung IS NOT NULL UNION ALL "
+                + "SELECT ct.MaPhuTung,ct.SoLuong FROM dbo.ChiTietDeXuatPhatSinh ct JOIN dbo.DeXuatPhatSinh d "
+                + "ON d.MaPhatSinh=ct.MaPhatSinh WHERE d.MaPhieu=? AND d.TrangThai='DA_DONG_Y' "
+                + "AND ct.MaPhuTung IS NOT NULL) x GROUP BY MaPhuTung";
         try (PreparedStatement ps = ketNoi().prepareStatement(sql)) {
             ps.setString(1, maLenh);
+            ps.setString(2, maLenh);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     ds.add(new LuongPhuTung(rs.getString("MaPhuTung"), rs.getDouble("Tong")));

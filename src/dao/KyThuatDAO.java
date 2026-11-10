@@ -126,6 +126,11 @@ public final class KyThuatDAO {
                 new String[] { hangMuc.trim(), moTa.trim(), phuTung.trim(), "", "Chờ lập báo giá bổ sung" });
     }
 
+    // Đọc mọi đề xuất và phản hồi của lệnh đang được phân công.
+    public List<entity.DeXuatPhatSinh> docPhatSinh(String maLenh) {
+        return new PhatSinhDAO().docDanhSach(phien(), maLenh);
+    }
+
     // Đọc hạng mục hợp lệ và chặn phát sinh chưa được khách duyệt.
     public ChiTietSuaChua docHangMuc(String maLenh, int viTri) {
         PhieuSuaChua lenh = docLenh(maLenh);
@@ -133,20 +138,20 @@ public final class KyThuatDAO {
             throw new IllegalArgumentException("Chưa chọn hạng mục trong lệnh.");
         }
         ChiTietSuaChua hangMuc = lenh.getDanhSachHangMuc().get(viTri);
-        if (hangMuc.isPhatSinh()
-                && (lenh.getPhatSinh() == null || lenh.getPhatSinh().getTrangThai() != TrangThaiPhatSinh.DA_DUYET)) {
-            throw new IllegalStateException("Hạng mục phát sinh chưa được khách duyệt.");
+        if (hangMuc.isPhatSinh()) {
+            ChiTietBaoGia dong = new PhatSinhDAO().docDongDuocDuyet(phien(), maLenh, viTri);
+            if (dong == null) throw new IllegalStateException("Hạng mục phát sinh chưa được khách đồng ý.");
         }
         return hangMuc;
     }
 
     // Đọc phụ tùng phù hợp với hạng mục và báo giá của lệnh hiện tại.
     public List<PhuTung> docPhuTung(String maLenh, int viTri) {
+        docHangMuc(maLenh, viTri);
         List<PhuTung> ketQua = new ArrayList<PhuTung>();
-        for (PhuTung pt : phuTungDAO.docDanhMuc()) {
-            if ((docGioiHan(maLenh, viTri, pt.getMaPhuTung()) > 0)) {
-                ketQua.add(pt);
-            }
+        ChiTietBaoGia dong = new PhatSinhDAO().docDongDuocDuyet(phien(), maLenh, viTri);
+        if (dong != null && !dong.getMaPhuTung().isEmpty()) {
+            ketQua.add(phuTungDAO.docPhuTung(dong.getMaPhuTung()));
         }
         return ketQua;
     }
@@ -154,12 +159,8 @@ public final class KyThuatDAO {
     // Đối chiếu mã phụ tùng và vị trí hạng mục với báo giá đã duyệt.
     private double docGioiHan(String maLenh, int viTri, String maPhuTung) {
         docHangMuc(maLenh, viTri);
-        BaoGia bg = suaChuaDAO.layBaoGia(phien(), maLenh);
-        if (!bg.isDaDongY() || viTri >= bg.getChiTiet().size()) {
-            return 0;
-        }
-        ChiTietBaoGia ct = bg.getChiTiet().get(viTri);
-        return ct.getMaPhuTung().equals(maPhuTung) ? ct.getSoLuong() : 0;
+        ChiTietBaoGia dong = new PhatSinhDAO().docDongDuocDuyet(phien(), maLenh, viTri);
+        return dong != null && dong.getMaPhuTung().equals(maPhuTung) ? dong.getSoLuong() : 0;
     }
 
     // Đọc tồn kho từ cùng DAO phụ tùng trong phiên.
