@@ -1,12 +1,5 @@
 package ui.screen.kythuat;
 
-import dao.KyThuatDAO;
-import entity.PhieuTiepNhan.BaoCaoKiemTra;
-import entity.TaiKhoan;
-import entity.PhuTung;
-import entity.PhieuSuaChua.TrangThaiSuaChua;
-import entity.PhieuTiepNhan;
-
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -25,6 +18,12 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 
+import dao.KyThuatDAO;
+import entity.PhieuSuaChua.TrangThaiSuaChua;
+import entity.PhieuTiepNhan;
+import entity.PhieuTiepNhan.BaoCaoKiemTra;
+import entity.PhuTung;
+import entity.TaiKhoan;
 import ui.MainFrame;
 import ui.component.UiChung;
 import ui.dialog.kythuat.DoiChieuKyThuatDialog;
@@ -36,7 +35,6 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
     final TaiKhoan taiKhoan;
     final ActionListener dangXuat;
     final KyThuatDAO dao;
-
     final List<JTextField> truongDangNhap = new ArrayList<JTextField>();
 
     String trang = "TONG_QUAN";
@@ -68,7 +66,7 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
     String anhChup = "";
     boolean dangNap;
 
-    // Các tham chiếu này dùng lại panel do MainFrame tạo, không tự tạo bộ panel khác.
+    // Dùng lại các panel do MainFrame tạo, không tạo thêm bộ panel khác.
     TrangChuKyThuatPanel pnlTongQuanCongViec;
     PhieuSuaChuaPanel pnlCongViecPhanCong;
     BaoCaoKiemTraPanel pnlKiemTraXe;
@@ -77,19 +75,15 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
     PhuTungSuDungPanel pnlGhiNhanPhuTung;
     KiemTraHoanTatPanel pnlKiemTraHoanTat;
 
-    public KhongGianKyThuatPanel(
-            MainFrame winChu, TaiKhoan taiKhoan, ActionListener dangXuat, KyThuatDAO daoChung) {
-
+    public KhongGianKyThuatPanel(MainFrame winChu, TaiKhoan taiKhoan,
+        ActionListener dangXuat, KyThuatDAO daoChung) {
         if (winChu == null || taiKhoan == null || dangXuat == null || daoChung == null) {
             throw new IllegalArgumentException("Thiếu khung chính, tài khoản hoặc nguồn kỹ thuật.");
         }
-
         taiKhoan.kiemTraPhien();
-
         if (taiKhoan.getVaiTro() != TaiKhoan.VaiTro.NHAN_VIEN_KY_THUAT) {
             throw new SecurityException("Chỉ dành cho kỹ thuật viên.");
         }
-
         this.winChu = winChu;
         this.taiKhoan = taiKhoan;
         this.dangXuat = dangXuat;
@@ -97,20 +91,13 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
     }
 
     // Nhận bộ panel dùng chung do MainFrame khởi tạo và giữ trong các field.
-    public void ganCacTrang(
-            TrangChuKyThuatPanel tongQuan,
-            PhieuSuaChuaPanel phanCong,
-            BaoCaoKiemTraPanel kiemTra,
-            TienDoSuaChuaPanel tienDo,
-            PhuTungSuDungPanel phuTung,
-            BaoHuHongPhatSinhPanel phatSinh,
-            KiemTraHoanTatPanel hoanTat) {
-
+    public void ganCacTrang(TrangChuKyThuatPanel tongQuan, PhieuSuaChuaPanel phanCong,
+        BaoCaoKiemTraPanel kiemTra, TienDoSuaChuaPanel tienDo, PhuTungSuDungPanel phuTung,
+        BaoHuHongPhatSinhPanel phatSinh, KiemTraHoanTatPanel hoanTat) {
         if (tongQuan == null || phanCong == null || kiemTra == null || tienDo == null
-                || phuTung == null || phatSinh == null || hoanTat == null) {
+            || phuTung == null || phatSinh == null || hoanTat == null) {
             throw new IllegalArgumentException("Cần đủ bảy trang kỹ thuật.");
         }
-
         pnlTongQuanCongViec = tongQuan;
         pnlCongViecPhanCong = phanCong;
         pnlKiemTraXe = kiemTra;
@@ -142,22 +129,15 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
             } else if ("TAO_BAO_CAO".equals(lenh)) {
                 pnlKiemTraXe.chonPhieu();
             } else if ("HUONG_DAN".equals(lenh)) {
-                baoLoi("Hướng dẫn sử dụng",
-                        "Chọn công việc được phân công để mở lệnh. "
-                                + "Chỉ cập nhật hạng mục đã được duyệt; "
-                                + "ghi nhận phụ tùng thực dùng trước khi hoàn tất.");
+                baoLoi("Hướng dẫn sử dụng", "Chọn công việc được phân công để mở lệnh. "
+                    + "Chỉ cập nhật hạng mục đã được duyệt; "
+                    + "ghi nhận phụ tùng thực dùng trước khi hoàn tất.");
             } else if ("SUA_BAO_CAO".equals(lenh) && choPhepRoiTrang()) {
                 batDauTrang("KIEM_TRA");
                 pnlKiemTraXe.hienLapBaoCao();
             } else if ("XOA_BAO_CAO".equals(lenh)) {
-                if (xacNhan(
-                        "Xác nhận xóa",
-                        "Xóa báo cáo nháp " + baoCao.getMaBaoCao() + "?",
-                        new String[0][0],
-                        "Chỉ xóa bản nháp chưa hoàn tất.",
-                        "Xóa",
-                        true)) {
-
+                if (xacNhan("Xác nhận xóa", "Xóa báo cáo nháp " + baoCao.getMaBaoCao() + "?",
+                    new String[0][0], "Chỉ xóa bản nháp chưa hoàn tất.", "Xóa", true)) {
                     dao.xoaBaoCao(baoCao);
                     batDauTrang("KIEM_TRA");
                     pnlKiemTraXe.hienDanhSachBaoCao();
@@ -167,18 +147,13 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
             } else if ("HOAN_TAT_BAO_CAO".equals(lenh)) {
                 pnlKiemTraXe.hoanTatBaoCao();
             } else if ("LUU_TIEN_DO".equals(lenh)) {
-                dao.luuTienDo(
-                        maLenh, viTriHangMuc,
-                        (TrangThaiSuaChua) cmbTienDo.getSelectedItem(),
-                        txtKetQua.getText());
-
+                dao.luuTienDo(maLenh, viTriHangMuc,
+                    (TrangThaiSuaChua) cmbTienDo.getSelectedItem(), txtKetQua.getText());
                 anhChup = docNoiDung();
                 chuyen("TIEN_DO");
+                baoLoi("Cập nhật thành công", "Đã lưu cập nhật tiến độ sửa chữa.");
             } else if ("GUI_PHAT_SINH".equals(lenh)) {
-                dao.guiPhatSinh(
-                        maLenh, txtPhatSinh.getText(),
-                        txtPhuTungDuKien.getText(), txtMoTa.getText());
-
+                dao.guiPhatSinh(maLenh, txtPhatSinh.getText(), txtPhuTungDuKien.getText(), txtMoTa.getText());
                 anhChup = docNoiDung();
                 chuyen("PHAT_SINH");
             } else if ("DOI_HANG_MUC".equals(lenh) && !dangNap) {
@@ -202,22 +177,14 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
 
     // Cho MainFrame kiểm tra nội dung chưa lưu khi chuyển trang, đóng hoặc đăng xuất.
     public boolean choPhepRoiTrang() {
-        if (tblNhap != null && tblNhap.isEditing()
-                && !tblNhap.getCellEditor().stopCellEditing()) {
+        if (tblNhap != null && tblNhap.isEditing() && !tblNhap.getCellEditor().stopCellEditing()) {
             return false;
         }
-
         if (anhChup.equals(docNoiDung())) {
             return true;
         }
-
-        return xacNhan(
-                "Bỏ thay đổi chưa lưu?",
-                "Nội dung đang nhập chưa được lưu.",
-                new String[0][0],
-                "Nếu bỏ thay đổi, dữ liệu đã lưu vẫn được giữ nguyên.",
-                "Bỏ thay đổi",
-                true);
+        return xacNhan("Bỏ thay đổi chưa lưu?", "Nội dung đang nhập chưa được lưu.", new String[0][0],
+            "Nếu bỏ thay đổi, dữ liệu đã lưu vẫn được giữ nguyên.", "Bỏ thay đổi", true);
     }
 
     // Gửi yêu cầu điều hướng từ nút hoặc đường tắt về MainFrame.
@@ -233,7 +200,6 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
         tblNhap = null;
         btnHoanTat = null;
         anhChup = "";
-
         winChu.capNhatMucKyThuat(tenTrang);
     }
 
@@ -241,13 +207,10 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
     void hienTrang(JPanel pnlManHinh, JPanel pnlCot) {
         JScrollPane scrTrang = UiChung.taoVungCuon(pnlCot);
         PhuTungUi.dinhDangVungCuon(scrTrang);
-
         scrTrang.setBorder(BorderFactory.createEmptyBorder());
         scrTrang.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-
         pnlManHinh.removeAll();
         pnlManHinh.add(scrTrang, BorderLayout.CENTER);
-
         anhChup = docNoiDung();
         winChu.hienTrangKyThuat(pnlManHinh);
     }
@@ -281,16 +244,13 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
         for (JTextField txtNhap : truongDangNhap) {
             noiDung.append(txtNhap.getText()).append('\n');
         }
-
         if ("TIEN_DO".equals(trang) && cmbTienDo != null) {
             noiDung.append(cmbTienDo.getSelectedItem());
         }
-
         if ("PHU_TUNG".equals(trang) && cmbHangMuc != null && cmbPhuTung != null) {
             noiDung.append(cmbHangMuc.getSelectedIndex());
             noiDung.append(cmbPhuTung.getSelectedItem());
         }
-
         if (modelNhap != null) {
             for (int dong = 0; dong < modelNhap.getRowCount(); dong++) {
                 for (int cot = 0; cot < modelNhap.getColumnCount(); cot++) {
@@ -298,18 +258,14 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
                 }
             }
         }
-
         return noiDung.toString();
     }
 
     // Mở hộp thoại đối chiếu và trả về lựa chọn xác nhận.
-    boolean xacNhan(
-            String tieuDe, String moTa, String[][] thongTin,
-            String canhBao, String nhanNut, boolean nguyHiem) {
-
+    boolean xacNhan(String tieuDe, String moTa, String[][] thongTin,
+        String canhBao, String nhanNut, boolean nguyHiem) {
         DoiChieuKyThuatDialog winDialog = new DoiChieuKyThuatDialog(
-                winChu, tieuDe, moTa, thongTin, canhBao, nhanNut, nguyHiem);
-
+            winChu, tieuDe, moTa, thongTin, canhBao, nhanNut, nguyHiem);
         winDialog.setVisible(true);
         return winDialog.isDongY();
     }
@@ -342,8 +298,7 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
 
     // Gửi yêu cầu đăng xuất qua luồng kiểm tra dữ liệu của MainFrame.
     private void yeuCauDangXuat() {
-        dangXuat.actionPerformed(
-                new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "dangXuat"));
+        dangXuat.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "dangXuat"));
     }
 
     // Gửi yêu cầu đóng cửa sổ để MainFrame kiểm tra nội dung chưa lưu.
@@ -354,22 +309,15 @@ public final class KhongGianKyThuatPanel implements ActionListener, DocumentList
     }
 
     // Giữ ô tìm, bộ lọc và nút làm mới trên cùng một hàng co giãn.
-    private JPanel taoThanhLoc(
-            JTextField txtTim, JComboBox<?> cmbLoc, ActionListener loc) {
-
+    private JPanel taoThanhLoc(JTextField txtTim, JComboBox<?> cmbLoc, ActionListener loc) {
         JPanel pnl = new JPanel(new BorderLayout(8, 0));
         pnl.setOpaque(false);
-
         JPanel pnlPhai = new JPanel(new BorderLayout(8, 0));
         pnlPhai.setOpaque(false);
         pnlPhai.add(cmbLoc, BorderLayout.CENTER);
-        pnlPhai.add(
-                GiaoDienKyThuat.taoNut("Làm mới", "LOC", false, loc),
-                BorderLayout.EAST);
-
+        pnlPhai.add(GiaoDienKyThuat.taoNut("Làm mới", "LOC", false, loc), BorderLayout.EAST);
         pnl.add(txtTim, BorderLayout.CENTER);
         pnl.add(pnlPhai, BorderLayout.EAST);
-
         return pnl;
     }
 }
