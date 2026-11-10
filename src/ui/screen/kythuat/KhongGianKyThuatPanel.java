@@ -26,9 +26,6 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 
 import ui.MainFrame;
-import ui.component.KyThuatNavigationPanel;
-import ui.component.GiaoDienKyThuat;
-import ui.component.PhuTungUi;
 import ui.component.UiChung;
 import ui.dialog.kythuat.DoiChieuKyThuatDialog;
 

@@ -13,7 +13,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
-import static ui.component.GiaoDienKyThuat.*;
+import static ui.screen.kythuat.GiaoDienKyThuat.*;
 
 // Chia sẻ bố cục nội dung và thanh bước giữa các màn hình kỹ thuật.
 abstract class TrangKyThuatPanel extends JPanel {

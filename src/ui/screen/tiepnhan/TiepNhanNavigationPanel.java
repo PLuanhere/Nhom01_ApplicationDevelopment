@@ -1,4 +1,4 @@
-package ui.component;
+package ui.screen.tiepnhan;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -16,6 +16,8 @@ import javax.swing.ButtonGroup;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
+
+import ui.component.UiTheme;
 
 /** Điều hướng tiếp nhận; khung chính quyết định màn hình được phép mở. */
 public final class TiepNhanNavigationPanel extends JPanel {

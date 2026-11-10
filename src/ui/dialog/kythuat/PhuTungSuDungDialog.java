@@ -30,7 +30,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-import ui.component.PhuTungUi;
+import ui.screen.kythuat.PhuTungUi;
 import ui.component.UiTheme;
 
 // Biểu mẫu thêm, sửa, xem và chi tiết liên quan; lưu qua DAO, không tự cập nhật tồn.

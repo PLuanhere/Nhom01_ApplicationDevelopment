@@ -18,8 +18,8 @@ import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
 
-import ui.component.GiaoDienKyThuat;
-import ui.component.PhuTungUi;
+import ui.screen.kythuat.GiaoDienKyThuat;
+import ui.screen.kythuat.PhuTungUi;
 
 // Hiển thị thông tin đối chiếu và trả lựa chọn xác nhận cho màn hình gọi.
 public final class DoiChieuKyThuatDialog extends JDialog implements ActionListener {

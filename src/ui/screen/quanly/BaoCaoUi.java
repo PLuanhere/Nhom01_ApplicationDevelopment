@@ -1,9 +1,11 @@
-package ui.component;
+package ui.screen.quanly;
 
 import dao.BaoCaoDAO;
 import entity.BaoCao;
 import entity.HoaDon;
 import entity.TaiKhoan;
+import ui.component.UiChung;
+import ui.component.UiTheme;
 
 import java.awt.BorderLayout;
 import java.awt.Component;

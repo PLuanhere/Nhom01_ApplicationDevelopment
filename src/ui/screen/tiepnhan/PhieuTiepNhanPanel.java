@@ -12,6 +12,7 @@ import entity.TaiKhoan;
 import entity.TaiKhoan.VaiTro;
 import entity.PhieuTiepNhan;
 import entity.PhieuTiepNhan.TrangThaiTiepNhan;
+import ui.component.ScrollablePanel;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -920,50 +921,9 @@ public final class PhieuTiepNhanPanel extends JPanel {
         return cuon;
     }
 
-    /** Bám chiều rộng viewport, chỉ cuộn dọc để form không bị cắt khi thu nhỏ. */
-    private static final class NoiDungCuon extends JPanel implements Scrollable {
-        private static final long serialVersionUID = 1L;
-
-        /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
-        NoiDungCuon() {
-            super(new BorderLayout());
-            setOpaque(false);
-        }
-
-        /** Trả về preferred scrollable viewport size. */
-        @Override
-        public Dimension getPreferredScrollableViewportSize() {
-            return getPreferredSize();
-        }
-
-        /** Trả về scrollable unit increment. */
-        @Override
-        public int getScrollableUnitIncrement(Rectangle r, int orientation, int direction) {
-            return 20;
-        }
-
-        /** Trả về scrollable block increment. */
-        @Override
-        public int getScrollableBlockIncrement(Rectangle r, int orientation, int direction) {
-            return Math.max(20, r.height - 20);
-        }
-
-        /** Trả về scrollable tracks viewport width. */
-        @Override
-        public boolean getScrollableTracksViewportWidth() {
-            return true;
-        }
-
-        /** Trả về scrollable tracks viewport height. */
-        @Override
-        public boolean getScrollableTracksViewportHeight() {
-            return false;
-        }
-    }
-
     /** Thực hiện cuon noi dung cho thành phần hiện tại. */
     private static JScrollPane cuonNoiDung(JPanel pnl) {
-        JPanel neo = new NoiDungCuon();
+        JPanel neo = new ScrollablePanel();
         neo.add(pnl, BorderLayout.NORTH);
         JScrollPane cuon = new JScrollPane(neo);
         cuon.setBorder(null);

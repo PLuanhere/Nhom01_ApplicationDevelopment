@@ -28,6 +28,7 @@ import javax.swing.JScrollPane;
 import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
 
+import ui.component.ScrollablePanel;
 import ui.component.UiTheme;
 
 /** Tổng quan tại quầy đọc chứng từ hiện tại, không tự suy ra đã thanh toán hay được bàn giao. */
@@ -75,7 +76,7 @@ public final class TrangChuTiepNhanPanel extends JPanel {
     /** Thực hiện cap nhat du lieu cho thành phần hiện tại. */
     public void capNhatDuLieu() {
         removeAll();
-        JPanel trang = new TrangCuon();
+        JPanel trang = new ScrollablePanel();
         trang.setOpaque(false);
         trang.setLayout(new BoxLayout(trang, BoxLayout.Y_AXIS));
         trang.add(nhan("Tiếp nhận / Hệ thống / Tổng quan tiếp nhận", 12, false));
@@ -199,41 +200,6 @@ public final class TrangChuTiepNhanPanel extends JPanel {
             return dao.trangThaiPhieu(tk, ma);
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
             return "Chưa đọc được trạng thái";
-        }
-    }
-
-    /** Bám chiều rộng vùng xem để không cắt cột khi cửa sổ hẹp. */
-    private static final class TrangCuon extends JPanel implements Scrollable {
-        private static final long serialVersionUID = 1L;
-
-        /** Trả về preferred scrollable viewport size. */
-        @Override
-        public Dimension getPreferredScrollableViewportSize() {
-            return getPreferredSize();
-        }
-
-        /** Trả về scrollable unit increment. */
-        @Override
-        public int getScrollableUnitIncrement(Rectangle r, int orientation, int direction) {
-            return 20;
-        }
-
-        /** Trả về scrollable block increment. */
-        @Override
-        public int getScrollableBlockIncrement(Rectangle r, int orientation, int direction) {
-            return Math.max(20, r.height - 20);
-        }
-
-        /** Trả về scrollable tracks viewport width. */
-        @Override
-        public boolean getScrollableTracksViewportWidth() {
-            return true;
-        }
-
-        /** Trả về scrollable tracks viewport height. */
-        @Override
-        public boolean getScrollableTracksViewportHeight() {
-            return false;
         }
     }
 

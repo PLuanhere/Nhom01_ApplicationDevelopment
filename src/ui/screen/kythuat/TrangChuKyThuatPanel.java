@@ -21,10 +21,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
-import ui.component.PhuTungUi;
-import ui.component.KyThuatNavigationPanel;
 
-import static ui.component.GiaoDienKyThuat.*;
+import static ui.screen.kythuat.GiaoDienKyThuat.*;
 
 // Hiển thị tổng quan công việc và các đường tắt của kỹ thuật viên.
 public final class TrangChuKyThuatPanel extends TrangKyThuatPanel {

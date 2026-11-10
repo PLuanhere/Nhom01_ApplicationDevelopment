@@ -33,8 +33,5 @@
 Thumbs.db
 .DS_Store
 
-/skills
-/QUY_DINH_DU_AN.md
 .gitattributes
 /config
-/test

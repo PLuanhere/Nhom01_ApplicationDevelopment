@@ -23,8 +23,6 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
-import ui.component.BaoCaoUi;
-import ui.component.BieuDoDoanhThuPanel;
 import ui.component.UiChung;
 import ui.component.UiTheme;
 

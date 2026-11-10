@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import ui.component.GiaoDienKyThuat;
+import ui.screen.kythuat.GiaoDienKyThuat;
 
 // Tiếp nhận lập phụ lục và ghi quyết định khách; kỹ thuật chỉ xem giá và phản hồi.
 public final class PhatSinhSuaChuaDialog extends JDialog implements ActionListener {

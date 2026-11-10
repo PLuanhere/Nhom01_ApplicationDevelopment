@@ -1,4 +1,4 @@
-package ui.component;
+package ui.screen.quanly;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -15,6 +15,8 @@ import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
+
+import ui.component.UiTheme;
 
 /** Hiển thị sidebar Quản lý và gửi sự kiện chọn màn hình cho MainFrame. */
 public final class QuanLyNavigationPanel extends JPanel {

@@ -1,4 +1,7 @@
-package ui.component;
+package ui.screen.kythuat;
+
+import ui.component.UiTheme;
+import ui.component.UiChung;
 
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;

@@ -1,4 +1,4 @@
-package ui.component;
+package ui.screen.quanly;
 
 import java.awt.BorderLayout;
 

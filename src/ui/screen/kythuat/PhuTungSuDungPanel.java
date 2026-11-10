@@ -15,9 +15,8 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import ui.dialog.kythuat.HoanPhuTungDialog;
-import ui.component.PhuTungUi;
 
-import static ui.component.GiaoDienKyThuat.*;
+import static ui.screen.kythuat.GiaoDienKyThuat.*;
 
 // Hiển thị biểu mẫu ghi nhận phụ tùng thực tế đã dùng và mở lịch sử hoàn.
 public final class PhuTungSuDungPanel extends TrangKyThuatPanel {
