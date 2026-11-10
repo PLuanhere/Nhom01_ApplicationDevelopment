@@ -1,25 +1,15 @@
 package ui.screen.thungan;
 
-import dao.HoaDonDAO;
-import entity.HoaDon;
-import dao.HoaDonDAO.PhieuChoThu;
-import entity.TaiKhoan;
-import entity.TaiKhoan.VaiTro;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Container;
 import java.awt.Cursor;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.ActionListener;
+import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
@@ -32,57 +22,81 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
+import dao.HoaDonDAO;
+import dao.HoaDonDAO.PhieuChoThu;
+import entity.HoaDon;
+import entity.TaiKhoan;
 import ui.component.UiTheme;
 
-/** Màn hình Trung tâm thanh toán — tổng quan ca thu và lối vào các chức năng chính. */
+/**
+ * Màn hình Trung tâm thanh toán — tổng quan ca thu và lối vào các chức năng chính.
+ * Dữ liệu được lấy từ {@link HoaDonDAO}; không hard-code số liệu trong UI.
+ *
+ * <p>Gắn vào vùng làm việc của {@code MainFrame} qua {@code dieuHuongThuNgan()}.</p>
+ */
 public final class PaymentCenterPanel extends JPanel {
 
-    private final TaiKhoan taiKhoan;
     private static final long serialVersionUID = 1L;
-    private static final Color GRID = new Color(0xDCE3EC);
+    private static final Color GRID  = new Color(0xDCE3EC);
     private static final Color MUTED = new Color(0x647489);
     private static final Color GREEN = new Color(0x16835B);
     private static final Color AMBER = new Color(0xB56A00);
-    private static final NumberFormat FMT = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"));
+    private static final NumberFormat FMT =
+            NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"));
+    private final TaiKhoan taiKhoan;
 
-    /** Tạo màn hình với no-op callback, dùng DAO mặc định. */
+    /**
+     * Tạo màn hình với no-op callback, dùng DAO mặc định.
+     * Dùng khi xem trước độc lập.
+     */
     public PaymentCenterPanel() {
-        this(new HoaDonDAO(), new TaiKhoan("NV007", VaiTro.THU_NGAN), new Navigation());
+        this(new HoaDonDAO(), new TaiKhoan("NV007", TaiKhoan.VaiTro.THU_NGAN), new Navigation());
     }
 
-    /** Tạo màn hình với DAO và callback điều hướng do MainFrame cung cấp. */
+    /**
+     * Tạo màn hình với DAO và callback điều hướng do MainFrame cung cấp.
+     *
+     * @param dao nguồn dữ liệu Thu ngân
+     * @param nav callback đích cho các nút hành động
+     */
     public PaymentCenterPanel(HoaDonDAO dao, TaiKhoan taiKhoan, Navigation nav) {
         this.taiKhoan = taiKhoan;
-        HoaDonDAO d = dao != null ? dao : new HoaDonDAO();
-        Navigation n = nav != null ? nav : new Navigation();
+        HoaDonDAO d    = dao != null ? dao : new HoaDonDAO();
+        Navigation n    = nav != null ? nav  : new Navigation();
 
         setLayout(new BorderLayout(0, 12));
-        setBackground(UiTheme.WINDOW);
-        setBorder(BorderFactory.createEmptyBorder(16, 16, 14, 16));
+        setOpaque(false);
+        setBorder(BorderFactory.createEmptyBorder(20, 26, 18, 26));
 
-        add(createIntro(), BorderLayout.NORTH);
-        add(createScrollBody(d, n), BorderLayout.CENTER);
-        add(createFooter(), BorderLayout.SOUTH);
+        add(buildHeading(),                         BorderLayout.NORTH);
+        add(createScrollBody(d, n),                 BorderLayout.CENTER);
+        add(createFooter(),                         BorderLayout.SOUTH);
     }
 
     // ── Intro ─────────────────────────────────────────────────────────────────
 
-    /** Tạo intro cho giao diện. */
-    private JPanel createIntro() {
-        JPanel pnl = new JPanel();
+    private JPanel buildHeading() {
+        JPanel pnl = new JPanel(new BorderLayout(0, 5));
         pnl.setOpaque(false);
-        pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS));
-        pnl.add(lbl("Thu ngân / Hệ thống / Trung tâm thanh toán", UiTheme.CAPTION_FONT, MUTED));
-        pnl.add(Box.createVerticalStrut(6));
-        pnl.add(lbl("Trung tâm thanh toán", UiTheme.BRAND_FONT.deriveFont(Font.BOLD, 20f), UiTheme.TEXT));
-        pnl.add(lbl("Chỉ thu từ phiếu sửa chữa hoàn thành và chưa có hóa đơn hợp lệ.", UiTheme.CAPTION_FONT, MUTED));
-        pnl.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+        pnl.add(new JLabel("Thu ngân  /  Nghiệp vụ  /  Trung tâm thanh toán") {{
+            setFont(new Font("Dialog", Font.PLAIN, 11));
+            setForeground(MUTED);
+        }}, BorderLayout.NORTH);
+        JPanel titles = new JPanel(new BorderLayout(0, 5));
+        titles.setOpaque(false);
+        titles.add(lbl("Trung tâm thanh toán",
+                new Font("Dialog", Font.BOLD, 24), UiTheme.TEXT), BorderLayout.NORTH);
+        titles.add(new JLabel("Chỉ thu từ phiếu sửa chữa hoàn thành và chưa có hóa đơn hợp lệ.") {{
+            setFont(new Font("Dialog", Font.PLAIN, 12));
+            setForeground(MUTED);
+        }}, BorderLayout.SOUTH);
+        pnl.add(titles, BorderLayout.CENTER);
+        pnl.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         return pnl;
     }
 
     // ── Body cuộn ─────────────────────────────────────────────────────────────
 
-    /** Tạo scroll body cho giao diện. */
     private JScrollPane createScrollBody(HoaDonDAO dao, Navigation nav) {
         JPanel body = new JPanel();
         body.setOpaque(false);
@@ -102,38 +116,54 @@ public final class PaymentCenterPanel extends JPanel {
 
     // ── Thẻ thống kê ──────────────────────────────────────────────────────────
 
-    /** Tạo summary cards cho giao diện. */
     private JPanel createSummaryCards(HoaDonDAO dao) {
-        int soPhieu = dao.demPhieuChoThu(taiKhoan);
-        int soHoaDon = dao.demHoaDonDaThu(taiKhoan);
-        long tienMat = dao.tinhTongTheoHinhThuc(taiKhoan, "Tiền mặt");
-        long chuyenKhoan = dao.tinhTongTheoHinhThuc(taiKhoan, "Chuyển khoản");
+        int soPhieu      = dao.layPhieuChoThu(taiKhoan).size();
+        List<HoaDon> hoaDon = dao.layHoaDonDaThu(taiKhoan);
+        int soHoaDon     = hoaDon.size();
+        long tienMat  = hoaDon.stream().filter(h -> h.getHinhThucThanhToan() == HoaDon.HinhThucThanhToan.TIEN_MAT)
+                .mapToLong(HoaDon::getTongTien).sum();
+        long chuyenKhoan = hoaDon.stream().filter(h -> h.getHinhThucThanhToan() == HoaDon.HinhThucThanhToan.CHUYEN_KHOAN)
+                .mapToLong(HoaDon::getTongTien).sum();
 
         JPanel cards = new JPanel(new GridLayout(1, 4, 10, 0));
         cards.setOpaque(false);
-        cards.add(stat("Phiếu hoàn tất chờ thu", String.valueOf(soPhieu), "Chỉ lấy phiếu chưa lập hóa đơn", AMBER));
-        cards.add(stat("Hóa đơn đã thu", String.valueOf(soHoaDon), "Chờ bàn giao cho tiếp nhận", GREEN));
-        cards.add(stat("Đã thu tiền mặt", FMT.format(tienMat) + "đ", "Trong kỳ hiện tại", MUTED));
-        cards.add(stat("Đã thu chuyển khoản", FMT.format(chuyenKhoan) + "đ", "Trong kỳ hiện tại", MUTED));
+        cards.add(stat("Phiếu hoàn tất chờ thu",
+                String.valueOf(soPhieu),
+                "Chỉ lấy phiếu chưa lập hóa đơn", AMBER));
+        cards.add(stat("Hóa đơn đã thu",
+                String.valueOf(soHoaDon),
+                "Chờ bàn giao cho tiếp nhận", GREEN));
+        cards.add(stat("Đã thu tiền mặt",
+                FMT.format(tienMat) + "đ",
+                "Trong kỳ hiện tại", MUTED));
+        cards.add(stat("Đã thu chuyển khoản",
+                FMT.format(chuyenKhoan) + "đ",
+                "Trong kỳ hiện tại", MUTED));
         cards.setMaximumSize(new Dimension(Integer.MAX_VALUE, 82));
         return cards;
     }
 
     // ── Hai cột nội dung ──────────────────────────────────────────────────────
 
-    /** Tạo two columns cho giao diện. */
     private JPanel createTwoColumns(HoaDonDAO dao, Navigation nav) {
         JPanel cols = new JPanel(new GridLayout(1, 2, 12, 0));
         cols.setOpaque(false);
 
-        // Cột trái
-        JPanel left = new JPanel();
-        left.setOpaque(false);
-        left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
-        left.add(createCardPanel("Phiếu sửa chữa chờ thanh toán", "Đối chiếu chi phí trước khi phát hành",
+        // Cột trái - Nhét 2 card vào 1 panel để kề nhau
+        JPanel leftWrapper = new JPanel(new BorderLayout());
+        leftWrapper.setOpaque(false);
+        
+        JPanel leftCards = new JPanel();
+        leftCards.setOpaque(false);
+        leftCards.setLayout(new BoxLayout(leftCards, BoxLayout.Y_AXIS));
+        leftCards.add(createCardPanel("Phiếu sửa chữa chờ thanh toán",
+                "Đối chiếu chi phí trước khi phát hành",
                 createPendingList(dao.layPhieuChoThu(taiKhoan), nav)));
-        left.add(Box.createVerticalStrut(12));
-        left.add(createCardPanel("Chứng từ vừa hoàn tất", "", createCompletedList(dao.layHoaDonDaThu(taiKhoan), nav)));
+        leftCards.add(Box.createVerticalStrut(12));
+        leftCards.add(createCardPanel("Chứng từ vừa hoàn tất", "",
+                createCompletedList(dao.layHoaDonDaThu(taiKhoan), nav)));
+        
+        leftWrapper.add(leftCards, BorderLayout.NORTH);
 
         // Cột phải — dùng BorderLayout để card không bị kéo giãn theo chiều dọc
         JPanel right = new JPanel(new BorderLayout());
@@ -142,9 +172,6 @@ public final class PaymentCenterPanel extends JPanel {
         shortcutCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, shortcutCard.getPreferredSize().height));
         right.add(shortcutCard, BorderLayout.NORTH);
 
-        JPanel leftWrapper = new JPanel(new BorderLayout());
-        leftWrapper.setOpaque(false);
-        leftWrapper.add(left, BorderLayout.NORTH);
         cols.add(leftWrapper);
         cols.add(right);
         return cols;
@@ -152,7 +179,13 @@ public final class PaymentCenterPanel extends JPanel {
 
     // ── Danh sách phiếu chờ ───────────────────────────────────────────────────
 
-    /** Tạo danh sách hàng từ dữ liệu DAO — không hard-code tên/số tiền. */
+    /**
+     * Tạo danh sách hàng từ dữ liệu DAO — không hard-code tên/số tiền.
+     *
+     * @param danhSach danh sách phiếu từ DAO
+     * @param nav      callback điều hướng
+     * @return panel danh sách
+     */
     private JPanel createPendingList(List<PhieuChoThu> danhSach, Navigation nav) {
         JPanel list = new JPanel();
         list.setOpaque(false);
@@ -165,9 +198,11 @@ public final class PaymentCenterPanel extends JPanel {
 
         for (int i = 0; i < danhSach.size(); i++) {
             PhieuChoThu p = danhSach.get(i);
-            list.add(receiptRow(p.getMaPhieu() + " · " + p.getBienSo(),
-                    p.getTenKhach() + " · " + FMT.format(p.getTongTien()) + "đ", "Chờ lập hóa đơn", AMBER,
-                    "Đối chiếu chi phí", theoMa(nav.costReconciliation, p.getMaPhieu())));
+            list.add(receiptRow(
+                    p.getMaPhieu(),
+                    p.getTenKhach() + " · " + p.getBienSo(),
+                    "Chờ thu tiền", AMBER,
+                    "Lập hóa đơn", nav.costReconciliation));
             if (i < danhSach.size() - 1) {
                 list.add(rowDivider());
             }
@@ -177,7 +212,13 @@ public final class PaymentCenterPanel extends JPanel {
 
     // ── Danh sách hóa đơn đã thu ──────────────────────────────────────────────
 
-    /** Tạo danh sách hóa đơn đã thu từ DAO. */
+    /**
+     * Tạo danh sách hóa đơn đã thu từ DAO — dùng entity HoaDon thực.
+     *
+     * @param danhSach danh sách hóa đơn từ DAO
+     * @param nav      callback điều hướng
+     * @return panel danh sách
+     */
     private JPanel createCompletedList(List<HoaDon> danhSach, Navigation nav) {
         JPanel list = new JPanel();
         list.setOpaque(false);
@@ -190,10 +231,17 @@ public final class PaymentCenterPanel extends JPanel {
 
         for (int i = 0; i < danhSach.size(); i++) {
             HoaDon hd = danhSach.get(i);
-            list.add(receiptRow(hd.getMaHoaDon() + " · " + hd.getTenKhachHang(),
-                    FMT.format(hd.getTongTien()) + "đ · " + hd.getHinhThucThanhToan().getTenHienThi(), "Đã thanh toán",
-                    GREEN, "Xem chứng từ",
-                    theoMa(nav.viewInvoice != null ? nav.viewInvoice : nav.paidDocuments, hd.getMaHoaDon())));
+            // Dòng đầu: mã hóa đơn + tên khách
+            String line1 = hd.getMaHoaDon() + " · " + hd.getTenKhachHang();
+            // Dòng thứ hai: tổng tiền + hình thức + ghi chú
+            String line2 = FMT.format(hd.getTongTien()) + "đ · " + 
+                           hd.getHinhThucThanhToan().getTenHienThi() + 
+                           " · gửi tiếp nhận bàn giao";
+            list.add(receiptRow(
+                    line1,
+                    line2,
+                    "Đã thanh toán", GREEN,
+                    "Xem chứng từ", nav.paidDocuments));
             if (i < danhSach.size() - 1) {
                 list.add(rowDivider());
             }
@@ -203,37 +251,31 @@ public final class PaymentCenterPanel extends JPanel {
 
     // ── Đường tắt ─────────────────────────────────────────────────────────────
 
-    /** Tạo shortcuts cho giao diện. */
     private JPanel createShortcuts(Navigation nav) {
-        JPanel p = new JPanel(new GridLayout(2, 2, 8, 8));
+        JPanel p = new JPanel(new GridLayout(1, 3, 8, 8));
         p.setOpaque(false);
-        p.add(actionBtn("Phiếu chờ thu", false, nav.pendingInvoices));
-        p.add(actionBtn("Đối chiếu chi phí", false, nav.costReconciliation));
-        p.add(actionBtn("Hóa đơn đã thanh toán", false, nav.paidDocuments));
-        p.add(actionBtn("Tra cứu hóa đơn", false, nav.documentSearch));
+        p.add(actionBtn("Phiếu chờ thu",          false, nav.pendingInvoices));
+        p.add(actionBtn("Hóa đơn đã thanh toán",   false, nav.paidDocuments));
+        p.add(actionBtn("Tra cứu hóa đơn",         false, nav.documentSearch));
         return p;
     }
 
     // ── Footer ────────────────────────────────────────────────────────────────
 
-    /** Tạo footer cho giao diện. */
     private JPanel createFooter() {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setOpaque(false);
         footer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, GRID));
-        JLabel txt = lbl("Garage Đức Dũng · Nội bộ nhân viên", UiTheme.CAPTION_FONT, MUTED);
-        txt.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
-        footer.add(txt, BorderLayout.WEST);
         return footer;
     }
 
     // ── Thành phần nhỏ ────────────────────────────────────────────────────────
 
-    /** Thực hiện stat cho thành phần hiện tại. */
     private JPanel stat(String title, String value, String note, Color noteColor) {
         JPanel p = new JPanel();
         p.setBackground(UiTheme.SURFACE);
-        p.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(GRID),
+        p.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(GRID),
                 BorderFactory.createEmptyBorder(9, 10, 8, 10)));
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
         p.add(lbl(title, UiTheme.CAPTION_FONT, MUTED));
@@ -244,8 +286,10 @@ public final class PaymentCenterPanel extends JPanel {
         return p;
     }
 
-    /** Tạo card panel cho giao diện. */
     private JPanel createCardPanel(String title, String subtitle, JPanel content) {
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(UiTheme.SURFACE);
         p.setBorder(BorderFactory.createLineBorder(GRID));
@@ -253,7 +297,8 @@ public final class PaymentCenterPanel extends JPanel {
         JPanel head = new JPanel();
         head.setOpaque(false);
         head.setLayout(new BoxLayout(head, BoxLayout.Y_AXIS));
-        head.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, GRID),
+        head.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, GRID),
                 BorderFactory.createEmptyBorder(10, 11, 9, 11)));
         head.add(lbl(title, UiTheme.BRAND_FONT.deriveFont(Font.BOLD, 14f), UiTheme.TEXT));
         if (subtitle != null && !subtitle.isBlank()) {
@@ -263,19 +308,21 @@ public final class PaymentCenterPanel extends JPanel {
 
         content.setBorder(BorderFactory.createEmptyBorder(10, 11, 10, 11));
         p.add(content, BorderLayout.CENTER);
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setOpaque(false);
+        
         wrapper.add(p, BorderLayout.NORTH);
         wrapper.setAlignmentX(LEFT_ALIGNMENT);
         return wrapper;
     }
 
-    /** Thực hiện receipt row cho thành phần hiện tại. */
-    private JPanel receiptRow(String title, String detail, String status, Color statusColor, String btnText,
-            ActionListener action) {
+    private JPanel receiptRow(String title, String detail,
+            String status, Color statusColor, String btnText, ActionListener action) {
         JPanel row = new JPanel(new BorderLayout(8, 0));
-        row.setOpaque(false);
+        row.setOpaque(true);
+        row.setBackground(Color.WHITE);
         row.setBorder(BorderFactory.createEmptyBorder(7, 0, 7, 0));
+        
+        // Thêm cursor pointer
+        row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         // Thanh màu bên trái
         JPanel marker = new JPanel();
@@ -287,85 +334,49 @@ public final class PaymentCenterPanel extends JPanel {
         JPanel text = new JPanel();
         text.setOpaque(false);
         text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
-        text.add(lbl(title, UiTheme.BRAND_FONT.deriveFont(Font.BOLD, 12f), UiTheme.TEXT));
+        text.add(lbl(title,  UiTheme.BRAND_FONT.deriveFont(Font.BOLD, 12f), UiTheme.TEXT));
         text.add(lbl(detail, UiTheme.CAPTION_FONT, MUTED));
         row.add(text, BorderLayout.CENTER);
 
-        // Badge + nút bên phải
-        JPanel end = new JPanel();
+        // Badge góc phải - KHÔNG CÓ NÚT
+        JPanel end = new JPanel(new BorderLayout());
         end.setOpaque(false);
-        end.setLayout(new BoxLayout(end, BoxLayout.Y_AXIS));
 
-        JLabel badge = lbl(status, UiTheme.CAPTION_FONT.deriveFont(Font.BOLD, 10f), statusColor);
+        JLabel badge = lbl(status,
+                UiTheme.CAPTION_FONT.deriveFont(Font.BOLD, 10f), statusColor);
         badge.setOpaque(true);
-        badge.setBackground(statusColor == GREEN ? new Color(0xE8F7EF) : new Color(0xFFF3DB));
+        badge.setBackground(statusColor == GREEN
+                ? new Color(0xE8F7EF) : new Color(0xFFF3DB));
         badge.setBorder(BorderFactory.createEmptyBorder(3, 7, 3, 7));
-        end.add(badge);
-
+        badge.setHorizontalAlignment(JLabel.CENTER);
+        end.add(badge, BorderLayout.NORTH);
+        
         row.add(end, BorderLayout.EAST);
-        row.setOpaque(true);
-        row.setBackground(Color.WHITE);
-        row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        row.setToolTipText(btnText);
-        row.setFocusable(true);
-        MouseAdapter chuot = new MouseAdapter() {
-            /** Mở đúng chứng từ của thẻ được bấm. */
+        
+        // Thêm MouseListener cho toàn bộ card
+        row.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (action != null) {
-                    action.actionPerformed(new ActionEvent(row, ActionEvent.ACTION_PERFORMED, "thaoTac"));
+                    action.actionPerformed(new java.awt.event.ActionEvent(row,
+                            java.awt.event.ActionEvent.ACTION_PERFORMED, title));
                 }
             }
-
-            /** Nhấn nền khi trỏ chuột vào thẻ. */
+            
             @Override
             public void mouseEntered(MouseEvent e) {
-                row.setBackground(new Color(0xF5F8FC));
+                row.setBackground(new Color(0xF5F8FC)); // Màu xanh nhạt khi hover
             }
-
-            /** Trả lại nền khi rời thẻ. */
+            
             @Override
             public void mouseExited(MouseEvent e) {
                 row.setBackground(Color.WHITE);
             }
-        };
-        ganChuot(row, chuot);
-        row.addKeyListener(new KeyAdapter() {
-            /** Cho phép mở thẻ bằng Enter khi dùng bàn phím. */
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER && action != null) {
-                    action.actionPerformed(new ActionEvent(row, ActionEvent.ACTION_PERFORMED, "thaoTac"));
-                }
-            }
         });
+        
         return row;
     }
 
-    /** Gắn thao tác cho cả nhãn và vùng trống bên trong thẻ. */
-    private void ganChuot(Component c, MouseAdapter chuot) {
-        c.addMouseListener(chuot);
-        if (c instanceof Container) {
-            for (Component con : ((Container) c).getComponents()) {
-                ganChuot(con, chuot);
-            }
-        }
-    }
-
-    /** Giữ mã chứng từ trong thao tác của từng thẻ. */
-    private ActionListener theoMa(ActionListener action, String ma) {
-        return new ActionListener() {
-            /** Chuyển mã thực của thẻ sang khung chính. */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (action != null) {
-                    action.actionPerformed(new ActionEvent(e.getSource(), ActionEvent.ACTION_PERFORMED, ma));
-                }
-            }
-        };
-    }
-
-    /** Thực hiện row divider cho thành phần hiện tại. */
     private JPanel rowDivider() {
         JPanel line = new JPanel();
         line.setBackground(new Color(0xE9EDF2));
@@ -374,25 +385,15 @@ public final class PaymentCenterPanel extends JPanel {
         return line;
     }
 
-    /** Thực hiện action btn cho thành phần hiện tại. */
     private JButton actionBtn(String text, boolean primary, ActionListener action) {
         JButton btn = new JButton(text);
         UiTheme.styleButton(btn, primary);
         btn.setFont(UiTheme.CAPTION_FONT);
         btn.setPreferredSize(new Dimension(150, 34));
-        btn.addActionListener(new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (action != null) {
-                    action.actionPerformed(new ActionEvent(action, ActionEvent.ACTION_PERFORMED, "thaoTac"));
-                }
-            }
-        });
+        btn.addActionListener(e -> { if (action != null) action.actionPerformed(new java.awt.event.ActionEvent(btn, java.awt.event.ActionEvent.ACTION_PERFORMED, text)); });
         return btn;
     }
 
-    /** Thực hiện lbl cho thành phần hiện tại. */
     private JLabel lbl(String text, Font font, Color color) {
         JLabel label = new JLabel(text);
         label.setFont(font);
@@ -402,9 +403,11 @@ public final class PaymentCenterPanel extends JPanel {
 
     // ── Navigation ────────────────────────────────────────────────────────────
 
-    /** Callback đích do MainFrame/shell cung cấp khi nối các nút hành động. */
+    /**
+     * Callback đích do MainFrame/shell cung cấp khi nối các nút hành động.
+     * Các field là {@code null} khi không được gán — nút sẽ im lặng.
+     */
     public static final class Navigation {
-        /** Mở chi tiết/in chứng từ được chọn. */
         public ActionListener viewInvoice;
         /** Mở màn hình đối chiếu chi phí. */
         public ActionListener costReconciliation;

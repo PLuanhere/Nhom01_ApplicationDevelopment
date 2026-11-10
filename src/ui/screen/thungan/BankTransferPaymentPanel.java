@@ -1,12 +1,10 @@
 package ui.screen.thungan;
 
 import java.awt.BorderLayout;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridLayout;
-
+import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -22,8 +20,6 @@ import javax.swing.event.DocumentListener;
 import dao.HoaDonDAO;
 import dao.HoaDonDAO.PhieuChoThu;
 import entity.TaiKhoan;
-import entity.TaiKhoan.VaiTro;
-import ui.component.UiChung;
 
 /** Bank transfer / QR payment content; the application shell is supplied by the parent. */
 public class BankTransferPaymentPanel extends JPanel {
@@ -49,19 +45,11 @@ public class BankTransferPaymentPanel extends JPanel {
         this(null, null, null, () -> {}, maHoaDon -> {});
     }
 
-    public BankTransferPaymentPanel(HoaDonDAO dao, PhieuChoThu phieu, TaiKhoan taiKhoan, Runnable onBack,
-            Consumer<String> onConfirm) {
+    public BankTransferPaymentPanel(HoaDonDAO dao, PhieuChoThu phieu, TaiKhoan taiKhoan,
+            Runnable onBack, Consumer<String> onConfirm) {
         this.dao = dao != null ? dao : new HoaDonDAO();
-        this.taiKhoan = taiKhoan != null ? taiKhoan : new TaiKhoan("NV007", VaiTro.THU_NGAN);
-        if (phieu == null) {
-            java.util.List<PhieuChoThu> ds = this.dao.layPhieuChoThu(this.taiKhoan);
-            if (ds.isEmpty()) {
-                throw new IllegalArgumentException("Không có phiếu chờ thu.");
-            }
-            this.phieu = ds.get(0);
-        } else {
-            this.phieu = phieu;
-        }
+        this.phieu = phieu != null ? phieu : new PhieuChoThu("SC-2026-0108", "Nguyễn Văn An", "51H-246.80", 1270000L, null);
+        this.taiKhoan = taiKhoan;
         this.amountDue = this.phieu.getTongTien();
         this.onConfirm = onConfirm;
 
@@ -71,7 +59,7 @@ public class BankTransferPaymentPanel extends JPanel {
 
         JPanel content = new JPanel(new BorderLayout(0, 14));
         content.setOpaque(false);
-        add(UiChung.taoVungCuon(content), BorderLayout.CENTER);
+        add(content, BorderLayout.NORTH);
 
         content.add(buildHeading(onBack), BorderLayout.NORTH);
         content.add(buildPaymentCard(), BorderLayout.CENTER);
@@ -83,14 +71,12 @@ public class BankTransferPaymentPanel extends JPanel {
 
         JPanel titleBlock = new JPanel(new BorderLayout(0, 8));
         titleBlock.setOpaque(false);
-        titleBlock.add(label("Thu ngân  /  Nghiệp vụ  /  Thanh toán chuyển khoản / QR", 11, Font.PLAIN, MUTED),
-                BorderLayout.NORTH);
+        titleBlock.add(label("Thu ngân  /  Nghiệp vụ  /  Thanh toán chuyển khoản / QR", 11, Font.PLAIN, MUTED), BorderLayout.NORTH);
 
         JPanel titleLines = new JPanel(new BorderLayout(0, 5));
         titleLines.setOpaque(false);
         titleLines.add(label("Thanh toán chuyển khoản / QR", 24, Font.BOLD, INK), BorderLayout.NORTH);
-        titleLines.add(label("Chỉ xác nhận sau khi giao dịch đã được đối chiếu.", 12, Font.PLAIN, MUTED),
-                BorderLayout.SOUTH);
+        titleLines.add(label("Chỉ xác nhận sau khi giao dịch đã được đối chiếu.", 12, Font.PLAIN, MUTED), BorderLayout.SOUTH);
 
         titleBlock.add(titleLines, BorderLayout.CENTER);
         heading.add(titleBlock, BorderLayout.CENTER);
@@ -100,16 +86,8 @@ public class BankTransferPaymentPanel extends JPanel {
         back.setForeground(new Color(49, 68, 91));
         back.setBackground(WHITE);
         back.setFocusPainted(false);
-        back.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER),
-                BorderFactory.createEmptyBorder(8, 12, 8, 12)));
-        back.addActionListener(new ActionListener() {
-            /** Thực hiện thao tác vừa chọn trên biểu mẫu. */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (onBack != null)
-                    ((ActionListener) onBack).actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "quayLai"));
-            }
-        });
+        back.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(8, 12, 8, 12)));
+        back.addActionListener(e -> { if (onBack != null) onBack.run(); });
         heading.add(back, BorderLayout.EAST);
 
         heading.setBorder(BorderFactory.createEmptyBorder(0, 0, 3, 0));
@@ -119,14 +97,12 @@ public class BankTransferPaymentPanel extends JPanel {
     private JPanel buildPaymentCard() {
         JPanel card = new JPanel(new BorderLayout(0, 14));
         card.setBackground(WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER),
-                BorderFactory.createEmptyBorder(18, 18, 18, 18)));
+        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(18, 18, 18, 18)));
 
         JPanel top = new JPanel(new BorderLayout(0, 10));
         top.setOpaque(false);
         top.add(label("Thanh toán chuyển khoản / QR · " + phieu.getMaPhieu(), 18, Font.BOLD, INK), BorderLayout.NORTH);
-        top.add(label("Nhập mã giao dịch không đồng nghĩa đã nhận tiền. Phải đối chiếu số tiền thực nhận.", 12,
-                Font.PLAIN, MUTED), BorderLayout.CENTER);
+        top.add(label("Nhập mã giao dịch không đồng nghĩa đã nhận tiền. Phải đối chiếu số tiền thực nhận.", 12, Font.PLAIN, MUTED), BorderLayout.CENTER);
 
         JPanel facts = new JPanel(new GridLayout(1, 3, 12, 0));
         facts.setOpaque(false);
@@ -147,8 +123,7 @@ public class BankTransferPaymentPanel extends JPanel {
 
         JPanel bankInfo = new JPanel(new GridLayout(2, 1, 0, 4));
         bankInfo.setOpaque(false);
-        bankInfo.add(label("Ngân hàng · Số tài khoản · Chủ tài khoản: CẦN CẤU HÌNH THEO THÔNG TIN GARAGE", 13,
-                Font.PLAIN, MUTED));
+        bankInfo.add(label("Ngân hàng · Số tài khoản · Chủ tài khoản: CẦN CẤU HÌNH THEO THÔNG TIN GARAGE", 13, Font.PLAIN, MUTED));
         bankInfo.add(label("Vùng QR sẽ hiển thị sau khi nhóm xác nhận tài khoản nhận tiền.", 12, Font.PLAIN, MUTED));
         bankBox.add(bankInfo, BorderLayout.CENTER);
 
@@ -166,7 +141,7 @@ public class BankTransferPaymentPanel extends JPanel {
         fields.add(inputField("Số tiền đã nhận qua ngân hàng *", receivedAmountField));
         fields.add(inputField("Mã tham chiếu giao dịch *", referenceField));
 
-        String nguoiThu = taiKhoan != null ? (taiKhoan.getTenDangNhap() + " · Thu ngân") : "NV007 · Thu ngân";
+        String nguoiThu = taiKhoan != null ? (taiKhoan.getTenDangNhap() + " · Thu ngân") : "thungan · Thu ngân";
         fields.add(readOnlyField("Người đối soát · chỉ đọc", nguoiThu));
 
         statusLabel = label("Chờ xác minh đã nhận đủ tiền", 14, Font.PLAIN, MUTED);
@@ -178,17 +153,15 @@ public class BankTransferPaymentPanel extends JPanel {
         JPanel bottom = new JPanel(new BorderLayout(0, 12));
         bottom.setOpaque(false);
 
-        JLabel note = label("Chỉ xác nhận thanh toán khi giao dịch đã vào tài khoản garage và số tiền hợp lệ.", 13,
-                Font.PLAIN, MUTED);
+        JLabel note = label("Chỉ xác nhận thanh toán khi giao dịch đã vào tài khoản garage và số tiền hợp lệ.", 13, Font.PLAIN, MUTED);
         note.setOpaque(true);
-        note.setBackground(new Color(255, 247, 227));
+        note.setBackground(WHITE);
         note.setBorder(BorderFactory.createEmptyBorder(11, 11, 11, 11));
         bottom.add(note, BorderLayout.NORTH);
 
         JPanel actions = new JPanel(new BorderLayout(12, 0));
         actions.setOpaque(false);
-        actions.add(label("Chỉ sau đối soát: phát hành hóa đơn và chuyển Tiếp nhận bàn giao", 12, Font.PLAIN, MUTED),
-                BorderLayout.CENTER);
+        actions.add(label("Chỉ sau đối soát: phát hành hóa đơn và chuyển Tiếp nhận bàn giao", 12, Font.PLAIN, MUTED), BorderLayout.CENTER);
 
         confirmButton = new JButton("Xác nhận đã nhận đủ tiền");
         confirmButton.setFont(new Font("Dialog", Font.BOLD, 14));
@@ -200,24 +173,19 @@ public class BankTransferPaymentPanel extends JPanel {
         confirmButton.setFocusPainted(false);
         confirmButton.setBorder(BorderFactory.createEmptyBorder(11, 14, 11, 14));
         confirmButton.setEnabled(false);
-        confirmButton.addActionListener(new ActionListener() {
-            /** Thực hiện thao tác vừa chọn trên biểu mẫu. */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    long soTienNhan = parseAmount(receivedAmountField.getText());
-                    String maGiaoDich = referenceField.getText().trim();
-
-                    String maHoaDon = dao.xacNhanThanhToanChuyenKhoan(taiKhoan, phieu.getMaPhieu(), soTienNhan,
-                            maGiaoDich);
-
-                    confirmButton.setEnabled(false);
-                    if (onConfirm != null)
-                        onConfirm.accept(maHoaDon);
-                } catch (RuntimeException ex) {
-                    javax.swing.JOptionPane.showMessageDialog(BankTransferPaymentPanel.this, ex.getMessage(),
-                            "Lỗi xác nhận thanh toán", javax.swing.JOptionPane.ERROR_MESSAGE);
-                }
+        confirmButton.addActionListener(e -> {
+            try {
+                long soTienNhan = parseAmount(receivedAmountField.getText());
+                String maGiaoDich = referenceField.getText().trim();
+                String nguoiDuyet = taiKhoan != null ? taiKhoan.getTenDangNhap() : "thungan";
+                
+                String maHoaDon = dao.xacNhanThanhToanChuyenKhoan(
+                    taiKhoan, phieu.getMaPhieu(), soTienNhan, maGiaoDich);
+                
+                if (onConfirm != null) onConfirm.accept(maHoaDon);
+            } catch (IllegalStateException ex) {
+                javax.swing.JOptionPane.showMessageDialog(this, ex.getMessage(),
+                        "Lỗi xác nhận thanh toán", javax.swing.JOptionPane.ERROR_MESSAGE);
             }
         });
 
@@ -227,17 +195,9 @@ public class BankTransferPaymentPanel extends JPanel {
         card.add(bottom, BorderLayout.SOUTH);
 
         DocumentListener listener = new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) {
-                refreshValidation();
-            }
-
-            public void removeUpdate(DocumentEvent e) {
-                refreshValidation();
-            }
-
-            public void changedUpdate(DocumentEvent e) {
-                refreshValidation();
-            }
+            public void insertUpdate(DocumentEvent e) { refreshValidation(); }
+            public void removeUpdate(DocumentEvent e) { refreshValidation(); }
+            public void changedUpdate(DocumentEvent e) { refreshValidation(); }
         };
 
         receivedAmountField.getDocument().addDocumentListener(listener);
@@ -260,8 +220,7 @@ public class BankTransferPaymentPanel extends JPanel {
         panel.setOpaque(false);
         panel.add(label(title, 12, Font.BOLD, MUTED), BorderLayout.NORTH);
         field.setFont(new Font("Dialog", Font.PLAIN, 14));
-        field.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)));
+        field.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(10, 10, 10, 10)));
         panel.add(field, BorderLayout.CENTER);
         return panel;
     }
@@ -276,34 +235,22 @@ public class BankTransferPaymentPanel extends JPanel {
         panel.add(label(title, 12, Font.BOLD, MUTED), BorderLayout.NORTH);
         value.setOpaque(true);
         value.setBackground(new Color(245, 248, 252));
-        value.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)));
+        value.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(10, 10, 10, 10)));
         panel.add(value, BorderLayout.CENTER);
         return panel;
     }
 
     private void refreshValidation() {
-        long received;
-        try {
-            received = parseAmount(receivedAmountField.getText());
-        } catch (IllegalArgumentException ex) {
-            confirmButton.setEnabled(false);
-            statusLabel.setText(ex.getMessage());
-            return;
-        }
+        long received = parseAmount(receivedAmountField.getText());
         boolean hasReference = !referenceField.getText().trim().isEmpty();
-        boolean valid = !receivedAmountField.getText().trim().isEmpty() && received == amountDue && hasReference;
+        boolean valid = received >= amountDue && hasReference;
 
         confirmButton.setEnabled(valid);
 
-        if (valid) {
-            statusLabel.setText("Đủ số tiền · chờ xác nhận đối soát");
-        } else if (received <= 0) {
+        if (received <= 0) {
             statusLabel.setText("Chờ xác minh đã nhận đủ tiền");
         } else if (received < amountDue) {
             statusLabel.setText("Chưa nhận đủ tiền · còn thiếu " + money(amountDue - received));
-        } else if (received > amountDue) {
-            statusLabel.setText("Số tiền chuyển khoản vượt số phải thu · cần đối soát riêng");
         } else if (!hasReference) {
             statusLabel.setText("Đủ số tiền · cần mã tham chiếu");
         } else {
@@ -312,10 +259,9 @@ public class BankTransferPaymentPanel extends JPanel {
     }
 
     private static long parseAmount(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return 0;
-        }
-        return UiChung.docTien(value, "Số tiền thực nhận");
+        String digits = value == null ? "" : value.replaceAll("[^0-9]", "");
+        if (digits.isEmpty()) return 0;
+        try { return Long.parseLong(digits); } catch (NumberFormatException e) { return Long.MAX_VALUE; }
     }
 
     private static String money(long amount) {

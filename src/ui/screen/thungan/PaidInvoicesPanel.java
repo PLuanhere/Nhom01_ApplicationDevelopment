@@ -10,13 +10,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.RowFilter;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 
 import dao.HoaDonDAO;
 import entity.TaiKhoan;
+import java.awt.event.ActionListener;
 import entity.HoaDon;
 
 /** Read-only list of issued and paid invoices — dung entity HoaDon thuc. */
@@ -38,23 +39,18 @@ public class PaidInvoicesPanel extends JPanel {
     private static final Color BLUE = new Color(34, 100, 166);
 
     private final HoaDonDAO dao;
-    private final TaiKhoan taiKhoan;
-    private final DefaultTableModel model;
-    private final JTable table;
-    private final JTextField searchField;
-    private final JComboBox<String> statusFilter;
-    private final JLabel resultLabel;
-    private final JLabel footerLabel;
+    private DefaultTableModel model;
+    private JTable table;
+    private JTextField searchField;
+    private JLabel resultLabel;
+    private JLabel footerLabel;
     private final Consumer<String> onViewInvoice;
+    private final TaiKhoan taiKhoan;
 
-    public PaidInvoicesPanel(HoaDonDAO dao, TaiKhoan taiKhoan, java.awt.event.ActionListener onViewInvoice) {
+    public PaidInvoicesPanel(HoaDonDAO dao, Consumer<String> onViewInvoice) {
         this.dao = dao;
-        this.taiKhoan = taiKhoan;
-        this.onViewInvoice = ma -> {
-            if (onViewInvoice != null) {
-                onViewInvoice.actionPerformed(new java.awt.event.ActionEvent(this, java.awt.event.ActionEvent.ACTION_PERFORMED, ma));
-            }
-        };
+        this.taiKhoan = new TaiKhoan("NV007", TaiKhoan.VaiTro.THU_NGAN);
+        this.onViewInvoice = onViewInvoice;
         setLayout(new BorderLayout());
         setBackground(PAGE);
         setBorder(BorderFactory.createEmptyBorder(20, 26, 18, 26));
@@ -70,11 +66,8 @@ public class PaidInvoicesPanel extends JPanel {
         toolbar.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(0, 14, 0, 14)));
         searchField = new PlaceholderTextField("Tìm mã hóa đơn, biển số hoặc khách hàng");
         searchField.setPreferredSize(new Dimension(380, 36));
-        statusFilter = new JComboBox<>(new String[]{"Tat ca trang thai", "Da thanh toan"});
-        statusFilter.setPreferredSize(new Dimension(150, 36));
         JButton refresh = secondaryButton("Lam moi");
         toolbar.add(searchField);
-        toolbar.add(statusFilter);
         toolbar.add(refresh);
         center.add(toolbar, BorderLayout.NORTH);
         model = new DefaultTableModel(new Object[]{"Ma hoa don", "Phieu sua chua", "Khach hang", "Bien so", "Ngay thanh toan", "Phuong thuc", "Tong tien"}, 0) {
@@ -138,15 +131,96 @@ public class PaidInvoicesPanel extends JPanel {
         center.add(card, BorderLayout.CENTER);
         refresh.addActionListener(e -> taiDuLieu());
         searchField.addActionListener(e -> taiDuLieu());
-        statusFilter.addActionListener(e -> taiDuLieu());
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (e.getClickCount() == 2 && table.getSelectedRow() >= 0 && PaidInvoicesPanel.this.onViewInvoice != null) {
                     int row = table.getSelectedRow();
-                    String maHoaDon = (String) table.getValueAt(row, 0);
+                    int modelRow = table.convertRowIndexToModel(row);
+                    String maHoaDon = String.valueOf(model.getValueAt(modelRow, 0));
                     PaidInvoicesPanel.this.onViewInvoice.accept(maHoaDon);
                 }
             }
+        });
+        taiDuLieu();
+    }
+
+    public PaidInvoicesPanel(HoaDonDAO dao, TaiKhoan taiKhoan, ActionListener onViewInvoice) {
+        this.dao = dao != null ? dao : new HoaDonDAO();
+        this.taiKhoan = taiKhoan != null ? taiKhoan : new TaiKhoan("NV007", TaiKhoan.VaiTro.THU_NGAN);
+        this.onViewInvoice = ma -> {
+            if (onViewInvoice != null) {
+                onViewInvoice.actionPerformed(new java.awt.event.ActionEvent(this,
+                        java.awt.event.ActionEvent.ACTION_PERFORMED, ma));
+            }
+        };
+        initUi();
+    }
+
+    private void initUi() {
+        setLayout(new BorderLayout());
+        setBackground(PAGE);
+        setBorder(BorderFactory.createEmptyBorder(20, 26, 18, 26));
+        JPanel content = new JPanel(new BorderLayout(0, 14));
+        content.setOpaque(false);
+        add(content, BorderLayout.CENTER);
+        content.add(buildHeading(), BorderLayout.NORTH);
+        JPanel center = new JPanel(new BorderLayout(0, 14));
+        center.setOpaque(false);
+        addTableUi(center);
+        content.add(center, BorderLayout.CENTER);
+    }
+
+    private void addTableUi(JPanel center) {
+        searchField = new PlaceholderTextField("Tìm mã hóa đơn, biển số hoặc khách hàng");
+        searchField.setPreferredSize(new Dimension(380, 36));
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 14));
+        toolbar.setBackground(WHITE);
+        toolbar.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(0, 14, 0, 14)));
+        JButton refresh = secondaryButton("Lam moi");
+        toolbar.add(searchField); toolbar.add(refresh);
+        center.add(toolbar, BorderLayout.NORTH);
+        model = new DefaultTableModel(new Object[]{"Ma hoa don", "Phieu sua chua", "Khach hang", "Bien so", "Ngay thanh toan", "Phuong thuc", "Tong tien"}, 0) { public boolean isCellEditable(int r, int c) { return false; }};
+        table = new JTable(model);
+        table.setRowHeight(52);
+        table.setFont(new Font("Dialog", Font.PLAIN, 12));
+        table.setForeground(new Color(50, 68, 90));
+        table.setGridColor(BORDER);
+        table.setShowVerticalLines(false);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 39));
+        table.getTableHeader().setFont(new Font("Dialog", Font.BOLD, 11));
+        table.getTableHeader().setForeground(new Color(86, 103, 126));
+        table.getTableHeader().setBackground(new Color(248, 250, 252));
+        table.getTableHeader().setReorderingAllowed(false);
+        DefaultTableCellRenderer paddedRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object value,
+                    boolean selected, boolean focus, int row, int col) {
+                super.getTableCellRendererComponent(t, value, selected, focus, row, col);
+                setBorder(BorderFactory.createEmptyBorder(0, 13, 0, 8));
+                return this;
+            }
+        };
+        for (int i = 0; i < 6; i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(paddedRenderer);
+        }
+        table.getColumnModel().getColumn(6).setCellRenderer(new MoneyRenderer());
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+        for (int i = 0; i < model.getColumnCount(); i++) sorter.setSortable(i, false);
+        table.setRowSorter(sorter);
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setBackground(WHITE);
+        center.add(scroll, BorderLayout.CENTER);
+        resultLabel = label("", 11, Font.PLAIN, MUTED); footerLabel = label("", 11, Font.PLAIN, MUTED);
+        refresh.addActionListener(e -> { searchField.setText(""); taiDuLieu(); });
+        searchField.addActionListener(e -> refreshRows());
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { refreshRows(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { refreshRows(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { refreshRows(); }
         });
         taiDuLieu();
     }
@@ -162,7 +236,7 @@ public class PaidInvoicesPanel extends JPanel {
         for (HoaDon hd : dao.layHoaDonDaThu(taiKhoan)) {
             String thoiDiem = hd.getThoiDiemThanhToan().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
             String hinhThuc = hd.getHinhThucThanhToan().getTenHienThi();
-
+            
             model.addRow(new Object[]{
                 hd.getMaHoaDon(),
                 hd.getMaPhieuSuaChua(),
@@ -174,6 +248,18 @@ public class PaidInvoicesPanel extends JPanel {
             });
         }
         footerLabel.setText("Hien thi " + model.getRowCount() + " / " + model.getRowCount() + " ho so");
+        refreshRows();
+    }
+
+    private void refreshRows() {
+        String query = searchField.getText().trim();
+        TableRowSorter<?> sorter = (TableRowSorter<?>) table.getRowSorter();
+        if (query.isEmpty()) {
+            sorter.setRowFilter(null);
+        } else {
+            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(query), 0, 1, 2, 3, 4, 5, 6));
+        }
+        footerLabel.setText("Hien thi " + table.getRowCount() + " / " + model.getRowCount() + " ho so");
     }
 
     private JPanel buildHeading() {
@@ -191,11 +277,12 @@ public class PaidInvoicesPanel extends JPanel {
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         btnPanel.setOpaque(false);
         JButton view = primaryButton("Xem / in hóa đơn");
-        view.addActionListener(e -> {
+        view.addActionListener(e -> { 
             if (this.onViewInvoice != null) {
                 int row = table.getSelectedRow();
                 if (row >= 0) {
-                    String maHoaDon = (String) table.getValueAt(row, 0);
+                    int modelRow = table.convertRowIndexToModel(row);
+                    String maHoaDon = String.valueOf(model.getValueAt(modelRow, 0));
                     this.onViewInvoice.accept(maHoaDon);
                 } else {
                     javax.swing.JOptionPane.showMessageDialog(this, "Vui lòng chọn một hóa đơn", "Thông báo", javax.swing.JOptionPane.WARNING_MESSAGE);
