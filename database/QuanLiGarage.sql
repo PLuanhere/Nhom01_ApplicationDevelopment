@@ -9,6 +9,7 @@
 -- SQL kiểm tra vai trò theo mã nhân viên, nhưng không thay thế xác thực/kiểm tra phiên của ứng dụng.
 
 USE master;
+DROP DATABASE QuanLiGarage
 GO
 IF DB_ID(N'QuanLiGarage') IS NULL
     EXEC(N'CREATE DATABASE QuanLiGarage');
@@ -32,7 +33,6 @@ IF OBJECT_ID('tempdb..#CauHinhCaiDat') IS NOT NULL DROP TABLE #CauHinhCaiDat;
 CREATE TABLE #CauHinhCaiDat(GieoMau BIT NOT NULL);
 INSERT #CauHinhCaiDat VALUES(CASE WHEN OBJECT_ID('dbo.NhanVien','U') IS NULL AND @TaoDuLieuMau=1 THEN 1 ELSE 0 END);
 GO
-
 -- PHẦN 1: GIỮ CÁC BẢNG LÕI, TẠO CÒN THIẾU VÀ CÁC BẢNG MỞ RỘNG.
 BEGIN TRY
     BEGIN TRANSACTION;

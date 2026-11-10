@@ -449,7 +449,7 @@ public final class BanGiaoXePanel extends JPanel {
                     "Chưa có xác nhận thu tiền/phê duyệt từ nguồn phụ trách.\nTiếp nhận không tự xác nhận thanh toán.");
         } else {
             NumberFormat so = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"));
-            so.setMaximumFractionDigits(340);
+            so.setMaximumFractionDigits(0);
             txtThanhToan.setText((canCuDaDoc.isNgoaiLe() ? "Phê duyệt ngoại lệ"
                     : canCuDaDoc.duDieuKien() ? "Đã thanh toán đủ" : "Chưa thanh toán đủ") + " · Chứng từ: "
                     + canCuDaDoc.getMaChungTu() + "\nLệnh trên căn cứ: " + canCuDaDoc.getMaLenh() + "\nPhải thu: "
