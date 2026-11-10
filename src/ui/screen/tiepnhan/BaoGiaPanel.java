@@ -76,6 +76,7 @@ public final class BaoGiaPanel extends JPanel implements KiemTraRoiTrang {
     private final TaiKhoan phien;
     private final CardLayout boCuc = new CardLayout();
     private final JPanel pnlThe = nen(boCuc);
+    private final BaoGiaFormPanel formPanel;
     private final List<BaoCaoKiemTra> baoCaoHoanTat = new ArrayList<>();
     private final BaoGiaDAO dao;
     /** Đọc lại khi mở chọn mặt hàng để nhận danh mục và trạng thái mới nhất. */
@@ -99,6 +100,7 @@ public final class BaoGiaPanel extends JPanel implements KiemTraRoiTrang {
     private final JLabel lblTong = nhan("0 đ", true);
     private final JLabel lblLoi = nhan(" ", false);
     private final DefaultTableModel modelQuyetDinh = model("Hạng mục", "SL / ĐVT", "Thành tiền");
+    private final JTable tblQuyetDinh = bang(modelQuyetDinh);
     private final JLabel lblBaoGiaGui = nhan(" ", true);
     private final JLabel lblTongQuyetDinh = nhan(" ", true);
     private final JRadioButton radDongY = new JRadioButton("Đồng ý báo giá");
@@ -136,9 +138,13 @@ public final class BaoGiaPanel extends JPanel implements KiemTraRoiTrang {
         this.phien = phien;
         kiemTraPhien();
         setOpaque(false);
+        formPanel = new BaoGiaFormPanel(cboBaoCao, lblCanCu, lblPhienBan, txtDeXuat, txtHen, tblChiTiet, lblTong,
+                lblLoi, lblBaoGiaGui, tblQuyetDinh, lblTongQuyetDinh, radDongY, radDieuChinh, radTuChoi,
+                nhomQuyetDinh, txtPhanHoiLuc, txtKenh, txtGhiChu, btnGhiNhan, lblPhanHoi,
+                e -> { if (choPhepRoiManHinh()) moDanhSach(); }, e -> suaDong(false), e -> suaDong(true),
+                e -> xoaDong(), e -> luuBanNhap(), e -> guiKhach(), e -> quayLaiForm(), e -> kiemTraPhanHoi());
         pnlThe.add(taoDanhSach(), "DANH_SACH");
-        pnlThe.add(taoForm(), "FORM");
-        pnlThe.add(taoQuyetDinh(), "QUYET_DINH");
+        pnlThe.add(formPanel, "FORM");
         add(pnlThe);
         cboBaoCao.addActionListener(new ActionListener() {
             /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
@@ -150,6 +156,14 @@ public final class BaoGiaPanel extends JPanel implements KiemTraRoiTrang {
                 }
             }
         });
+        ActionListener chonPhanHoi = e -> {
+            btnGhiNhan.setEnabled(true);
+            daThayDoi = true;
+            lblPhanHoi.setText("Phản hồi chưa lưu nghiệp vụ.");
+        };
+        radDongY.addActionListener(chonPhanHoi);
+        radDieuChinh.addActionListener(chonPhanHoi);
+        radTuChoi.addActionListener(chonPhanHoi);
         theoDoi(txtHen);
         theoDoi(txtPhanHoiLuc);
         theoDoi(txtKenh);
@@ -252,92 +266,6 @@ public final class BaoGiaPanel extends JPanel implements KiemTraRoiTrang {
         ds.add(tacVu, BorderLayout.SOUTH);
         pnl.add(ds);
         pnl.add(lblDanhSach, BorderLayout.SOUTH);
-        return pnl;
-    }
-
-    /** Tạo form cho giao diện. */
-    private JPanel taoForm() {
-        JPanel pnl = nen(new BorderLayout(0, 16));
-        pnl.add(tieuDe("Lập / điều chỉnh báo giá", "1. Kết quả kiểm tra → 2. Hạng mục & chi phí → 3. Khách phản hồi",
-                nut("Danh sách / quay lại", false, new ActionListener() {
-                    /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-                    @Override
-                    public void actionPerformed(ActionEvent event) {
-
-                        if (choPhepRoiManHinh()) {
-                            moDanhSach();
-                        }
-
-                    }
-                })), BorderLayout.NORTH);
-        JPanel khung = khung(new BorderLayout(0, 16));
-        JPanel dau = nen(new GridLayout(0, 1, 0, 8));
-        dau.add(nhan("Báo cáo kiểm tra hoàn tất", true));
-        for (BaoCaoKiemTra bc : baoCaoHoanTat) {
-            cboBaoCao.addItem(bc.getMaBaoCao() + " · " + bc.getPhieu().getBienSo());
-        }
-        dau.add(cboBaoCao);
-        dau.add(lblCanCu);
-        dau.add(lblPhienBan);
-        txtDeXuat.setEditable(false);
-        txtDeXuat.setLineWrap(true);
-        txtDeXuat.setWrapStyleWord(true);
-        txtDeXuat.setFont(UiTheme.APP_FONT);
-        dau.add(new JScrollPane(txtDeXuat));
-        dau.add(truong("Ngày hẹn dự kiến * · dd/MM/yyyy HH:mm", txtHen));
-        epCot(dau);
-        khung.add(dau, BorderLayout.NORTH);
-        JPanel chiTiet = nen(new BorderLayout(0, 10));
-        JScrollPane bang = cuonBang(tblChiTiet);
-        bang.setPreferredSize(new Dimension(0, 250));
-        chiTiet.add(bang);
-        JPanel tacVu = nen(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        tacVu.add(nut("Thêm dòng", false, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                suaDong(false);
-            }
-        }));
-        tacVu.add(nut("Sửa dòng", false, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                suaDong(true);
-            }
-        }));
-        tacVu.add(nut("Xóa dòng", false, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                BaoGiaPanel.this.xoaDong();
-            }
-        }));
-        chiTiet.add(tacVu, BorderLayout.SOUTH);
-        khung.add(chiTiet);
-        JPanel chan = nen(new GridLayout(0, 1, 0, 10));
-        chan.add(lblTong);
-        lblLoi.setForeground(UiTheme.ERROR);
-        chan.add(lblLoi);
-        chan.add(nhan("Bản đã gửi chỉ đọc. Điều chỉnh tạo phiên bản mới và cần khách duyệt lại.", false));
-        JPanel nutLuu = nen(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        nutLuu.add(nut("Lưu nháp", false, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                luuBanNhap();
-            }
-        }));
-        nutLuu.add(nut("Ghi nhận gửi khách", true, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                BaoGiaPanel.this.guiKhach();
-            }
-        }));
-        chan.add(nutLuu);
-        khung.add(chan, BorderLayout.SOUTH);
-        pnl.add(cuonNoiDung(khung));
         return pnl;
     }
 
@@ -451,6 +379,7 @@ public final class BaoGiaPanel extends JPanel implements KiemTraRoiTrang {
         capNhatChiTiet();
         daThayDoi = false;
         dangNap = false;
+        formPanel.hienThiForm();
         boCuc.show(pnlThe, "FORM");
     }
 
@@ -695,7 +624,8 @@ public final class BaoGiaPanel extends JPanel implements KiemTraRoiTrang {
         txtGhiChu.setText("");
         lblPhanHoi.setText("Chưa chọn phản hồi · chưa lưu nghiệp vụ.");
         dangNap = false;
-        boCuc.show(pnlThe, "QUYET_DINH");
+        formPanel.hienThiQuyetDinh();
+        boCuc.show(pnlThe, "FORM");
     }
 
     /** Thực hiện quay lai form cho thành phần hiện tại. */
