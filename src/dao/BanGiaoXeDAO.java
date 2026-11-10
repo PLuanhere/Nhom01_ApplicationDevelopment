@@ -25,15 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Kho bàn giao trong bộ nhớ; nguồn thu tiền/phê duyệt chỉ đọc, luôn kiểm tra lại khi xác nhận.
- */
+/** Đọc căn cứ và ghi nhận bàn giao xe cho vai trò tiếp nhận. */
 public final class BanGiaoXeDAO {
     private final PhieuSuaChuaDAO suaChua;
-    private final HoaDonDAO nguonCanCu;
-    private final List<BanGiaoXe> theoLenh = new ArrayList<>();
-    private final List<String[]> theoThaoTac = new ArrayList<>();
-    private int soThuTu = 1;
 
 
     /**
@@ -47,7 +41,6 @@ public final class BanGiaoXeDAO {
         if (nguonCanCu == null) {
             throw new NullPointerException("Thiếu dữ liệu bắt buộc.");
         }
-        this.nguonCanCu = nguonCanCu;
     }
 
     /**
@@ -75,7 +68,7 @@ public final class BanGiaoXeDAO {
      */
     public CanCuBanGiao docCanCu(TaiKhoan tk, String ma) {
         docLenh(tk, ma);
-        return nguonCanCu.docCanCuBanGiao(ma);
+        return docCanCuMoRong(ma);
     }
 
     /**
@@ -113,7 +106,7 @@ public final class BanGiaoXeDAO {
             return "Thiếu liên kết phiếu tiếp nhận của lệnh.";
         }
         if (canCu == null) {
-            return "Chưa có xác nhận thanh toán/phê duyệt từ nguồn phụ trách.";
+            return lyDoCanCu(lenh.getMaPhieu());
         }
         if (!canCu.getMaLenh().equals(lenh.getMaPhieu())) {
             return "Căn cứ thanh toán/phê duyệt không thuộc lệnh đang giao.";
@@ -171,11 +164,10 @@ public final class BanGiaoXeDAO {
             throw new IllegalStateException("Thanh toán/phê duyệt đã thay đổi. Mở lại lệnh để đối chiếu.");
         }
         LocalDateTime lucLuu = LocalDateTime.now();
-        String ma = String.format(Locale.ROOT, "GX-%04d-%04d", lucGiao == null ? lucLuu.getYear() : lucGiao.getYear(),
-                soThuTu);
+        String ma = taoMaBanGiao(lucLuu.getYear());
         BanGiaoXe moi = new BanGiaoXe(ma, lenh, bg, hienTai, tk, nguoiNhan, lucGiao, tinhTrang, taiSan, ghiChu,
                 hinhThuc, khachXacNhan, lucLuu);
-        luuBanGiao(moi, token, hienTai.getMaChungTu());
+        luuBanGiao(moi, token, hienTai);
         return moi;
     }
 
@@ -304,22 +296,29 @@ public final class BanGiaoXeDAO {
     /**
      * Ghi bàn giao cùng mã thao tác để lần bấm lặp chỉ đọc lại chứng từ cũ.
      */
-    private void luuBanGiao(BanGiaoXe giao, String token, String maHoaDon) {
-        String sql = "INSERT dbo.BanGiaoXe(MaBanGiao,MaLenh,MaHoaDon,NguoiGiao,NguoiNhan,ThoiDiemGiao,"
-                + "ThoiDiemGhiNhan,TinhTrang,TaiSanDaTra,GhiChu,HinhThucXacNhan,MaThaoTac) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)";
+    private void luuBanGiao(BanGiaoXe giao, String token, CanCuBanGiao canCu) {
+        String sql = "INSERT dbo.BanGiaoXe(MaBanGiao,MaLenh,MaHoaDon,MaPheDuyetNgoaiLe,NguoiGiao,NguoiNhan,"
+                + "ThoiDiemGiao,ThoiDiemGhiNhan,TinhTrang,TaiSanDaTra,GhiChu,HinhThucXacNhan,MaThaoTac) "
+                + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement ps = ketNoi().prepareStatement(sql)) {
             ps.setString(1, giao.getMaBanGiao());
             ps.setString(2, giao.getMaLenh());
-            ps.setString(3, maHoaDon);
-            ps.setString(4, giao.getNguoiGiao());
-            ps.setString(5, giao.getNguoiNhan());
-            ps.setTimestamp(6, Timestamp.valueOf(giao.getThoiDiemGiao()));
-            ps.setTimestamp(7, Timestamp.valueOf(giao.getThoiDiemGhiNhan()));
-            ps.setString(8, giao.getTinhTrang());
-            ps.setString(9, giao.getTaiSanDaTra());
-            ps.setString(10, giao.getGhiChu());
-            ps.setString(11, giao.getHinhThucXacNhan());
-            ps.setString(12, token);
+            if (canCu.isNgoaiLe()) {
+                ps.setNull(3, java.sql.Types.VARCHAR);
+                ps.setLong(4, maPheDuyet(canCu));
+            } else {
+                ps.setString(3, canCu.getMaChungTu());
+                ps.setNull(4, java.sql.Types.BIGINT);
+            }
+            ps.setString(5, giao.getNguoiGiao());
+            ps.setString(6, giao.getNguoiNhan());
+            ps.setTimestamp(7, Timestamp.valueOf(giao.getThoiDiemGiao()));
+            ps.setTimestamp(8, Timestamp.valueOf(giao.getThoiDiemGhiNhan()));
+            ps.setString(9, giao.getTinhTrang());
+            ps.setString(10, giao.getTaiSanDaTra());
+            ps.setString(11, giao.getGhiChu());
+            ps.setString(12, giao.getHinhThucXacNhan());
+            ps.setString(13, token);
             ps.executeUpdate();
         } catch (SQLException ex) {
             throw loi("Không lưu được bàn giao xe.", ex);
@@ -331,14 +330,122 @@ public final class BanGiaoXeDAO {
      */
     private BanGiaoXe docBanGiao(ResultSet rs) throws SQLException {
         String maLenh = rs.getString("MaLenh");
-        PhieuSuaChua lenh = suaChua.timTheoMa(new TaiKhoan("NV003", VaiTro.NHAN_VIEN_TIEP_NHAN), maLenh);
-        BaoGia baoGia = suaChua.layBaoGia(new TaiKhoan("NV003", VaiTro.NHAN_VIEN_TIEP_NHAN), maLenh);
-        CanCuBanGiao canCu = nguonCanCu.docCanCuBanGiao(maLenh);
+        TaiKhoan nguoiGiao = docTaiKhoan(rs.getString("NguoiGiao"));
+        PhieuSuaChua lenh = suaChua.timTheoMa(nguoiGiao, maLenh);
+        BaoGia baoGia = suaChua.layBaoGia(nguoiGiao, maLenh);
+        CanCuBanGiao canCu = rs.getObject("MaPheDuyetNgoaiLe") == null
+                ? docCanCuHoaDon(rs.getString("MaHoaDon"))
+                : docCanCuPheDuyet(rs.getLong("MaPheDuyetNgoaiLe"));
         return new BanGiaoXe(rs.getString("MaBanGiao"), lenh, baoGia, canCu,
-                new TaiKhoan(rs.getString("NguoiGiao"), VaiTro.NHAN_VIEN_TIEP_NHAN), rs.getString("NguoiNhan"),
+                nguoiGiao, rs.getString("NguoiNhan"),
                 rs.getTimestamp("ThoiDiemGiao").toLocalDateTime(), rs.getString("TinhTrang"), rs.getString("TaiSanDaTra"),
                 rs.getString("GhiChu"), rs.getString("HinhThucXacNhan"), true,
                 rs.getTimestamp("ThoiDiemGhiNhan").toLocalDateTime());
+    }
+
+    /** Đọc căn cứ mới nhất từ view mở rộng, gồm hóa đơn đủ tiền hoặc phê duyệt ngoại lệ còn hạn. */
+    private CanCuBanGiao docCanCuMoRong(String maLenh) {
+        if (maLenh == null || maLenh.isBlank()) return null;
+        String sql = "SELECT MaLenh,MaChungTu,PhaiThu,DaThu,NguoiXacNhan,ThoiDiem,NgoaiLe,LyDo "
+                + "FROM dbo.vw_CanCuBanGiaoMoRong WHERE MaLenh=? ORDER BY NgoaiLe";
+        try (PreparedStatement ps = ketNoi().prepareStatement(sql)) {
+            ps.setString(1, maLenh.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? docCanCu(rs) : null;
+            }
+        } catch (SQLException ex) {
+            throw loi("Không đọc được căn cứ bàn giao.", ex);
+        }
+    }
+
+    /** Giải thích ngắn gọn khi lệnh chưa có căn cứ bàn giao hợp lệ. */
+    private String lyDoCanCu(String maLenh) {
+        String sql = "SELECT TOP 1 TrangThai,ThoiHan FROM dbo.PheDuyetBanGiaoNgoaiLe "
+                + "WHERE MaLenh=? ORDER BY MaPheDuyet DESC";
+        try (PreparedStatement ps = ketNoi().prepareStatement(sql)) {
+            ps.setString(1, maLenh);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return "Chưa có xác nhận thanh toán/phê duyệt từ nguồn phụ trách.";
+                String trangThai = rs.getString("TrangThai");
+                Timestamp thoiHan = rs.getTimestamp("ThoiHan");
+                if ("CHO_DUYET".equals(trangThai)) return "Phê duyệt ngoại lệ đang chờ quản lý duyệt.";
+                if ("TU_CHOI".equals(trangThai)) return "Phê duyệt ngoại lệ đã bị từ chối.";
+                if ("HET_HAN".equals(trangThai)
+                        || (thoiHan != null && thoiHan.toLocalDateTime().isBefore(LocalDateTime.now()))) {
+                    return "Phê duyệt ngoại lệ đã hết hạn.";
+                }
+            }
+        } catch (SQLException ex) {
+            throw loi("Không kiểm tra được phê duyệt ngoại lệ.", ex);
+        }
+        return "Chưa có xác nhận thanh toán/phê duyệt từ nguồn phụ trách.";
+    }
+
+    private CanCuBanGiao docCanCuHoaDon(String maHoaDon) {
+        String sql = "SELECT hd.MaPhieuSuaChua AS MaLenh,hd.MaHoaDon AS MaChungTu,hd.TongTien AS PhaiThu,"
+                + "hd.TongTien AS DaThu,hd.NguoiThucHien AS NguoiXacNhan,hd.ThoiDiemThanhToan AS ThoiDiem,"
+                + "CONVERT(bit,0) AS NgoaiLe,CONVERT(nvarchar(500),'') AS LyDo FROM dbo.HoaDon hd WHERE hd.MaHoaDon=?";
+        return docCanCuTheoKhoa(sql, maHoaDon, "Hóa đơn bàn giao không còn tồn tại.");
+    }
+
+    private CanCuBanGiao docCanCuPheDuyet(long maPheDuyet) {
+        String sql = "SELECT MaLenh,CONCAT('NGOAI_LE-',MaPheDuyet) AS MaChungTu,SoTienConNo AS PhaiThu,"
+                + "CONVERT(bigint,0) AS DaThu,NguoiPheDuyet AS NguoiXacNhan,ThoiDiemPheDuyet AS ThoiDiem,"
+                + "CONVERT(bit,1) AS NgoaiLe,LyDo FROM dbo.PheDuyetBanGiaoNgoaiLe WHERE MaPheDuyet=?";
+        return docCanCuTheoKhoa(sql, maPheDuyet, "Phê duyệt ngoại lệ không còn tồn tại.");
+    }
+
+    private CanCuBanGiao docCanCuTheoKhoa(String sql, Object khoa, String thongBaoKhongCo) {
+        try (PreparedStatement ps = ketNoi().prepareStatement(sql)) {
+            if (khoa instanceof Long) ps.setLong(1, (Long) khoa); else ps.setString(1, (String) khoa);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return docCanCu(rs);
+            }
+        } catch (SQLException ex) {
+            throw loi("Không đọc được căn cứ bàn giao.", ex);
+        }
+        throw new IllegalStateException(thongBaoKhongCo);
+    }
+
+    private CanCuBanGiao docCanCu(ResultSet rs) throws SQLException {
+        boolean ngoaiLe = rs.getBoolean("NgoaiLe");
+        Timestamp thoiDiem = rs.getTimestamp("ThoiDiem");
+        return new CanCuBanGiao(rs.getString("MaLenh"), rs.getString("MaChungTu"), rs.getLong("PhaiThu"),
+                rs.getLong("DaThu"), docTaiKhoan(rs.getString("NguoiXacNhan")),
+                thoiDiem == null ? LocalDateTime.now() : thoiDiem.toLocalDateTime(), ngoaiLe, rs.getString("LyDo"));
+    }
+
+    private TaiKhoan docTaiKhoan(String maNhanVien) {
+        String sql = "SELECT MaNhanVien,VaiTro,HoatDong,NgayTao,PhienBan FROM dbo.TaiKhoan WHERE MaNhanVien=?";
+        try (PreparedStatement ps = ketNoi().prepareStatement(sql)) {
+            ps.setString(1, maNhanVien);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) throw new IllegalStateException("Tài khoản xác nhận không còn tồn tại.");
+                return new TaiKhoan(rs.getString("MaNhanVien"), VaiTro.valueOf(rs.getString("VaiTro")),
+                        rs.getBoolean("HoatDong"), rs.getTimestamp("NgayTao").toLocalDateTime(), rs.getInt("PhienBan"));
+            }
+        } catch (SQLException ex) { throw loi("Không đọc được tài khoản xác nhận.", ex); }
+    }
+
+    private long maPheDuyet(CanCuBanGiao canCu) {
+        String tienTo = "NGOAI_LE-";
+        if (!canCu.getMaChungTu().startsWith(tienTo))
+            throw new IllegalStateException("Mã phê duyệt ngoại lệ không hợp lệ.");
+        try { return Long.parseLong(canCu.getMaChungTu().substring(tienTo.length())); }
+        catch (NumberFormatException ex) { throw new IllegalStateException("Mã phê duyệt ngoại lệ không hợp lệ.", ex); }
+    }
+
+    private String taoMaBanGiao(int nam) {
+        String prefix = "GX-" + nam + "-";
+        String sql = "SELECT COALESCE(MAX(TRY_CONVERT(int,RIGHT(MaBanGiao,4))),0)+1 FROM dbo.BanGiaoXe "
+                + "WHERE MaBanGiao LIKE ?";
+        try (PreparedStatement ps = ketNoi().prepareStatement(sql)) {
+            ps.setString(1, prefix + "%");
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return prefix + String.format(Locale.ROOT, "%04d", rs.getInt(1));
+            }
+        } catch (SQLException ex) { throw loi("Không tạo được mã bàn giao.", ex); }
     }
 
     private Connection ketNoi() {
