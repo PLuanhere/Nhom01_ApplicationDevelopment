@@ -276,7 +276,7 @@ public final class DichVuFormPanel extends QuanLyFormPanel implements ActionList
                     txtMoTa.getText(), txtThoiGian.getText(), txtDieuKien.getText(),
                     cmbTrangThai.getSelectedIndex() == 0);
             manHinh.luu(dichVu, moi);
-        } catch (IllegalArgumentException | SecurityException ex) {
+        } catch (RuntimeException ex) {
             hienLoi(ex);
         }
     }
@@ -290,7 +290,7 @@ public final class DichVuFormPanel extends QuanLyFormPanel implements ActionList
         }
         try {
             manHinh.xoa(dichVu);
-        } catch (IllegalArgumentException | SecurityException ex) {
+        } catch (RuntimeException ex) {
             hienLoi(ex);
         }
     }

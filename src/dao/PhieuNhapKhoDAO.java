@@ -1,116 +1,271 @@
 package dao;
 
+import connectDB.ConnectDB;
 import entity.BaoGia.ChiTietBaoGia;
+import entity.PhuTung;
 import entity.TaiKhoan;
 import entity.TaiKhoan.VaiTro;
-import dao.PhieuNhapKhoDAO.ChiTietNhapKho;
-import dao.PhieuNhapKhoDAO.PhieuNhapKho;
-import entity.PhuTung;
-
+import java.math.BigDecimal;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
-/** Lưu phiếu nhập nhiều mặt hàng và cập nhật tồn sau khi kiểm tra đủ dữ liệu. */
+/** Lưu và đọc phiếu nhập kho bằng transaction do SQL Server quản lý. */
 public final class PhieuNhapKhoDAO {
     private final PhuTungDAO kho;
-    private final List<PhieuNhapKho> danhSach = new ArrayList<>();
-    private int soTiepTheo = 1;
 
-    /** Gắn nguồn phiếu nhập với đúng DAO đang quản lý kho. */
     PhieuNhapKhoDAO(PhuTungDAO kho) {
+        if (kho == null) {
+            throw new IllegalArgumentException("Thiếu nguồn kho.");
+        }
         this.kho = kho;
     }
 
-    /** Sinh mã phiếu nhập kho dự kiến để hiển thị, chưa lưu hoặc chiếm mã. */
-    public String maTiepTheo(TaiKhoan tk) {
-        kiemTraQuyen(tk);
-        return "NK-" + LocalDateTime.now().getYear() + "-" + String.format("%04d", soTiepTheo);
+    /** Trả mã dự kiến; mã chính thức được procedure cấp khi lưu. */
+    public String maTiepTheo(TaiKhoan taiKhoan) {
+        kiemTraQuyen(taiKhoan);
+        String sql = "SELECT CONCAT('NK-', YEAR(dbo.fn_ThoiDiemGarage()), '-', "
+                + "ISNULL(CONVERT(BIGINT, current_value) + CONVERT(BIGINT, increment), "
+                + "CONVERT(BIGINT, start_value))) FROM sys.sequences "
+                + "WHERE object_id = OBJECT_ID('dbo.SoMaChungTu')";
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql);
+                ResultSet ketQua = lenh.executeQuery()) {
+            if (ketQua.next()) {
+                return ketQua.getString(1);
+            }
+            return "NK-TỰ-SINH";
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc mã phiếu nhập dự kiến.", ex);
+        }
     }
 
-    /** Kiểm tra phiếu nhập, gộp lượng cùng mã và lưu phiếu cùng biến động tồn. */
-    public PhieuNhapKho ghiNhan(TaiKhoan tk, String ma, String nguon, String chungTu, List<ChiTietNhapKho> chiTiet) {
-        kiemTraQuyen(tk);
-        if (!maTiepTheo(tk).equals(ma)) {
-            throw new IllegalArgumentException("Mã lần nhập đã thay đổi. Kiểm tra mã mới rồi ghi nhận lại.");
+    /** Lưu phiếu với mã thao tác mới. */
+    public PhieuNhapKho ghiNhan(TaiKhoan taiKhoan, String maDuKien, String nguon,
+            String chungTu, List<ChiTietNhapKho> chiTiet) {
+        String maThaoTac = "NK-" + UUID.randomUUID();
+        return ghiNhan(taiKhoan, maDuKien, nguon, chungTu, chiTiet, maThaoTac);
+    }
+
+    /** Lưu phiếu idempotent; procedure đồng thời ghi chi tiết, tồn và nhật ký. */
+    public PhieuNhapKho ghiNhan(TaiKhoan taiKhoan, String maDuKien, String nguon,
+            String chungTu, List<ChiTietNhapKho> chiTiet, String maThaoTac) {
+        kiemTraQuyen(taiKhoan);
+        if (maDuKien == null || maDuKien.isBlank()) {
+            throw new IllegalArgumentException("Thiếu mã phiếu nhập dự kiến.");
         }
-        PhieuNhapKho phieu = new PhieuNhapKho(ma, LocalDateTime.now(), nguon, chungTu, tk.getTenDangNhap(), chiTiet);
-        String[] cacMa = new String[chiTiet.size()];
-        double[] cacLuong = new double[chiTiet.size()];
-        int soMatHang = 0;
-        for (ChiTietNhapKho dong : phieu.getChiTiet()) {
-            PhuTung pt = kho.timNoiBo(dong.getPhuTung().getMaPhuTung());
-            if (!kho.cungThongTin(pt, dong.getPhuTung())) {
-                throw new IllegalArgumentException("Danh mục đã thay đổi. Mở sửa dòng hàng rồi kiểm tra lại.");
+        if (nguon == null || nguon.isBlank()) {
+            throw new IllegalArgumentException("Nhập nguồn hàng / diễn giải.");
+        }
+        if (chiTiet == null || chiTiet.isEmpty()) {
+            throw new IllegalArgumentException("Phiếu nhập cần ít nhất một mặt hàng.");
+        }
+        if (maThaoTac == null || maThaoTac.isBlank()) {
+            throw new IllegalArgumentException("Thiếu mã thao tác nhập kho.");
+        }
+
+        String json = taoJsonChiTiet(chiTiet);
+        String maPhieu;
+        String sql = "{call dbo.usp_NhapKho(?, ?, ?, ?, ?)}";
+        try (CallableStatement lenh = ketNoi().prepareCall(sql)) {
+            lenh.setString(1, taiKhoan.getMaNhanVien());
+            lenh.setString(2, nguon.trim());
+            lenh.setString(3, chungTu == null ? "" : chungTu.trim());
+            lenh.setString(4, json);
+            lenh.setString(5, maThaoTac.trim());
+            try (ResultSet ketQua = lenh.executeQuery()) {
+                if (!ketQua.next()) {
+                    throw new IllegalStateException("SQL không trả mã phiếu nhập.");
+                }
+                maPhieu = ketQua.getString("MaPhieu");
             }
-            if (!pt.isHoatDong()) {
-                throw new IllegalArgumentException("Phụ tùng đã ngừng hoạt động: " + pt.getMaPhuTung());
-            }
-            int viTri = -1;
-            for (int i = 0; i < soMatHang; i++) {
-                if (cacMa[i].equals(pt.getMaPhuTung())) {
-                    viTri = i;
-                    break;
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể ghi nhận nhập kho.", ex);
+        }
+        return timTheoMa(taiKhoan, maPhieu);
+    }
+
+    /** Đọc toàn bộ phiếu nhập đã lưu, mới nhất trước. */
+    public List<PhieuNhapKho> layDanhSach(TaiKhoan taiKhoan) {
+        kiemTraQuyen(taiKhoan);
+        String sql = "SELECT nk.MaPhieu, nk.NgayNhap, nk.NguonNhap, nk.ChungTuNguon, nk.NguoiNhap, "
+                + "ct.ViTri, ct.SoLuong, ct.DonGia, pt.* "
+                + "FROM dbo.PhieuNhapKho nk "
+                + "JOIN dbo.ChiTietNhapKho ct ON ct.MaPhieu = nk.MaPhieu "
+                + "JOIN dbo.PhuTung pt ON pt.MaPhuTung = ct.MaPhuTung "
+                + "ORDER BY nk.NgayNhap DESC, nk.MaPhieu DESC, ct.ViTri";
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql);
+                ResultSet ketQua = lenh.executeQuery()) {
+            return docDanhSach(ketQua);
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc danh sách phiếu nhập.", ex);
+        }
+    }
+
+    /** Tìm một phiếu nhập theo mã. */
+    public PhieuNhapKho timTheoMa(TaiKhoan taiKhoan, String maPhieu) {
+        kiemTraQuyen(taiKhoan);
+        if (maPhieu == null || maPhieu.isBlank()) {
+            throw new IllegalArgumentException("Thiếu mã phiếu nhập.");
+        }
+        String sql = "SELECT nk.MaPhieu, nk.NgayNhap, nk.NguonNhap, nk.ChungTuNguon, nk.NguoiNhap, "
+                + "ct.ViTri, ct.SoLuong, ct.DonGia, pt.* "
+                + "FROM dbo.PhieuNhapKho nk "
+                + "JOIN dbo.ChiTietNhapKho ct ON ct.MaPhieu = nk.MaPhieu "
+                + "JOIN dbo.PhuTung pt ON pt.MaPhuTung = ct.MaPhuTung "
+                + "WHERE nk.MaPhieu = ? ORDER BY ct.ViTri";
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql)) {
+            lenh.setString(1, maPhieu.trim());
+            try (ResultSet ketQua = lenh.executeQuery()) {
+                List<PhieuNhapKho> danhSach = docDanhSach(ketQua);
+                if (!danhSach.isEmpty()) {
+                    return danhSach.get(0);
                 }
             }
-            if (viTri == -1) {
-                cacMa[soMatHang] = pt.getMaPhuTung();
-                cacLuong[soMatHang] = dong.getSoLuong();
-                soMatHang++;
-            } else {
-                double tongLuong = cacLuong[viTri] + dong.getSoLuong();
-                if (!(tongLuong < Long.MAX_VALUE / 1000.0)) {
-                    throw new IllegalArgumentException("Tổng lượng nhập vượt giới hạn cho phép.");
-                }
-                cacLuong[viTri] = Math.round(tongLuong * 1000) / 1000.0;
+            throw new IllegalArgumentException("Không tìm thấy lần nhập kho.");
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc phiếu nhập.", ex);
+        }
+    }
+
+    private List<PhieuNhapKho> docDanhSach(ResultSet ketQua) throws SQLException {
+        List<PhieuNhapKho> danhSach = new ArrayList<>();
+        String maDangDoc = null;
+        LocalDateTime ngayNhap = null;
+        String nguonNhap = "";
+        String chungTu = "";
+        String nguoiNhap = "";
+        List<ChiTietNhapKho> cacDong = new ArrayList<>();
+
+        while (ketQua.next()) {
+            String maPhieu = ketQua.getString("MaPhieu");
+            if (maDangDoc != null && !maDangDoc.equals(maPhieu)) {
+                danhSach.add(new PhieuNhapKho(
+                        maDangDoc,
+                        ngayNhap,
+                        nguonNhap,
+                        chungTu,
+                        nguoiNhap,
+                        cacDong));
+                cacDong = new ArrayList<>();
+            }
+            maDangDoc = maPhieu;
+            ngayNhap = ketQua.getTimestamp("NgayNhap").toLocalDateTime();
+            nguonNhap = ketQua.getString("NguonNhap");
+            chungTu = ketQua.getString("ChungTuNguon");
+            nguoiNhap = ketQua.getString("NguoiNhap");
+            PhuTung phuTung = docPhuTung(ketQua);
+            cacDong.add(new ChiTietNhapKho(
+                    phuTung,
+                    ketQua.getDouble("SoLuong"),
+                    ketQua.getLong("DonGia")));
+        }
+        if (maDangDoc != null) {
+            danhSach.add(new PhieuNhapKho(
+                    maDangDoc,
+                    ngayNhap,
+                    nguonNhap,
+                    chungTu,
+                    nguoiNhap,
+                    cacDong));
+        }
+        return danhSach;
+    }
+
+    private PhuTung docPhuTung(ResultSet ketQua) throws SQLException {
+        PhuTung phuTung = new PhuTung(
+                ketQua.getString("MaPhuTung"),
+                ketQua.getString("TenPhuTung"),
+                ketQua.getString("LoaiPhuTung"),
+                ketQua.getString("DonViTinh"),
+                ketQua.getLong("GiaNhap"),
+                ketQua.getLong("GiaBan"),
+                ketQua.getDouble("MucToiThieu"),
+                ketQua.getBoolean("HoatDong"));
+        phuTung.setSoLuongTon(ketQua.getDouble("SoLuongTon"));
+        return phuTung;
+    }
+
+    private String taoJsonChiTiet(List<ChiTietNhapKho> chiTiet) {
+        StringBuilder json = new StringBuilder("[");
+        List<PhuTung> danhMuc = kho.danhMucNoiBo();
+        for (int i = 0; i < chiTiet.size(); i++) {
+            ChiTietNhapKho dong = chiTiet.get(i);
+            if (dong == null) {
+                throw new IllegalArgumentException("Dòng nhập không được rỗng.");
+            }
+            PhuTung hienTai = timPhuTung(
+                    danhMuc,
+                    dong.getPhuTung().getMaPhuTung());
+            if (!kho.cungThongTin(hienTai, dong.getPhuTung())) {
+                throw new IllegalArgumentException(
+                        "Danh mục đã thay đổi. Mở sửa dòng hàng rồi kiểm tra lại.");
+            }
+            if (!hienTai.isHoatDong()) {
+                throw new IllegalArgumentException(
+                        "Phụ tùng đã ngừng hoạt động: " + hienTai.getMaPhuTung());
+            }
+            if (i > 0) {
+                json.append(',');
+            }
+            json.append("{\"MaPhuTung\":\"");
+            json.append(thoatJson(hienTai.getMaPhuTung()));
+            json.append("\",\"SoLuong\":");
+            json.append(BigDecimal.valueOf(dong.getSoLuong()).stripTrailingZeros().toPlainString());
+            json.append(",\"DonGia\":");
+            json.append(dong.getDonGia());
+            json.append('}');
+        }
+        json.append(']');
+        return json.toString();
+    }
+
+    private PhuTung timPhuTung(List<PhuTung> danhMuc, String maPhuTung) {
+        for (PhuTung phuTung : danhMuc) {
+            if (phuTung.getMaPhuTung().equals(maPhuTung)) {
+                return phuTung;
             }
         }
-        String[] maPhuTung = new String[soMatHang];
-        double[] luongNhap = new double[soMatHang];
-        for (int i = 0; i < soMatHang; i++) {
-            maPhuTung[i] = cacMa[i];
-            luongNhap[i] = cacLuong[i];
-        }
-        kho.ghiBienDong(maPhuTung, luongNhap, true, ma, tk, phieu.getNguonNhap(), phieu.getNgayNhap());
-        danhSach.add(phieu);
-        soTiepTheo++;
-        return phieu;
+        throw new IllegalArgumentException("Không tìm thấy phụ tùng: " + maPhuTung);
     }
 
-    /** Đọc danh sách phiếu nhập kho sau khi kiểm tra quyền truy cập. */
-    public List<PhieuNhapKho> layDanhSach(TaiKhoan tk) {
-        kiemTraQuyen(tk);
-        return new ArrayList<>(danhSach);
+    private String thoatJson(String chu) {
+        return chu.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    /** Tìm phiếu nhập kho theo mã; báo lỗi nếu không tồn tại. */
-    public PhieuNhapKho timTheoMa(TaiKhoan tk, String ma) {
-        kiemTraQuyen(tk);
-        for (PhieuNhapKho phieu : danhSach) {
-            if (phieu.getMaPhieu().equals(ma)) {
-                return phieu;
-            }
+    private void kiemTraQuyen(TaiKhoan taiKhoan) {
+        if (taiKhoan == null || !new TaiKhoanDAO().phienConHopLe(taiKhoan)) {
+            throw new SecurityException("Cần phiên đăng nhập còn hiệu lực.");
         }
-        throw new IllegalArgumentException("Không tìm thấy lần nhập kho.");
-    }
-
-    /** Kiểm tra tài khoản, phiên đăng nhập và quyền Quản lý trước thao tác DAO. */
-    private void kiemTraQuyen(TaiKhoan tk) {
-        if (tk == null) {
-            throw new SecurityException("Cần đăng nhập.");
-        }
-        tk.kiemTraPhien();
-        if (tk.getVaiTro() != VaiTro.QUAN_LY) {
+        taiKhoan.kiemTraPhien();
+        if (taiKhoan.getVaiTro() != VaiTro.QUAN_LY) {
             throw new SecurityException("Chỉ Quản lý được ghi nhận nhập kho.");
         }
     }
 
+    private Connection ketNoi() {
+        try {
+            return ConnectDB.getInstance().getConnection();
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể kết nối database QuanLiGarage.", ex);
+        }
+    }
+
+    private static IllegalStateException loiDuLieu(String thongBao, SQLException ex) {
+        return new IllegalStateException(thongBao + " " + ex.getMessage(), ex);
+    }
+
+    /** Một dòng phụ tùng trên phiếu nhập. */
     public static final class ChiTietNhapKho {
         private final PhuTung phuTung;
         private final double soLuong;
         private final long donGia;
-    
-        /** Tạo dòng nhập, kiểm tra số lượng, đơn giá và giới hạn thành tiền. */
+
         public ChiTietNhapKho(PhuTung phuTung, double soLuong, long donGia) {
             if (phuTung == null) {
                 throw new IllegalArgumentException("Cần chọn phụ tùng.");
@@ -118,34 +273,31 @@ public final class PhieuNhapKhoDAO {
             this.phuTung = new PhuTung(phuTung);
             phuTung.kiemTraSoLuong(soLuong);
             this.soLuong = soLuong;
-            this.donGia = donGia;
             if (donGia < 0) {
                 throw new IllegalArgumentException("Đơn giá nhập không được âm.");
             }
+            this.donGia = donGia;
             getThanhTien();
         }
-    
-        /** Trả về thông tin phụ tùng được lưu trên dòng dữ liệu. */
+
         public PhuTung getPhuTung() {
-            return phuTung;
+            return new PhuTung(phuTung);
         }
-    
-        /** Trả về số lượng nhập. */
+
         public double getSoLuong() {
             return soLuong;
         }
-    
-        /** Trả về đơn giá đã lưu. */
+
         public long getDonGia() {
             return donGia;
         }
-    
-        /** Tính tiền dòng nhập và làm tròn đến đồng gần nhất, đồng thời kiểm tra tràn số. */
+
         public long getThanhTien() {
             return ChiTietBaoGia.tinhThanhTien(soLuong, donGia);
         }
     }
 
+    /** Header và các dòng của một phiếu nhập đã ghi nhận. */
     public static final class PhieuNhapKho {
         private final String maPhieu;
         private final LocalDateTime ngayNhap;
@@ -153,76 +305,55 @@ public final class PhieuNhapKhoDAO {
         private final String chungTuNguon;
         private final String nguoiNhap;
         private final List<ChiTietNhapKho> chiTiet;
-    
-        /** Tạo phiếu nhập, sao chép các dòng và kiểm tra tổng tiền. */
-        public PhieuNhapKho(String maPhieu, LocalDateTime ngayNhap, String nguonNhap, String chungTuNguon, String nguoiNhap,
-                List<ChiTietNhapKho> chiTiet) {
-            if (ngayNhap == null) {
-                throw new IllegalArgumentException("Thiếu ngayNhap.");
-            }
-            if (chungTuNguon == null) {
-                throw new IllegalArgumentException("Thiếu chungTuNguon.");
-            }
+
+        public PhieuNhapKho(String maPhieu, LocalDateTime ngayNhap, String nguonNhap,
+                String chungTuNguon, String nguoiNhap, List<ChiTietNhapKho> chiTiet) {
             this.maPhieu = batBuoc(maPhieu, "Mã phiếu");
+            if (ngayNhap == null) {
+                throw new IllegalArgumentException("Thiếu ngày nhập.");
+            }
             this.ngayNhap = ngayNhap;
-            this.nguonNhap = batBuoc(nguonNhap, "Nhà cung cấp / nguồn nhập");
-            this.chungTuNguon = chungTuNguon.trim();
+            this.nguonNhap = batBuoc(nguonNhap, "Nguồn nhập");
+            this.chungTuNguon = chungTuNguon == null ? "" : chungTuNguon.trim();
             this.nguoiNhap = batBuoc(nguoiNhap, "Người nhập");
-            if (chiTiet == null) {
-                throw new IllegalArgumentException("Cần ít nhất một mặt hàng.");
-            }
-            this.chiTiet = new ArrayList<>();
-            for (ChiTietNhapKho dong : chiTiet) {
-                if (dong == null) {
-                    throw new IllegalArgumentException("Dòng nhập không được null.");
-                }
-                this.chiTiet.add(dong);
-            }
-            if (this.chiTiet.isEmpty()) {
+            if (chiTiet == null || chiTiet.isEmpty()) {
                 throw new IllegalArgumentException("Phiếu nhập cần ít nhất một mặt hàng.");
             }
+            this.chiTiet = new ArrayList<>(chiTiet);
             getTongTien();
         }
-    
-        /** Kiểm tra trường bắt buộc không rỗng và trả về nội dung đã bỏ khoảng trắng. */
+
         private static String batBuoc(String chu, String ten) {
             if (chu == null || chu.isBlank()) {
                 throw new IllegalArgumentException(ten + " không được rỗng.");
             }
             return chu.trim();
         }
-    
-        /** Trả về mã phiếu nhập. */
+
         public String getMaPhieu() {
             return maPhieu;
         }
-    
-        /** Trả về thời điểm nhập kho. */
+
         public LocalDateTime getNgayNhap() {
             return ngayNhap;
         }
-    
-        /** Trả về nguồn hàng hoặc diễn giải nhập kho. */
+
         public String getNguonNhap() {
             return nguonNhap;
         }
-    
-        /** Trả về mã hóa đơn hoặc biên nhận nguồn. */
+
         public String getChungTuNguon() {
             return chungTuNguon;
         }
-    
-        /** Trả về tên tài khoản nhập kho. */
+
         public String getNguoiNhap() {
             return nguoiNhap;
         }
-    
-        /** Trả về bản sao danh sách mặt hàng trên phiếu nhập. */
+
         public List<ChiTietNhapKho> getChiTiet() {
             return new ArrayList<>(chiTiet);
         }
-    
-        /** Cộng thành tiền các dòng nhập đã làm tròn và kiểm tra tràn tổng. */
+
         public long getTongTien() {
             long tong = 0;
             for (ChiTietNhapKho dong : chiTiet) {

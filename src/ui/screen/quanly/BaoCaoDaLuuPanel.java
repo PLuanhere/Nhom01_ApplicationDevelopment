@@ -26,7 +26,7 @@ import ui.component.BaoCaoUi;
 import ui.component.UiChung;
 import ui.component.UiTheme;
 
-/** Tra cứu các bản chụp đã lưu trong cùng lần chạy ứng dụng. */
+/** Tra cứu các bản chụp báo cáo đã lưu bền vững trong database. */
 public final class BaoCaoDaLuuPanel extends JPanel implements ActionListener, DocumentListener {
     private static final long serialVersionUID = 1L;
     private final TaiKhoan taiKhoan;
@@ -91,7 +91,8 @@ public final class BaoCaoDaLuuPanel extends JPanel implements ActionListener, Do
         });
         pnlBang.removeAll();
         pnlBang.add(BaoCaoUi.cuonBang(tbl));
-        lblThongBao.setText("Hiển thị " + danhSach.size() + " báo cáo · Bản lưu chỉ giữ trong lần chạy ứng dụng.");
+        lblThongBao.setText("Hiển thị " + danhSach.size()
+                + " báo cáo · Bản chụp được giữ nguyên trong database.");
         pnlBang.revalidate();
         pnlBang.repaint();
     }
