@@ -23,11 +23,6 @@ import java.util.List;
 /** Đọc và ghi hóa đơn Thu ngân trong SQL Server theo schema QuanLiGarage_v2. */
 public final class HoaDonDAO {
 
-    private static final String DANH_DAU_PHIEU_DA_THANH_TOAN =
-            "UPDATE dbo.PhieuSuaChua SET DaThanhToan = 1, ThoiDiemThanhToan = ? "
-                    + "WHERE MaPhieu = ? AND TrangThai = 'HOAN_THANH' AND DaThanhToan = 0";
-
-
     /** Tạo DAO dùng nguồn SQL Server. */
     public HoaDonDAO() {
     }
@@ -93,6 +88,22 @@ public final class HoaDonDAO {
         return ketQua.isEmpty() ? null : ketQua.get(0);
     }
 
+    /** Đọc thông tin đơn vị đã được quản trị xác nhận để in chứng từ; không dùng dữ liệu giả. */
+    public String[] docThongTinGarage(TaiKhoan taiKhoan) {
+        kiemTraThuNgan(taiKhoan);
+        String sql = "SELECT TenGarage,DiaChi,SoDienThoai,MaSoThue FROM dbo.ThongTinGarage "
+                + "WHERE MaCauHinh=1 AND DangSuDung=1";
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql); ResultSet rs = lenh.executeQuery()) {
+            if (!rs.next()) return null;
+            String ten = rs.getString(1), diaChi = rs.getString(2), dienThoai = rs.getString(3), mst = rs.getString(4);
+            if (ten == null || ten.isBlank() || diaChi == null || diaChi.isBlank()
+                    || dienThoai == null || dienThoai.isBlank()) return null;
+            return new String[] {ten.trim(), diaChi.trim(), dienThoai.trim(), mst == null ? "" : mst.trim()};
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc thông tin garage để in hóa đơn.", ex);
+        }
+    }
+
     /** Tìm hóa đơn theo mã, khách, biển số, lệnh và hình thức thanh toán. */
     public List<HoaDon> timKiem(TaiKhoan taiKhoan, String tuKhoa, HinhThucThanhToan hinhThuc) {
         kiemTraThuNgan(taiKhoan);
@@ -142,45 +153,131 @@ public final class HoaDonDAO {
         taiKhoan.kiemTraQuyenThuNgan();
     }
 
-    /** Khóa lệnh, kiểm tra chưa thu, chụp báo giá và ghi hóa đơn trong một transaction. */
+    /**
+     * Ghi nhận khoản thực thu, xác minh và chốt hóa đơn qua các procedure nghiệp vụ.
+     * Tiền khách đưa có thể lớn hơn phải thu khi trả tiền mặt, nhưng sổ thu chỉ ghi đúng
+     * số phải thu; phần chênh lệch là tiền thối lại chứ không phải doanh thu.
+     */
     private String ghiThanhToan(TaiKhoan taiKhoan, String maPhieu, long soTienNhan,
             HinhThucThanhToan hinhThuc, String maGiaoDich) {
         kiemTraThuNgan(taiKhoan);
         String maLenh = batBuoc(maPhieu, "Mã phiếu");
         String nguoiThu = taiKhoan.getMaNhanVien();
-
-        Connection ketNoi = ketNoi();
+        String daCo = docMaHoaDonTheoLenh(maLenh);
+        if (daCo != null) {
+            return daCo;
+        }
+        PhieuChoThu phieu = timPhieuTheoMa(taiKhoan, maLenh);
+        if (phieu == null) {
+            throw new IllegalStateException("Phiếu không tồn tại, chưa hoàn thành hoặc đã thanh toán.");
+        }
+        String thamChieu = HoaDon.kiemTraThanhToan(phieu.getTongTien(), soTienNhan, hinhThuc, maGiaoDich);
+        xacNhanDoiChieu(taiKhoan, maLenh);
+        String maThaoTacThu = "APP-THU-" + maLenh + "-" + hinhThuc.name();
+        String maThaoTacHoaDon = "APP-HD-" + maLenh;
         try {
-            ketNoi.setAutoCommit(false);
-            PhieuChoThu phieu = docPhieuChoThuKhoa(ketNoi, maLenh);
-            if (phieu == null) {
-                throw new IllegalStateException("Phiếu không tồn tại, chưa hoàn thành hoặc đã thanh toán.");
-            }
-            String thamChieu = HoaDon.kiemTraThanhToan(phieu.getTongTien(), soTienNhan, hinhThuc, maGiaoDich);
-            int soThuTu = docSoHoaDonTiepTheo(ketNoi, LocalDate.now().getYear());
-            String maHoaDon = HoaDon.taoMa(LocalDate.now().getYear(), soThuTu);
-            LocalDateTime thoiDiem = LocalDateTime.now();
-            themHoaDon(ketNoi, maHoaDon, phieu, hinhThuc, thoiDiem, nguoiThu,
-                    thamChieu);
-            int soDong = chupChiTietHoaDon(ketNoi, maHoaDon, maLenh);
-            if (soDong == 0) {
-                throw new IllegalStateException("Phiếu chưa có chi tiết báo giá để lập hóa đơn.");
-            }
-            HoaDon.kiemTraTongChiTiet(phieu.getTongTien(), docChiTietHoaDon(ketNoi, maHoaDon));
-            danhDauPhieuDaThanhToan(ketNoi, maLenh, thoiDiem);
-            ketNoi.commit();
-            return maHoaDon;
+            long maNoiBo = ghiNhanKhoanThu(maLenh, nguoiThu, hinhThuc, phieu.getTongTien(), thamChieu,
+                    maThaoTacThu);
+            xacMinhKhoanThu(maNoiBo, nguoiThu,
+                    hinhThuc == HinhThucThanhToan.TIEN_MAT
+                            ? "Đã kiểm đếm tiền mặt tại quầy"
+                            : "Đã đối chiếu mã chuyển khoản " + thamChieu);
+            return lapHoaDonDaThu(maLenh, nguoiThu, maThaoTacHoaDon);
         } catch (SQLException ex) {
-            hoanTac(ketNoi);
-            if (ex.getErrorCode() == 2601 || ex.getErrorCode() == 2627) {
-                throw new IllegalStateException("Phiếu đã được thanh toán hoặc mã hóa đơn bị trùng.", ex);
-            }
             throw loiDuLieu("Không thể ghi nhận thanh toán.", ex);
-        } catch (RuntimeException ex) {
-            hoanTac(ketNoi);
-            throw ex;
-        } finally {
-            batLaiTuDongLuu(ketNoi);
+        }
+    }
+
+    /** Chụp chi phí thực tế đã kiểm tra trước khi nhận tiền. */
+    public void xacNhanDoiChieu(TaiKhoan taiKhoan, String maPhieu) {
+        kiemTraThuNgan(taiKhoan);
+        String ma = batBuoc(maPhieu, "Mã phiếu");
+        String daCo = "SELECT 1 FROM dbo.DoiChieuChiPhi WHERE MaPhieu=? AND TrangThai='DA_XAC_NHAN'";
+        try (PreparedStatement kiemTra = ketNoi().prepareStatement(daCo)) {
+            kiemTra.setString(1, ma);
+            try (ResultSet rs = kiemTra.executeQuery()) {
+                if (rs.next()) {
+                    return;
+                }
+            }
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể kiểm tra đối chiếu chi phí.", ex);
+        }
+        try (PreparedStatement lenh = ketNoi().prepareStatement(
+                "EXEC dbo.usp_XacNhanDoiChieu ?,?,?,?,?")) {
+            lenh.setString(1, ma);
+            lenh.setString(2, taiKhoan.getMaNhanVien());
+            lenh.setLong(3, 0L);
+            lenh.setLong(4, 0L);
+            lenh.setString(5, "");
+            lenh.execute();
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể xác nhận đối chiếu chi phí.", ex);
+        }
+    }
+
+    private long ghiNhanKhoanThu(String maLenh, String nguoiThu, HinhThucThanhToan hinhThuc,
+            long soTien, String thamChieu, String maThaoTac) throws SQLException {
+        try (PreparedStatement lenh = ketNoi().prepareStatement(
+                "EXEC dbo.usp_GhiNhanThanhToan ?,?,?,?,?,?")) {
+            lenh.setString(1, maLenh);
+            lenh.setString(2, nguoiThu);
+            lenh.setString(3, hinhThuc.name());
+            lenh.setLong(4, soTien);
+            lenh.setString(5, thamChieu);
+            lenh.setString(6, maThaoTac);
+            try (ResultSet rs = lenh.executeQuery()) {
+                if (!rs.next()) throw new SQLException("Procedure không trả mã giao dịch.");
+                return rs.getLong("MaGiaoDichNoiBo");
+            }
+        }
+    }
+
+    private void xacMinhKhoanThu(long maNoiBo, String nguoiThu, String chungCu) throws SQLException {
+        String trangThai;
+        try (PreparedStatement lenh = ketNoi().prepareStatement(
+                "SELECT TrangThai FROM dbo.GiaoDichThanhToan WHERE MaGiaoDichNoiBo=?")) {
+            lenh.setLong(1, maNoiBo);
+            try (ResultSet rs = lenh.executeQuery()) {
+                if (!rs.next()) throw new SQLException("Không tìm thấy giao dịch vừa ghi nhận.");
+                trangThai = rs.getString(1);
+            }
+        }
+        if ("DA_XAC_MINH".equals(trangThai)) return;
+        if (!"CHO_XAC_MINH".equals(trangThai))
+            throw new IllegalStateException("Khoản thu đã bị từ chối hoặc ở trạng thái không hợp lệ.");
+        try (PreparedStatement lenh = ketNoi().prepareStatement(
+                "EXEC dbo.usp_XacMinhThanhToan ?,?,?,?")) {
+            lenh.setLong(1, maNoiBo);
+            lenh.setString(2, nguoiThu);
+            lenh.setString(3, chungCu);
+            lenh.setBoolean(4, true);
+            lenh.execute();
+        }
+    }
+
+    private String lapHoaDonDaThu(String maLenh, String nguoiThu, String maThaoTac) throws SQLException {
+        try (PreparedStatement lenh = ketNoi().prepareStatement(
+                "EXEC dbo.usp_LapHoaDonDaThu ?,?,?")) {
+            lenh.setString(1, maLenh);
+            lenh.setString(2, nguoiThu);
+            lenh.setString(3, maThaoTac);
+            try (ResultSet rs = lenh.executeQuery()) {
+                if (!rs.next()) throw new SQLException("Procedure không trả mã hóa đơn.");
+                return rs.getString("MaHoaDon");
+            }
+        }
+    }
+
+    private String docMaHoaDonTheoLenh(String maLenh) {
+        try (PreparedStatement lenh = ketNoi().prepareStatement(
+                "SELECT MaHoaDon FROM dbo.HoaDon WHERE MaPhieuSuaChua=?")) {
+            lenh.setString(1, maLenh);
+            try (ResultSet rs = lenh.executeQuery()) {
+                return rs.next() ? rs.getString(1) : null;
+            }
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể kiểm tra hóa đơn hiện có.", ex);
         }
     }
 
@@ -247,14 +344,14 @@ public final class HoaDonDAO {
         }
     }
 
-    /** Đọc chi tiết báo giá của phiếu còn chờ thu. */
+    /** Đọc công việc hoàn tất, phát sinh được duyệt và phụ tùng thực dùng sau hoàn kho. */
     public List<ChiTietBaoGia> layChiTietDoiChieu(TaiKhoan taiKhoan, String maPhieu) {
         if (timPhieuTheoMa(taiKhoan, maPhieu) == null) {
             throw new IllegalArgumentException("Phiếu không còn chờ thu.");
         }
-        String sql = "SELECT ct.MaDichVu, ct.MaPhuTung, ct.TenHangMuc, ct.Loai, ct.DonVi, ct.SoLuong, "
-                + "ct.DonGia, ct.ThanhTien FROM dbo.PhieuSuaChua sc "
-                + "JOIN dbo.ChiTietBaoGia ct ON ct.MaBaoGia = sc.MaBaoGia WHERE sc.MaPhieu = ? ORDER BY ct.ViTri";
+        String sql = "SELECT MaDichVu,MaPhuTung,TenHangMuc,Loai,DonVi,SoLuongTinhTien AS SoLuong,"
+                + "DonGia,ThanhTien FROM dbo.vw_ChiPhiThucTe WHERE MaPhieu=? AND SoLuongTinhTien>0 "
+                + "ORDER BY ViTriSuaChua,COALESCE(MaPhatSinh,0),TenHangMuc";
         return docChiTiet(sql, maPhieu);
     }
 
@@ -271,11 +368,9 @@ public final class HoaDonDAO {
     /** Tách tổng tiền dịch vụ và phụ tùng của phiếu đang chờ. */
     public long[] docChiPhi(TaiKhoan taiKhoan, String maPhieu) {
         kiemTraThuNgan(taiKhoan);
-        String sql = "SELECT COALESCE(SUM(CASE WHEN ct.Loai = N'Phụ tùng' THEN 0 ELSE ct.ThanhTien END), 0), "
-                + "COALESCE(SUM(CASE WHEN ct.Loai = N'Phụ tùng' THEN ct.ThanhTien ELSE 0 END), 0) "
-                + "FROM dbo.PhieuSuaChua sc JOIN dbo.ChiTietBaoGia ct ON ct.MaBaoGia = sc.MaBaoGia "
-                + "WHERE sc.MaPhieu = ? AND sc.TrangThai = 'HOAN_THANH' "
-                + "AND NOT EXISTS (SELECT 1 FROM dbo.HoaDon hd WHERE hd.MaPhieuSuaChua = sc.MaPhieu)";
+        String sql = "SELECT COALESCE(SUM(CASE WHEN Loai=N'Phụ tùng' THEN 0 ELSE ThanhTien END),0),"
+                + "COALESCE(SUM(CASE WHEN Loai=N'Phụ tùng' THEN ThanhTien ELSE 0 END),0) "
+                + "FROM dbo.vw_ChiPhiThucTe WHERE MaPhieu=?";
         try (PreparedStatement lenh = ketNoi().prepareStatement(sql)) {
             lenh.setString(1, batBuoc(maPhieu, "Mã phiếu"));
             try (ResultSet dong = lenh.executeQuery()) {
@@ -417,76 +512,6 @@ public final class HoaDonDAO {
             }
         }
         return ketQua;
-    }
-
-    /**
-     * Chuyển phiếu sang trạng thái đã thanh toán trong cùng transaction ghi hóa đơn.
-     *
-     * <p>Quy định 3.2 yêu cầu phương thức nghiệp vụ trong DAO phải "lưu hóa đơn/chi tiết và cập
-     * nhật phiếu trong cùng transaction". Bộ lọc {@code TrangThai = 'HOAN_THANH' AND DaThanhToan = 0}
-     * giữ nguyên tính chống trùng của điều kiện {@code NOT EXISTS} trước đây: lần thu thứ hai cập
-     * nhật 0 dòng và bị coi là lỗi.
-     *
-     * @param ketNoi kết nối đang mở transaction của bên gọi
-     * @param maPhieu mã lệnh sửa chữa vừa lập hóa đơn
-     * @param thoiDiem thời điểm thanh toán, cùng mốc ghi trên hóa đơn
-     * @throws SQLException nếu câu lệnh thất bại
-     * @throws IllegalStateException nếu phiếu không còn ở trạng thái chờ thu
-     */
-    private static void danhDauPhieuDaThanhToan(Connection ketNoi, String maPhieu,
-            LocalDateTime thoiDiem) throws SQLException {
-        try (PreparedStatement lenh = ketNoi.prepareStatement(DANH_DAU_PHIEU_DA_THANH_TOAN)) {
-            lenh.setTimestamp(1, Timestamp.valueOf(thoiDiem));
-            lenh.setString(2, maPhieu);
-            if (lenh.executeUpdate() != 1) {
-                throw new IllegalStateException(
-                        "Phiếu đã được thanh toán hoặc chưa hoàn thành sửa chữa.");
-            }
-        }
-    }
-
-    private static void themHoaDon(Connection ketNoi, String maHoaDon, PhieuChoThu phieu,
-            HinhThucThanhToan hinhThuc, LocalDateTime thoiDiem, String nguoiThu, String maGiaoDich)
-            throws SQLException {
-        String sql = "INSERT dbo.HoaDon (MaHoaDon, MaPhieuSuaChua, TenKhachHang, BienSo, TongTien, "
-                + "HinhThucThanhToan, ThoiDiemThanhToan, NguoiThucHien, MaGiaoDich) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement lenh = ketNoi.prepareStatement(sql)) {
-            lenh.setString(1, maHoaDon);
-            lenh.setString(2, phieu.getMaPhieu());
-            lenh.setString(3, phieu.getTenKhach());
-            lenh.setString(4, phieu.getBienSo());
-            lenh.setLong(5, phieu.getTongTien());
-            lenh.setString(6, hinhThuc.name());
-            lenh.setTimestamp(7, Timestamp.valueOf(thoiDiem));
-            lenh.setString(8, nguoiThu);
-            lenh.setString(9, maGiaoDich);
-            lenh.executeUpdate();
-        }
-    }
-
-    private static int chupChiTietHoaDon(Connection ketNoi, String maHoaDon, String maPhieu) throws SQLException {
-        String sql = "INSERT dbo.ChiTietHoaDon (MaHoaDon, ViTri, TenHangMuc, Loai, DonVi, SoLuong, DonGia, ThanhTien) "
-                + "SELECT ?, ct.ViTri, ct.TenHangMuc, ct.Loai, ct.DonVi, ct.SoLuong, ct.DonGia, ct.ThanhTien "
-                + "FROM dbo.PhieuSuaChua sc JOIN dbo.ChiTietBaoGia ct ON ct.MaBaoGia = sc.MaBaoGia "
-                + "WHERE sc.MaPhieu = ?";
-        try (PreparedStatement lenh = ketNoi.prepareStatement(sql)) {
-            lenh.setString(1, maHoaDon);
-            lenh.setString(2, maPhieu);
-            return lenh.executeUpdate();
-        }
-    }
-
-    private static int docSoHoaDonTiepTheo(Connection ketNoi, int nam) throws SQLException {
-        String tienTo = "HD-" + nam + "-";
-        String sql = "SELECT COALESCE(MAX(TRY_CONVERT(INT, RIGHT(MaHoaDon, 4))), 0) + 1 "
-                + "FROM dbo.HoaDon WITH (UPDLOCK, HOLDLOCK) WHERE MaHoaDon LIKE ?";
-        try (PreparedStatement lenh = ketNoi.prepareStatement(sql)) {
-            lenh.setString(1, tienTo + "%");
-            try (ResultSet dong = lenh.executeQuery()) {
-                dong.next();
-                return dong.getInt(1);
-            }
-        }
     }
 
     private static void datNgay(PreparedStatement lenh, int chiSoNull, int chiSoGiaTri, LocalDate ngay)

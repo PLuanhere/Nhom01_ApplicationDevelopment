@@ -8,6 +8,7 @@ public final class TaiKhoan {
     private final String maNhanVien;
     private final VaiTro vaiTro;
     private final boolean hoatDong;
+    private final boolean buocDoiMatKhau;
     private final LocalDateTime ngayTao;
     private final int phienBan;
 
@@ -15,16 +16,22 @@ public final class TaiKhoan {
 
     /** Tạo thông tin tài khoản với vai trò và trạng thái truy cập. */
     public TaiKhoan(String maNhanVien, VaiTro vaiTro) {
-        this(maNhanVien, vaiTro, true, LocalDateTime.now(), 1);
+        this(maNhanVien, vaiTro, true, LocalDateTime.now(), 1, false);
     }
 
     /** Tạo thông tin tài khoản với vai trò và trạng thái truy cập. */
     public TaiKhoan(String maNhanVien, VaiTro vaiTro, boolean hoatDong, LocalDateTime ngayTao) {
-        this(maNhanVien, vaiTro, hoatDong, ngayTao, 1);
+        this(maNhanVien, vaiTro, hoatDong, ngayTao, 1, false);
     }
 
     /** Tạo tài khoản đọc từ database và giữ phiên bản để kiểm tra phiên. */
     public TaiKhoan(String maNhanVien, VaiTro vaiTro, boolean hoatDong, LocalDateTime ngayTao, int phienBan) {
+        this(maNhanVien, vaiTro, hoatDong, ngayTao, phienBan, false);
+    }
+
+    /** Tạo tài khoản và giữ cả cờ bắt buộc đổi mật khẩu. */
+    public TaiKhoan(String maNhanVien, VaiTro vaiTro, boolean hoatDong,
+            LocalDateTime ngayTao, int phienBan, boolean buocDoiMatKhau) {
         this.maNhanVien = kiemTraMaNhanVien(maNhanVien);
         if (vaiTro == null) {
             throw new IllegalArgumentException("Thiếu vaiTro.");
@@ -36,6 +43,7 @@ public final class TaiKhoan {
         }
         this.ngayTao = ngayTao;
         this.phienBan = phienBan;
+        this.buocDoiMatKhau = buocDoiMatKhau;
     }
 
     /** Trả về mã nhân viên dùng làm mã tài khoản. */
@@ -71,6 +79,11 @@ public final class TaiKhoan {
     /** Trả về phiên bản dữ liệu tài khoản tại lúc đăng nhập. */
     public int getPhienBan() {
         return phienBan;
+    }
+
+    /** Cho biết tài khoản phải đổi mật khẩu trước khi vào màn hình chính. */
+    public boolean isBuocDoiMatKhau() {
+        return buocDoiMatKhau;
     }
 
     /** Cho biết phiên đăng nhập đã bị thu hồi hay chưa. */

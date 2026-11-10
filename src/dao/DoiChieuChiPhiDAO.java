@@ -76,6 +76,14 @@ public final class DoiChieuChiPhiDAO {
         return ketQua;
     }
 
+    /** Chốt snapshot chi phí thực tế trước khi chuyển sang bước nhận tiền. */
+    public void xacNhanDoiChieu(String maPhieu) {
+        if (maPhieu == null || maPhieu.isBlank()) {
+            throw new IllegalArgumentException("Cần chọn phiếu.");
+        }
+        hoaDonDAO.xacNhanDoiChieu(taiKhoan, maPhieu.trim());
+    }
+
     /** Một dòng chi phí chỉ đọc; tiền dùng long nguyên đồng. */
     public static final class DongChiPhi {
         private final String hangMuc;

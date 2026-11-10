@@ -433,6 +433,35 @@ public final class PhieuSuaChuaDAO {
         return p;
     }
 
+    // Hoàn vật tư có thể diễn ra sau khi kỹ thuật đã bấm hoàn tất, miễn là lệnh chưa lập hóa đơn.
+    PhieuSuaChua khoaLenhChoHoanKho(Connection c, TaiKhoan tk, String ma) throws SQLException {
+        PhieuSuaChua p = docTheoMa(c, ma, true);
+        if (p == null || !duocGiao(tk, p)) {
+            throw new SecurityException("Lệnh không tồn tại hoặc không thuộc phân công.");
+        }
+        try (PreparedStatement ps = c.prepareStatement(
+                "SELECT 1 FROM dbo.HoaDon WITH (UPDLOCK,HOLDLOCK) WHERE MaPhieuSuaChua=?")) {
+            ps.setString(1, ma);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    throw new IllegalStateException("Lệnh đã lập hóa đơn; không được thay đổi phụ tùng thực dùng.");
+                }
+            }
+        }
+        try (PreparedStatement ps = c.prepareStatement(
+                "SELECT 1 FROM dbo.DoiChieuChiPhi WITH (UPDLOCK,HOLDLOCK) "
+                        + "WHERE MaPhieu=? AND TrangThai='DA_XAC_NHAN'")) {
+            ps.setString(1, ma);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    throw new IllegalStateException(
+                            "Chi phí đã được thu ngân đối chiếu; cần hủy/điều chỉnh đối chiếu theo thẩm quyền.");
+                }
+            }
+        }
+        return p;
+    }
+
     // Đọc lệnh bằng mã trên kết nối được cấp, tùy chọn khóa để cập nhật.
     private PhieuSuaChua docTheoMa(Connection c, String ma, boolean khoa) throws SQLException {
         String sql = "SELECT * FROM dbo.PhieuSuaChua " + (khoa ? "WITH (UPDLOCK,HOLDLOCK) " : "") + "WHERE MaPhieu=?";

@@ -112,6 +112,9 @@ public final class HoaDon {
         if (hinhThuc == HinhThucThanhToan.CHUYEN_KHOAN && thamChieu.isEmpty()) {
             throw new IllegalArgumentException("Nhập mã giao dịch chuyển khoản.");
         }
+        if (hinhThuc == HinhThucThanhToan.CHUYEN_KHOAN && tienNhan != phaiThu) {
+            throw new IllegalArgumentException("Số tiền chuyển khoản phải khớp đúng số phải thu.");
+        }
         return thamChieu;
     }
 

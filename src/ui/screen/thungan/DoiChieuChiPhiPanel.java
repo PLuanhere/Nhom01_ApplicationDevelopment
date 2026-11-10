@@ -44,6 +44,7 @@ public final class DoiChieuChiPhiPanel extends JPanel {
     private static final Color BLUE = new Color(34, 100, 166);
 
     private final ActionListener onChoosePayment;
+    private final DoiChieuChiPhiDAO nguonDoiChieu;
 
     public DoiChieuChiPhiPanel() {
         this(new DoiChieuChiPhiDAO(), "SC-2026-0111", null, null);
@@ -52,14 +53,14 @@ public final class DoiChieuChiPhiPanel extends JPanel {
     public DoiChieuChiPhiPanel(DoiChieuChiPhiDAO dao, String maPhieu, ActionListener onChoosePayment,
             ActionListener onBack) {
         this.onChoosePayment = onChoosePayment;
+        this.nguonDoiChieu = dao != null ? dao : new DoiChieuChiPhiDAO();
 
         setLayout(new BorderLayout());
         setBackground(PAGE);
 
         KetQuaDoiChieu kq;
         try {
-            kq = (dao != null ? dao : new DoiChieuChiPhiDAO())
-                    .layKetQuaDoiChieu(maPhieu != null ? maPhieu : "SC-2026-0111");
+            kq = nguonDoiChieu.layKetQuaDoiChieu(maPhieu != null ? maPhieu : "SC-2026-0111");
         } catch (IllegalArgumentException e) {
             add(buildErrorPanel(e.getMessage()), BorderLayout.CENTER);
             return;
@@ -186,7 +187,14 @@ public final class DoiChieuChiPhiPanel extends JPanel {
                 dlg.setVisible(true);
                 HinhThucThanhToan ht = dlg.getKetQua();
                 if (ht != null && onChoosePayment != null) {
-                    onChoosePayment.actionPerformed(new ActionEvent(ht, ActionEvent.ACTION_PERFORMED, kq.getMaPhieu()));
+                    try {
+                        nguonDoiChieu.xacNhanDoiChieu(kq.getMaPhieu());
+                        onChoosePayment.actionPerformed(
+                                new ActionEvent(ht, ActionEvent.ACTION_PERFORMED, kq.getMaPhieu()));
+                    } catch (RuntimeException ex) {
+                        javax.swing.JOptionPane.showMessageDialog(DoiChieuChiPhiPanel.this, ex.getMessage(),
+                                "Không thể chốt đối chiếu", javax.swing.JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             }
         });

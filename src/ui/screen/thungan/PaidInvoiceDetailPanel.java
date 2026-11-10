@@ -205,6 +205,13 @@ public class PaidInvoiceDetailPanel extends JPanel {
     }
 
     private void inHoaDon(HoaDon hoaDon) {
+        String[] garage = thuNganDAO.docThongTinGarage(taiKhoan);
+        if (garage == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Chưa cấu hình và xác nhận tên, địa chỉ, số điện thoại garage; không thể in chứng từ.",
+                    "Thiếu thông tin đơn vị", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         // Tạo PrinterJob
         PrinterJob printerJob = PrinterJob.getPrinterJob();
 
@@ -224,13 +231,14 @@ public class PaidInvoiceDetailPanel extends JPanel {
 
                 // Header - Thông tin garage
                 g2d.setFont(new Font("Dialog", Font.BOLD, 18));
-                g2d.drawString("GARAGE Ô TÔ ĐỨC DŨNG", x, y);
+                g2d.drawString(garage[0], x, y);
                 y += 25;
 
                 g2d.setFont(new Font("Dialog", Font.PLAIN, 10));
-                g2d.drawString("Địa chỉ: 123 Đường ABC, Quận XYZ, TP.HCM", x, y);
+                g2d.drawString("Địa chỉ: " + garage[1], x, y);
                 y += 15;
-                g2d.drawString("Điện thoại: 028 1234 5678", x, y);
+                g2d.drawString("Điện thoại: " + garage[2]
+                        + (garage[3].isBlank() ? "" : " · MST: " + garage[3]), x, y);
                 y += 30;
 
                 // Tiêu đề hóa đơn

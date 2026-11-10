@@ -3,9 +3,9 @@
 -- Chạy trọn file bằng SSMS hoặc sqlcmd -b. Không DROP/TRUNCATE database/bảng/dữ liệu.
 -- Chạy lại: không gieo lại demo, không reset sequence, không ghi đè chứng từ.
 -- Database có dữ liệu: backup trước, đối chiếu cảnh báo cuối file; script không tự bịa dữ liệu lịch sử.
--- DAO/UI main cần đổi nguồn tính tiền và gọi các procedure mới; xem database/README.md.
+-- DAO/UI phải dùng nguồn chi phí thực tế và các procedure nghiệp vụ; xem database/README.md.
 -- Cờ DaThanhToan trên lệnh tách khỏi trạng thái sửa chữa HOAN_THANH.
--- Mật khẩu demo mới dùng PBKDF2 có salt; DAO so sánh plaintext cũ cần nâng cấp.
+-- Mật khẩu demo dùng PBKDF2 có salt; ứng dụng phải xác minh qua TaiKhoanThongTinBaoMat.
 -- SQL kiểm tra vai trò theo mã nhân viên, nhưng không thay thế xác thực/kiểm tra phiên của ứng dụng.
 
 USE master;
@@ -1126,6 +1126,19 @@ SELECT MaLenh,SUM(CONVERT(DECIMAL(38,0),CASE
 FROM dbo.GiaoDichThanhToan GROUP BY MaLenh;
 GO
 
+-- Nghĩa vụ hiện hành: trước hóa đơn lấy đối chiếu/thực tế; sau hóa đơn lấy snapshot cộng điều chỉnh được duyệt.
+CREATE OR ALTER VIEW dbo.vw_NghiaVuThanhToan
+AS
+SELECT sc.MaPhieu,
+       CONVERT(BIGINT,CASE WHEN hd.MaHoaDon IS NULL THEN CONVERT(DECIMAL(38,0),t.TongPhaiThu)
+            ELSE CONVERT(DECIMAL(38,0),hd.TongTien)+a.DieuChinh END) AS TongPhaiThu
+FROM dbo.PhieuSuaChua sc
+JOIN dbo.vw_TongPhaiThu t ON t.MaPhieu=sc.MaPhieu
+LEFT JOIN dbo.HoaDon hd ON hd.MaPhieuSuaChua=sc.MaPhieu
+OUTER APPLY(SELECT COALESCE(SUM(CONVERT(DECIMAL(38,0),d.SoTienDieuChinh)),0) AS DieuChinh
+            FROM dbo.DieuChinhHoaDon d WHERE d.MaHoaDon=hd.MaHoaDon AND d.TrangThai='DA_DUYET') a;
+GO
+
 CREATE OR ALTER VIEW dbo.vw_PhieuChoThu
 AS
 SELECT sc.MaPhieu AS MaLenh,tn.TenKhach AS TenKhachHang,sc.BienSo,t.TongPhaiThu AS SoTienPhaiThu
@@ -1170,7 +1183,7 @@ SELECT p.MaLenh,CONVERT(VARCHAR(40),CONCAT('NGOAI_LE-',p.MaPheDuyet)),
        t.TongPhaiThu,CONVERT(BIGINT,COALESCE(s.DaThu,0)),p.NguoiPheDuyet,p.ThoiDiemPheDuyet,
        CONVERT(BIT,1),p.LyDo
 FROM dbo.PheDuyetBanGiaoNgoaiLe p
-JOIN dbo.vw_TongPhaiThu t ON t.MaPhieu=p.MaLenh
+JOIN dbo.vw_NghiaVuThanhToan t ON t.MaPhieu=p.MaLenh
 JOIN dbo.TaiKhoan tk ON tk.MaNhanVien=p.NguoiPheDuyet AND tk.VaiTro='QUAN_LY'
 LEFT JOIN dbo.vw_SoTienDaXacMinh s ON s.MaLenh=p.MaLenh
 WHERE p.TrangThai='DA_DUYET' AND (p.ThoiHan IS NULL OR p.ThoiHan>=dbo.fn_ThoiDiemGarage())
@@ -1386,7 +1399,8 @@ BEGIN
         BEGIN TRANSACTION;
         IF NOT EXISTS(SELECT 1 FROM dbo.PhieuSuaChua WITH(UPDLOCK,HOLDLOCK) WHERE MaPhieu=@MaLenh)
             THROW 51122,N'Lệnh không tồn tại.',1;
-        DECLARE @Id BIGINT,@HoaDonCu VARCHAR(40);
+        DECLARE @Id BIGINT,@HoaDonCu VARCHAR(40),@PhaiThu DECIMAL(38,0),
+            @DaXacMinh DECIMAL(38,0),@DangCho DECIMAL(38,0);
         SELECT @HoaDonCu=MaHoaDon FROM dbo.HoaDon WHERE MaPhieuSuaChua=@MaLenh;
         SELECT @Id=MaGiaoDichNoiBo FROM dbo.GiaoDichThanhToan WITH(UPDLOCK,HOLDLOCK) WHERE MaThaoTac=@MaThaoTac;
         IF @Id IS NOT NULL
@@ -1397,12 +1411,21 @@ BEGIN
                 THROW 51123,N'Mã thao tác đã được dùng cho giao dịch khác.',1;
             COMMIT; SELECT @Id AS MaGiaoDichNoiBo; RETURN;
         END;
-        IF @HoaDonCu IS NOT NULL AND @SoTien>(SELECT CONVERT(DECIMAL(38,0),h.TongTien)
-            +COALESCE((SELECT SUM(CONVERT(DECIMAL(38,0),d.SoTienDieuChinh)) FROM dbo.DieuChinhHoaDon d
-                WHERE d.MaHoaDon=h.MaHoaDon AND d.TrangThai='DA_DUYET'),0)
-            -COALESCE((SELECT DaThu FROM dbo.vw_SoTienDaXacMinh WHERE MaLenh=@MaLenh),0)
-            FROM dbo.HoaDon h WHERE h.MaHoaDon=@HoaDonCu)
-            THROW 51126,N'Số tiền thu thêm vượt số còn phải thu sau điều chỉnh.',1;
+        IF @HoaDonCu IS NULL
+            SELECT @PhaiThu=TongPhaiThu FROM dbo.DoiChieuChiPhi
+            WHERE MaPhieu=@MaLenh AND TrangThai='DA_XAC_NHAN';
+        ELSE
+            SELECT @PhaiThu=CONVERT(DECIMAL(38,0),h.TongTien)+COALESCE(
+                (SELECT SUM(CONVERT(DECIMAL(38,0),d.SoTienDieuChinh)) FROM dbo.DieuChinhHoaDon d
+                 WHERE d.MaHoaDon=h.MaHoaDon AND d.TrangThai='DA_DUYET'),0)
+            FROM dbo.HoaDon h WHERE h.MaHoaDon=@HoaDonCu;
+        IF @PhaiThu IS NULL THROW 51127,N'Cần xác nhận đối chiếu trước khi ghi nhận tiền.',1;
+        SELECT @DaXacMinh=COALESCE(DaThu,0) FROM dbo.vw_SoTienDaXacMinh WHERE MaLenh=@MaLenh;
+        SET @DaXacMinh=COALESCE(@DaXacMinh,0);
+        SELECT @DangCho=COALESCE(SUM(CONVERT(DECIMAL(38,0),SoTien)),0)
+        FROM dbo.GiaoDichThanhToan WHERE MaLenh=@MaLenh AND LoaiGiaoDich='THU' AND TrangThai='CHO_XAC_MINH';
+        IF @SoTien>@PhaiThu-@DaXacMinh-@DangCho
+            THROW 51126,N'Số tiền ghi nhận vượt số còn phải thu hoặc đã có khoản chờ xác minh.',1;
         INSERT dbo.GiaoDichThanhToan(MaLenh,MaHoaDon,LoaiGiaoDich,HinhThuc,SoTien,MaThamChieu,
             TrangThai,NguoiThucHien,ThoiDiemTao,MaThaoTac)
         VALUES(@MaLenh,@HoaDonCu,'THU',@HinhThuc,@SoTien,COALESCE(@MaThamChieu,N''),'CHO_XAC_MINH',
@@ -1427,9 +1450,28 @@ BEGIN
         THROW 51124,N'Cần thu ngân đang hoạt động và căn cứ xác minh.',1;
     BEGIN TRY
         BEGIN TRANSACTION;
-        DECLARE @MaLenh VARCHAR(40),@Khoa VARCHAR(40);
-        SELECT @MaLenh=MaLenh FROM dbo.GiaoDichThanhToan WHERE MaGiaoDichNoiBo=@MaGiaoDichNoiBo;
+        DECLARE @MaLenh VARCHAR(40),@Khoa VARCHAR(40),@SoTien BIGINT,@PhaiThu DECIMAL(38,0),
+            @DaXacMinh DECIMAL(38,0),@MaHoaDon VARCHAR(40);
+        SELECT @MaLenh=MaLenh,@SoTien=SoTien,@MaHoaDon=MaHoaDon
+        FROM dbo.GiaoDichThanhToan WITH(UPDLOCK,HOLDLOCK)
+        WHERE MaGiaoDichNoiBo=@MaGiaoDichNoiBo AND TrangThai='CHO_XAC_MINH' AND LoaiGiaoDich='THU';
         SELECT @Khoa=MaPhieu FROM dbo.PhieuSuaChua WITH(UPDLOCK,HOLDLOCK) WHERE MaPhieu=@MaLenh;
+        IF @MaLenh IS NULL THROW 51125,N'Giao dịch không tồn tại hoặc đã xử lý.',1;
+        IF @ThanhCong=1
+        BEGIN
+            IF @MaHoaDon IS NULL
+                SELECT @PhaiThu=TongPhaiThu FROM dbo.DoiChieuChiPhi
+                WHERE MaPhieu=@MaLenh AND TrangThai='DA_XAC_NHAN';
+            ELSE
+                SELECT @PhaiThu=CONVERT(DECIMAL(38,0),h.TongTien)+COALESCE(
+                    (SELECT SUM(CONVERT(DECIMAL(38,0),d.SoTienDieuChinh)) FROM dbo.DieuChinhHoaDon d
+                     WHERE d.MaHoaDon=h.MaHoaDon AND d.TrangThai='DA_DUYET'),0)
+                FROM dbo.HoaDon h WHERE h.MaHoaDon=@MaHoaDon;
+            SELECT @DaXacMinh=COALESCE(DaThu,0) FROM dbo.vw_SoTienDaXacMinh WHERE MaLenh=@MaLenh;
+            SET @DaXacMinh=COALESCE(@DaXacMinh,0);
+            IF @PhaiThu IS NULL OR @DaXacMinh+@SoTien>@PhaiThu
+                THROW 51128,N'Xác minh làm tổng thu vượt số phải thu hiện tại.',1;
+        END;
         UPDATE dbo.GiaoDichThanhToan SET TrangThai=CASE WHEN @ThanhCong=1 THEN 'DA_XAC_MINH' ELSE 'TU_CHOI' END,
             NguoiXacMinh=@NguoiXacMinh,ThoiDiemXacMinh=dbo.fn_ThoiDiemGarage(),ChungCuXacMinh=@ChungCu
         WHERE MaGiaoDichNoiBo=@MaGiaoDichNoiBo AND TrangThai='CHO_XAC_MINH' AND LoaiGiaoDich='THU';
@@ -1539,12 +1581,12 @@ BEGIN
         BEGIN TRANSACTION;
         DECLARE @Lenh VARCHAR(40),@No BIGINT;
         SELECT @Lenh=MaPhieu FROM dbo.PhieuSuaChua WITH(UPDLOCK,HOLDLOCK)
-            WHERE MaPhieu=@MaLenh AND TrangThai='HOAN_THANH' AND DaThanhToan=0;
+            WHERE MaPhieu=@MaLenh AND TrangThai='HOAN_THANH';
         IF @Lenh IS NULL OR EXISTS(SELECT 1 FROM dbo.BanGiaoXe WHERE MaLenh=@MaLenh)
-            THROW 51151,N'Lệnh chưa hoàn tất hoặc đã giao/thu đủ.',1;
+            THROW 51151,N'Lệnh chưa hoàn tất hoặc đã bàn giao.',1;
         IF NOT EXISTS(SELECT 1 FROM dbo.DoiChieuChiPhi WHERE MaPhieu=@MaLenh AND TrangThai='DA_XAC_NHAN')
             THROW 51152,N'Cần xác nhận số phải thu trước khi duyệt công nợ.',1;
-        SELECT @No=t.TongPhaiThu-COALESCE(s.DaThu,0) FROM dbo.vw_TongPhaiThu t
+        SELECT @No=t.TongPhaiThu-COALESCE(s.DaThu,0) FROM dbo.vw_NghiaVuThanhToan t
             LEFT JOIN dbo.vw_SoTienDaXacMinh s ON s.MaLenh=t.MaPhieu WHERE t.MaPhieu=@MaLenh;
         IF @No IS NULL OR @No<=0 THROW 51153,N'Không có số dư cần phê duyệt.',1;
         INSERT dbo.PheDuyetBanGiaoNgoaiLe(MaLenh,SoTienConNo,LyDo,TrangThai,NguoiDeNghi,
@@ -1562,6 +1604,7 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.usp_BanGiaoXe
     @MaLenh VARCHAR(40),@NguoiGiao VARCHAR(20),@NguoiNhan NVARCHAR(150),
+    @ThoiDiemGiao DATETIME2(3),
     @TinhTrang NVARCHAR(2000),@TaiSanDaTra NVARCHAR(2000),@HinhThucXacNhan NVARCHAR(200),
     @GhiChu NVARCHAR(2000),@MaThaoTac VARCHAR(100),@MaPheDuyetNgoaiLe BIGINT=NULL
 AS
@@ -1569,19 +1612,24 @@ BEGIN
     SET NOCOUNT ON; SET XACT_ABORT ON;
     IF NOT EXISTS(SELECT 1 FROM dbo.TaiKhoan WHERE MaNhanVien=@NguoiGiao
         AND VaiTro='NHAN_VIEN_TIEP_NHAN' AND HoatDong=1)
-        OR NULLIF(@MaThaoTac,'') IS NULL OR NULLIF(LTRIM(RTRIM(@NguoiNhan)),N'') IS NULL
+        OR NULLIF(@MaThaoTac,'') IS NULL OR @ThoiDiemGiao IS NULL OR NULLIF(LTRIM(RTRIM(@NguoiNhan)),N'') IS NULL
         OR NULLIF(LTRIM(RTRIM(@HinhThucXacNhan)),N'') IS NULL OR NULLIF(LTRIM(RTRIM(@TinhTrang)),N'') IS NULL
         THROW 51160,N'Thiếu người nhận/xác nhận/tình trạng hoặc sai quyền bàn giao.',1;
     BEGIN TRY
         BEGIN TRANSACTION;
-        DECLARE @Ma VARCHAR(40),@Hd VARCHAR(40),@Luc DATETIME2(3)=dbo.fn_ThoiDiemGarage(),@Khoa VARCHAR(40);
-        SELECT @Khoa=MaPhieu FROM dbo.PhieuSuaChua WITH(UPDLOCK,HOLDLOCK) WHERE MaPhieu=@MaLenh AND TrangThai='HOAN_THANH';
+        DECLARE @Ma VARCHAR(40),@Hd VARCHAR(40),@Luc DATETIME2(3)=dbo.fn_ThoiDiemGarage(),@Khoa VARCHAR(40),
+            @LucHoanTat DATETIME2(3),@LucCanCu DATETIME2(3);
+        SELECT @Khoa=MaPhieu,@LucHoanTat=ThoiDiemHoanTat FROM dbo.PhieuSuaChua WITH(UPDLOCK,HOLDLOCK)
+        WHERE MaPhieu=@MaLenh AND TrangThai='HOAN_THANH';
         IF @Khoa IS NULL THROW 51161,N'Lệnh chưa hoàn tất.',1;
+        IF @ThoiDiemGiao>@Luc OR @ThoiDiemGiao<@LucHoanTat
+            THROW 51166,N'Thời điểm giao phải từ lúc hoàn tất sửa chữa đến hiện tại.',1;
         SELECT @Ma=MaBanGiao FROM dbo.BanGiaoXe WHERE MaThaoTac=@MaThaoTac;
         IF @Ma IS NOT NULL
         BEGIN
             IF EXISTS(SELECT 1 FROM dbo.BanGiaoXe WHERE MaBanGiao=@Ma AND
-                (MaLenh<>@MaLenh OR NguoiGiao<>@NguoiGiao OR NguoiNhan<>@NguoiNhan OR TinhTrang<>@TinhTrang
+                (MaLenh<>@MaLenh OR NguoiGiao<>@NguoiGiao OR NguoiNhan<>@NguoiNhan OR ThoiDiemGiao<>@ThoiDiemGiao
+                 OR TinhTrang<>@TinhTrang
                  OR TaiSanDaTra<>COALESCE(@TaiSanDaTra,N'') OR HinhThucXacNhan<>@HinhThucXacNhan
                  OR GhiChu<>COALESCE(@GhiChu,N'') OR COALESCE(MaPheDuyetNgoaiLe,-1)<>COALESCE(@MaPheDuyetNgoaiLe,-1)))
                 THROW 51162,N'Mã thao tác đã dùng cho bàn giao khác.',1;
@@ -1591,16 +1639,21 @@ BEGIN
             THROW 51163,N'Lệnh đã bàn giao.',1;
         IF @MaPheDuyetNgoaiLe IS NULL
         BEGIN
-            SELECT @Hd=MaChungTu FROM dbo.vw_CanCuBanGiao WHERE MaLenh=@MaLenh;
+            SELECT @Hd=MaChungTu,@LucCanCu=ThoiDiem FROM dbo.vw_CanCuBanGiao WHERE MaLenh=@MaLenh;
             IF @Hd IS NULL THROW 51164,N'Chưa đủ tiền/chứng từ thanh toán.',1;
         END
-        ELSE IF NOT EXISTS(SELECT 1 FROM dbo.vw_CanCuBanGiaoMoRong WHERE MaLenh=@MaLenh
-            AND MaChungTu=CONVERT(VARCHAR(40),CONCAT('NGOAI_LE-',@MaPheDuyetNgoaiLe)) AND NgoaiLe=1)
-            THROW 51165,N'Phê duyệt ngoại lệ không hợp lệ/còn hiệu lực hoặc số nợ đã đổi.',1;
+        ELSE
+        BEGIN
+            SELECT @LucCanCu=ThoiDiem FROM dbo.vw_CanCuBanGiaoMoRong WHERE MaLenh=@MaLenh
+                AND MaChungTu=CONVERT(VARCHAR(40),CONCAT('NGOAI_LE-',@MaPheDuyetNgoaiLe)) AND NgoaiLe=1;
+            IF @LucCanCu IS NULL
+                THROW 51165,N'Phê duyệt ngoại lệ không hợp lệ/còn hiệu lực hoặc số nợ đã đổi.',1;
+        END;
+        IF @ThoiDiemGiao<@LucCanCu THROW 51167,N'Thời điểm giao không được trước thời điểm xác nhận căn cứ.',1;
         EXEC dbo.usp_CapMaChungTu 'GX',@Ma OUTPUT;
         INSERT dbo.BanGiaoXe(MaBanGiao,MaLenh,MaHoaDon,NguoiGiao,NguoiNhan,ThoiDiemGiao,ThoiDiemGhiNhan,
             TinhTrang,TaiSanDaTra,GhiChu,HinhThucXacNhan,MaThaoTac,MaPheDuyetNgoaiLe)
-        VALUES(@Ma,@MaLenh,@Hd,@NguoiGiao,@NguoiNhan,@Luc,@Luc,@TinhTrang,COALESCE(@TaiSanDaTra,N''),
+        VALUES(@Ma,@MaLenh,@Hd,@NguoiGiao,@NguoiNhan,@ThoiDiemGiao,@Luc,@TinhTrang,COALESCE(@TaiSanDaTra,N''),
             COALESCE(@GhiChu,N''),@HinhThucXacNhan,@MaThaoTac,@MaPheDuyetNgoaiLe);
         COMMIT; SELECT @Ma AS MaBanGiao;
     END TRY
@@ -1708,7 +1761,8 @@ BEGIN
         THROW 51183,N'Quyền/số tiền/căn cứ hoàn tiền không hợp lệ.',1;
     BEGIN TRY
         BEGIN TRANSACTION;
-        DECLARE @MaLenh VARCHAR(40),@MaHd VARCHAR(40),@ToiDa BIGINT,@DaHoan DECIMAL(38,0),@Id BIGINT,@Khoa VARCHAR(40);
+        DECLARE @MaLenh VARCHAR(40),@MaHd VARCHAR(40),@ToiDa BIGINT,@DaHoan DECIMAL(38,0),@Id BIGINT,
+            @Khoa VARCHAR(40),@PhaiThu DECIMAL(38,0),@DaThu DECIMAL(38,0);
         SELECT @MaHd=d.MaHoaDon,@MaLenh=h.MaPhieuSuaChua,@ToiDa=-d.SoTienDieuChinh
         FROM dbo.DieuChinhHoaDon d JOIN dbo.HoaDon h ON h.MaHoaDon=d.MaHoaDon
         WHERE d.MaDieuChinh=@MaDieuChinh AND d.TrangThai='DA_DUYET' AND d.SoTienDieuChinh<0;
@@ -1726,6 +1780,13 @@ BEGIN
         SELECT @DaHoan=COALESCE(SUM(CONVERT(DECIMAL(38,0),SoTien)),0) FROM dbo.GiaoDichThanhToan
         WHERE MaDieuChinh=@MaDieuChinh AND LoaiGiaoDich='HOAN_TIEN' AND TrangThai='DA_HOAN';
         IF @DaHoan+@SoTien>@ToiDa THROW 51186,N'Hoàn vượt khoản giảm được duyệt.',1;
+        SELECT @PhaiThu=CONVERT(DECIMAL(38,0),h.TongTien)+COALESCE(
+            (SELECT SUM(CONVERT(DECIMAL(38,0),d.SoTienDieuChinh)) FROM dbo.DieuChinhHoaDon d
+             WHERE d.MaHoaDon=h.MaHoaDon AND d.TrangThai='DA_DUYET'),0)
+        FROM dbo.HoaDon h WHERE h.MaHoaDon=@MaHd;
+        SELECT @DaThu=DaThu FROM dbo.vw_SoTienDaXacMinh WHERE MaLenh=@MaLenh;
+        IF COALESCE(@DaThu,0)-@SoTien<@PhaiThu
+            THROW 51187,N'Khoản hoàn làm tiền thực nhận thấp hơn nghĩa vụ sau các điều chỉnh hiện tại.',1;
         INSERT dbo.GiaoDichThanhToan(MaLenh,MaHoaDon,MaDieuChinh,MaThaoTac,LoaiGiaoDich,HinhThuc,SoTien,
             MaThamChieu,TrangThai,NguoiThucHien,NguoiXacMinh,ThoiDiemXacMinh,ChungCuXacMinh)
         VALUES(@MaLenh,@MaHd,@MaDieuChinh,@MaThaoTac,'HOAN_TIEN',@HinhThuc,@SoTien,COALESCE(@MaThamChieu,N''),
@@ -1755,6 +1816,9 @@ BEGIN
         SELECT @Khoa=MaPhieu FROM dbo.PhieuSuaChua WITH(UPDLOCK,HOLDLOCK) WHERE MaPhieu=@MaLenh AND DaThanhToan=0;
         IF @Khoa IS NULL OR EXISTS(SELECT 1 FROM dbo.HoaDon WHERE MaPhieuSuaChua=@MaLenh)
             THROW 51191,N'Lần xuất không hợp lệ hoặc đã có hóa đơn; cần luồng điều chỉnh sau thu.',1;
+        IF EXISTS(SELECT 1 FROM dbo.DoiChieuChiPhi WITH(UPDLOCK,HOLDLOCK)
+                  WHERE MaPhieu=@MaLenh AND TrangThai='DA_XAC_NHAN')
+            THROW 51198,N'Chi phí đã được xác nhận; phải hủy/điều chỉnh đối chiếu trước khi hoàn phụ tùng.',1;
         SELECT @MaPT=MaPhuTung,@ViTri=ViTriHangMuc,@DaXuat=SoLuong FROM dbo.PhuTungSuDung
             WITH(UPDLOCK,HOLDLOCK) WHERE MaGhiNhan=@MaGhiNhan;
         IF NOT EXISTS(SELECT 1 FROM dbo.TaiKhoan t WHERE t.MaNhanVien=@NguoiThucHien AND t.HoatDong=1
@@ -2480,6 +2544,16 @@ BEGIN
     IF EXISTS(SELECT 1 FROM inserted WHERE TrangThai IN('DA_XAC_MINH','DA_HOAN')
         AND NULLIF(LTRIM(RTRIM(ChungCuXacMinh)),N'') IS NULL)
         THROW 51233,N'Giao dịch xác minh cần căn cứ thu/chi.',1;
+    IF EXISTS(SELECT 1 FROM inserted i JOIN dbo.vw_SoTienDaXacMinh s ON s.MaLenh=i.MaLenh
+        WHERE i.LoaiGiaoDich='THU' AND i.TrangThai='DA_XAC_MINH'
+          AND s.DaThu>COALESCE(
+            (SELECT TOP(1) CONVERT(DECIMAL(38,0),h.TongTien)+COALESCE(
+                (SELECT SUM(CONVERT(DECIMAL(38,0),d.SoTienDieuChinh)) FROM dbo.DieuChinhHoaDon d
+                 WHERE d.MaHoaDon=h.MaHoaDon AND d.TrangThai='DA_DUYET'),0)
+             FROM dbo.HoaDon h WHERE h.MaPhieuSuaChua=i.MaLenh),
+            (SELECT CONVERT(DECIMAL(38,0),dc.TongPhaiThu) FROM dbo.DoiChieuChiPhi dc
+             WHERE dc.MaPhieu=i.MaLenh AND dc.TrangThai='DA_XAC_NHAN')))
+        THROW 51237,N'Tổng tiền xác minh vượt nghĩa vụ phải thu hiện tại.',1;
     IF EXISTS(SELECT 1 FROM inserted i LEFT JOIN dbo.DieuChinhHoaDon d ON d.MaDieuChinh=i.MaDieuChinh
         WHERE i.LoaiGiaoDich='HOAN_TIEN' AND i.TrangThai='DA_HOAN'
           AND (d.MaDieuChinh IS NULL OR d.MaHoaDon<>i.MaHoaDon OR d.TrangThai<>'DA_DUYET' OR d.SoTienDieuChinh>=0))
@@ -2489,6 +2563,13 @@ BEGIN
           AND g.MaDieuChinh IN(SELECT MaDieuChinh FROM inserted)
         GROUP BY g.MaDieuChinh,d.SoTienDieuChinh HAVING SUM(CONVERT(DECIMAL(38,0),g.SoTien))>-d.SoTienDieuChinh)
         THROW 51236,N'Tổng hoàn vượt điều chỉnh giảm được duyệt.',1;
+    IF EXISTS(SELECT 1 FROM inserted i JOIN dbo.vw_SoTienDaXacMinh s ON s.MaLenh=i.MaLenh
+        WHERE i.LoaiGiaoDich='HOAN_TIEN' AND i.TrangThai='DA_HOAN'
+          AND s.DaThu<(SELECT CONVERT(DECIMAL(38,0),h.TongTien)+COALESCE(
+                (SELECT SUM(CONVERT(DECIMAL(38,0),d.SoTienDieuChinh)) FROM dbo.DieuChinhHoaDon d
+                 WHERE d.MaHoaDon=h.MaHoaDon AND d.TrangThai='DA_DUYET'),0)
+             FROM dbo.HoaDon h WHERE h.MaPhieuSuaChua=i.MaLenh))
+        THROW 51238,N'Hoàn tiền làm số thực nhận thấp hơn nghĩa vụ sau điều chỉnh.',1;
 END;
 GO
 CREATE OR ALTER TRIGGER dbo.trg_DieuChinhHoaDon_BatBien ON dbo.DieuChinhHoaDon

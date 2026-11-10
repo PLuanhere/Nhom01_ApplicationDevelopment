@@ -109,19 +109,26 @@ public final class BaoGiaDAO {
     public BaoGia suaNhap(TaiKhoan tk, BaoGia daDoc, List<ChiTietBaoGia> chiTiet,
                           LocalDateTime hen) {
         quyen(tk);
-        kiemTraDanhMuc(tk, chiTiet);
-        BaoGia cu = timTheoMa(tk, daDoc == null ? null : daDoc.getMaBaoGia());
-        if (cu.getTrangThai() != TrangThaiBaoGia.NHAP) {
-            throw new IllegalStateException("Bản đã gửi/duyệt chỉ đọc; cần tạo phiên bản mới.");
+        if (daDoc == null) {
+            throw new IllegalArgumentException("Cần bản báo giá đã đọc để kiểm tra thay đổi đồng thời.");
         }
-        BaoGia moi = new BaoGia(cu.getMaBaoGia(), cu.getMaBaoGiaGoc(), cu.getPhienBan(),
-                cu.getBaoCao(), chiTiet, hen, cu.getNguoiLap(), cu.getNgayLap());
+        kiemTraDanhMuc(tk, chiTiet);
         Connection c = ketNoi();
         try {
             boolean tuDong = c.getAutoCommit();
             c.setAutoCommit(false);
             try {
-                capNhatNoiDung(c, moi);
+                byte[] banKhoa = khoaBanNhap(c, daDoc.getMaBaoGia());
+                BaoGia cu = docBaoGia(c, daDoc.getMaBaoGia());
+                if (cu == null || cu.getTrangThai() != TrangThaiBaoGia.NHAP) {
+                    throw new IllegalStateException("Bản đã gửi/duyệt chỉ đọc; cần tạo phiên bản mới.");
+                }
+                if (!cungNoiDung(cu, daDoc)) {
+                    throw new IllegalStateException("Báo giá đã được người khác thay đổi; tải lại trước khi sửa.");
+                }
+                BaoGia moi = new BaoGia(cu.getMaBaoGia(), cu.getMaBaoGiaGoc(), cu.getPhienBan(),
+                        cu.getBaoCao(), chiTiet, hen, cu.getNguoiLap(), cu.getNgayLap());
+                capNhatNoiDung(c, moi, tk.getMaNhanVien(), banKhoa);
                 c.commit();
                 return moi;
             } catch (RuntimeException | SQLException ex) {
@@ -316,17 +323,67 @@ public final class BaoGiaDAO {
         themChiTiet(c, baoGia);
     }
 
-    private void capNhatNoiDung(Connection c, BaoGia baoGia) throws SQLException {
-        try (PreparedStatement xoa = c.prepareStatement("DELETE dbo.ChiTietBaoGia WHERE MaBaoGia=?")) {
-            xoa.setString(1, baoGia.getMaBaoGia());
-            xoa.executeUpdate();
+    private byte[] khoaBanNhap(Connection c, String maBaoGia) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement(
+                "SELECT PhienBanKhoa FROM dbo.BaoGia WITH (UPDLOCK,HOLDLOCK) WHERE MaBaoGia=?")) {
+            ps.setString(1, maBaoGia);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) throw new IllegalArgumentException("Báo giá không tồn tại.");
+                return rs.getBytes(1);
+            }
         }
-        try (PreparedStatement ps = c.prepareStatement("UPDATE dbo.BaoGia SET NgayHen=? WHERE MaBaoGia=?")) {
-            ps.setTimestamp(1, Timestamp.valueOf(baoGia.getNgayHen()));
-            ps.setString(2, baoGia.getMaBaoGia());
-            ps.executeUpdate();
+    }
+
+    private void capNhatNoiDung(Connection c, BaoGia baoGia, String nguoiSua, byte[] banKhoa)
+            throws SQLException {
+        String sql = "EXEC dbo.usp_SuaBaoGiaNhap @MaBaoGia=?,@NguoiSua=?,@BanDaDoc=?,@NgayHen=?,@ChiTiet=?";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, baoGia.getMaBaoGia());
+            ps.setString(2, nguoiSua);
+            ps.setBytes(3, banKhoa);
+            ps.setTimestamp(4, Timestamp.valueOf(baoGia.getNgayHen()));
+            ps.setString(5, jsonChiTiet(baoGia.getChiTiet()));
+            ps.execute();
         }
-        themChiTiet(c, baoGia);
+    }
+
+    private String jsonChiTiet(List<ChiTietBaoGia> chiTiet) {
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < chiTiet.size(); i++) {
+            ChiTietBaoGia d = chiTiet.get(i);
+            if (i > 0) json.append(',');
+            json.append('{')
+                    .append("\"MaDichVu\":").append(jsonChu(d.getMaDichVu())).append(',')
+                    .append("\"MaPhuTung\":").append(jsonChu(d.getMaPhuTung())).append(',')
+                    .append("\"TenHangMuc\":").append(jsonChu(d.getTenHangMuc())).append(',')
+                    .append("\"Loai\":").append(jsonChu(d.getLoai())).append(',')
+                    .append("\"DonVi\":").append(jsonChu(d.getDonVi())).append(',')
+                    .append("\"SoLuong\":").append(Double.toString(d.getSoLuong())).append(',')
+                    .append("\"DonGia\":").append(d.getDonGia()).append('}');
+        }
+        return json.append(']').toString();
+    }
+
+    private String jsonChu(String giaTri) {
+        if (giaTri == null || giaTri.isEmpty()) return "null";
+        return "\"" + giaTri.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t") + "\"";
+    }
+
+    private boolean cungNoiDung(BaoGia hienTai, BaoGia daDoc) {
+        if (!hienTai.getMaBaoGia().equals(daDoc.getMaBaoGia())
+                || hienTai.getTrangThai() != daDoc.getTrangThai()
+                || !hienTai.getBaoCao().getMaBaoCao().equals(daDoc.getBaoCao().getMaBaoCao())
+                || !hienTai.getNgayHen().equals(daDoc.getNgayHen())
+                || hienTai.getChiTiet().size() != daDoc.getChiTiet().size()) return false;
+        for (int i = 0; i < hienTai.getChiTiet().size(); i++) {
+            ChiTietBaoGia a = hienTai.getChiTiet().get(i), b = daDoc.getChiTiet().get(i);
+            if (!a.getMaDichVu().equals(b.getMaDichVu()) || !a.getMaPhuTung().equals(b.getMaPhuTung())
+                    || !a.getTenHangMuc().equals(b.getTenHangMuc()) || !a.getLoai().equals(b.getLoai())
+                    || !a.getDonVi().equals(b.getDonVi()) || Double.compare(a.getSoLuong(), b.getSoLuong()) != 0
+                    || a.getDonGia() != b.getDonGia()) return false;
+        }
+        return true;
     }
 
     private void themChiTiet(Connection c, BaoGia baoGia) throws SQLException {
@@ -469,17 +526,6 @@ public final class BaoGiaDAO {
             throw new IllegalArgumentException("Mã thao tác thuộc bản báo giá khác.");
         BaoGia noiDung = new BaoGia(cu.getMaBaoGia(), cu.getMaBaoGiaGoc(), cu.getPhienBan(), bc, ct, hen, tk.getMaNhanVien(), cu.getNgayLap());
         if (!cungNoiDung(cu, noiDung)) throw new IllegalArgumentException("Mã thao tác đã lưu nội dung khác.");
-    }
-
-    private boolean cungNoiDung(BaoGia a, BaoGia b) {
-        if (!a.getBaoCao().getMaBaoCao().equals(b.getBaoCao().getMaBaoCao()) || !a.getNgayHen().equals(b.getNgayHen()) || a.getChiTiet().size() != b.getChiTiet().size())
-            return false;
-        for (int i = 0; i < a.getChiTiet().size(); i++) {
-            ChiTietBaoGia x = a.getChiTiet().get(i), y = b.getChiTiet().get(i);
-            if (!x.getMaDichVu().equals(y.getMaDichVu()) || !x.getMaPhuTung().equals(y.getMaPhuTung()) || !x.getTenHangMuc().equals(y.getTenHangMuc()) || !x.getLoai().equals(y.getLoai()) || !x.getDonVi().equals(y.getDonVi()) || x.getSoLuong() != y.getSoLuong() || x.getDonGia() != y.getDonGia())
-                return false;
-        }
-        return true;
     }
 
     private void kiemTraToken(String token) {

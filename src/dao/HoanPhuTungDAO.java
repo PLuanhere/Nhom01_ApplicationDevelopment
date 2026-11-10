@@ -95,7 +95,7 @@ public final class HoanPhuTungDAO {
         try {
             c.setAutoCommit(false);
             // Khóa lệnh trước để không chạy đồng thời với xuất dùng hoặc hoàn tất.
-            PhieuSuaChua p = new PhieuSuaChuaDAO().khoaLenh(c, tk, maLenh);
+            PhieuSuaChua p = new PhieuSuaChuaDAO().khoaLenhChoHoanKho(c, tk, maLenh);
             String maPT;
             int viTri;
             BigDecimal daXuat;

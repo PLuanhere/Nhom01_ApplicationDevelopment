@@ -292,7 +292,7 @@ public class BankTransferPaymentPanel extends JPanel {
             return;
         }
         boolean hasReference = !referenceField.getText().trim().isEmpty();
-        boolean valid = !receivedAmountField.getText().trim().isEmpty() && received >= amountDue && hasReference;
+        boolean valid = !receivedAmountField.getText().trim().isEmpty() && received == amountDue && hasReference;
 
         confirmButton.setEnabled(valid);
 
@@ -302,6 +302,8 @@ public class BankTransferPaymentPanel extends JPanel {
             statusLabel.setText("Chờ xác minh đã nhận đủ tiền");
         } else if (received < amountDue) {
             statusLabel.setText("Chưa nhận đủ tiền · còn thiếu " + money(amountDue - received));
+        } else if (received > amountDue) {
+            statusLabel.setText("Số tiền chuyển khoản vượt số phải thu · cần đối soát riêng");
         } else if (!hasReference) {
             statusLabel.setText("Đủ số tiền · cần mã tham chiếu");
         } else {

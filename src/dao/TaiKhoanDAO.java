@@ -13,24 +13,39 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
+
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 
 /** Đọc và cập nhật tài khoản nhân viên trong SQL Server. */
 public final class TaiKhoanDAO {
+    private static final String THUAT_TOAN = "PBKDF2-HMAC-SHA256";
+    private static final int SO_VONG = 600_000;
+    private static final int DO_DAI_HASH_BIT = 256;
+    private static final SecureRandom NGAU_NHIEN = new SecureRandom();
 
     /** Đăng nhập bằng mã nhân viên và mật khẩu được cấp. */
     public TaiKhoan dangNhap(String maNhanVien, char[] matKhau) {
         if (maNhanVien == null || maNhanVien.trim().isEmpty() || matKhau == null || matKhau.length == 0) {
             throw new IllegalArgumentException("Cần nhập mã nhân viên và mật khẩu.");
         }
-        String sql = "SELECT MaNhanVien, VaiTro, HoatDong, NgayTao, PhienBan "
-                + "FROM dbo.TaiKhoan WHERE MaNhanVien = ? AND MatKhau = ?";
+        String sql = "SELECT tk.MaNhanVien,tk.MatKhau,tk.VaiTro,tk.HoatDong,tk.NgayTao,tk.PhienBan,"
+                + "tk.BuocDoiMatKhau,"
+                + "bm.ThuatToan,bm.Muoi,bm.GiaTriBam,bm.SoVong FROM dbo.TaiKhoan tk "
+                + "LEFT JOIN dbo.TaiKhoanThongTinBaoMat bm ON bm.MaNhanVien=tk.MaNhanVien "
+                + "WHERE tk.MaNhanVien=?";
         try (PreparedStatement lenh = ketNoi().prepareStatement(sql)) {
             lenh.setString(1, maNhanVien.trim());
-            lenh.setString(2, new String(matKhau));
             try (ResultSet ketQua = lenh.executeQuery()) {
-                if (!ketQua.next()) {
+                if (!ketQua.next() || !xacThucMatKhau(ketQua, matKhau)) {
                     return null;
                 }
                 TaiKhoan taiKhoan = docTaiKhoan(ketQua);
@@ -53,7 +68,7 @@ public final class TaiKhoanDAO {
 
     /** Đọc tài khoản để ghép với hồ sơ nhân viên trong các nghiệp vụ khác. */
     List<TaiKhoan> layTaiKhoanNoiBo() {
-        String sql = "SELECT MaNhanVien, VaiTro, HoatDong, NgayTao, PhienBan "
+        String sql = "SELECT MaNhanVien,VaiTro,HoatDong,NgayTao,PhienBan,BuocDoiMatKhau "
                 + "FROM dbo.TaiKhoan ORDER BY MaNhanVien";
         List<TaiKhoan> danhSach = new ArrayList<>();
         try (PreparedStatement lenh = ketNoi().prepareStatement(sql); ResultSet ketQua = lenh.executeQuery()) {
@@ -81,7 +96,8 @@ public final class TaiKhoanDAO {
         } else if (sapXep == 2) {
             sapXepSql = "nv.HoTen DESC";
         }
-        String sql = "SELECT tk.MaNhanVien, tk.VaiTro, tk.HoatDong, tk.NgayTao, tk.PhienBan "
+        String sql = "SELECT tk.MaNhanVien,tk.VaiTro,tk.HoatDong,tk.NgayTao,tk.PhienBan,"
+                + "tk.BuocDoiMatKhau "
                 + "FROM dbo.TaiKhoan tk JOIN dbo.NhanVien nv ON nv.MaNhanVien = tk.MaNhanVien "
                 + "WHERE (tk.MaNhanVien LIKE ? OR nv.HoTen LIKE ?) "
                 + "AND (? = -1 OR tk.HoatDong = ?) "
@@ -165,15 +181,26 @@ public final class TaiKhoanDAO {
         Connection ketNoi = ketNoi();
         try {
             ketNoi.setAutoCommit(false);
+            ThongTinBam baoMat = bamMatKhau(matKhau);
             String sql = "INSERT dbo.TaiKhoan "
-                    + "(MaNhanVien, MatKhau, VaiTro, HoatDong, NgayTao) "
-                    + "VALUES (?, ?, ?, ?, SYSDATETIME())";
+                    + "(MaNhanVien,MatKhau,VaiTro,HoatDong,NgayTao,BuocDoiMatKhau) "
+                    + "VALUES (?,?,?,?,SYSDATETIME(),1)";
             try (PreparedStatement lenh = ketNoi.prepareStatement(sql)) {
                 String ma = thongTin.getMaNhanVien();
                 lenh.setString(1, ma);
-                lenh.setString(2, new String(matKhau));
+                lenh.setString(2, "!PBKDF2!" + UUID.randomUUID());
                 lenh.setString(3, thongTin.getVaiTro().name());
                 lenh.setBoolean(4, thongTin.isHoatDong());
+                lenh.executeUpdate();
+            }
+            try (PreparedStatement lenh = ketNoi.prepareStatement(
+                    "INSERT dbo.TaiKhoanThongTinBaoMat(MaNhanVien,ThuatToan,Muoi,GiaTriBam,SoVong) "
+                            + "VALUES(?,?,?,?,?)")) {
+                lenh.setString(1, thongTin.getMaNhanVien());
+                lenh.setString(2, THUAT_TOAN);
+                lenh.setBytes(3, baoMat.muoi);
+                lenh.setBytes(4, baoMat.hash);
+                lenh.setInt(5, SO_VONG);
                 lenh.executeUpdate();
             }
             TaiKhoan moi = timTaiKhoan(thongTin.getMaNhanVien(), ketNoi);
@@ -257,17 +284,85 @@ public final class TaiKhoanDAO {
         Connection ketNoi = ketNoi();
         try {
             ketNoi.setAutoCommit(false);
+            ThongTinBam baoMat = bamMatKhau(matKhau);
             try (PreparedStatement lenh = ketNoi.prepareStatement(
-                    "UPDATE dbo.TaiKhoan SET MatKhau = ?, PhienBan = PhienBan + 1 WHERE MaNhanVien = ?")) {
-                lenh.setString(1, new String(matKhau));
-                lenh.setString(2, banDau.getMaNhanVien());
-                lenh.executeUpdate();
+                    "EXEC dbo.usp_DatMatKhauBam ?,?,?,?,?")) {
+                lenh.setString(1, banDau.getMaNhanVien());
+                lenh.setString(2, nguoiDung.getMaNhanVien());
+                lenh.setBytes(3, baoMat.muoi);
+                lenh.setBytes(4, baoMat.hash);
+                lenh.setInt(5, SO_VONG);
+                lenh.execute();
             }
-            ghiNhatKy(ketNoi, nguoiDung, banDau, "Đặt lại mật khẩu", lyDoHopLe);
+            ghiNhatKy(ketNoi, nguoiDung, banDau, "Ghi nhận lý do đặt lại mật khẩu", lyDoHopLe);
             ketNoi.commit();
         } catch (SQLException ex) {
             hoanTac(ketNoi);
             throw loiDuLieu("Không thể đặt lại mật khẩu.", ex);
+        } finally {
+            batLaiTuDongLuu(ketNoi);
+        }
+    }
+
+    /** Đổi mật khẩu bắt buộc ngay sau đăng nhập và trả về phiên tài khoản mới. */
+    public TaiKhoan doiMatKhauLanDau(TaiKhoan taiKhoan, char[] matKhauMoi) {
+        if (taiKhoan == null || !taiKhoan.isBuocDoiMatKhau()) {
+            throw new IllegalArgumentException("Tài khoản không ở trạng thái bắt buộc đổi mật khẩu.");
+        }
+
+        TaiKhoan.kiemTraMatKhauMoi(matKhauMoi);
+        Connection ketNoi = ketNoi();
+
+        try {
+            ketNoi.setAutoCommit(false);
+            ThongTinBam baoMat = bamMatKhau(matKhauMoi);
+
+            try (PreparedStatement lenh = ketNoi.prepareStatement(
+                    "UPDATE dbo.TaiKhoan SET MatKhau=?,BuocDoiMatKhau=0,PhienBan=PhienBan+1 "
+                            + "WHERE MaNhanVien=? AND BuocDoiMatKhau=1")) {
+                lenh.setString(1, "!PBKDF2!" + UUID.randomUUID());
+                lenh.setString(2, taiKhoan.getMaNhanVien());
+
+                if (lenh.executeUpdate() != 1) {
+                    throw new IllegalStateException(
+                            "Trạng thái tài khoản đã thay đổi. Vui lòng đăng nhập lại.");
+                }
+            }
+
+            try (PreparedStatement lenh = ketNoi.prepareStatement(
+                    "UPDATE dbo.TaiKhoanThongTinBaoMat SET ThuatToan=?,Muoi=?,GiaTriBam=?,"
+                            + "SoVong=?,NgayCapNhat=SYSDATETIME() WHERE MaNhanVien=?")) {
+                lenh.setString(1, THUAT_TOAN);
+                lenh.setBytes(2, baoMat.muoi);
+                lenh.setBytes(3, baoMat.hash);
+                lenh.setInt(4, SO_VONG);
+                lenh.setString(5, taiKhoan.getMaNhanVien());
+
+                if (lenh.executeUpdate() != 1) {
+                    throw new IllegalStateException("Tài khoản thiếu thông tin bảo mật.");
+                }
+            }
+
+            try (PreparedStatement lenh = ketNoi.prepareStatement(
+                    "INSERT dbo.NhatKyTaiKhoan(ThoiDiem,NguoiThucHien,MaTaiKhoan,HanhDong,LyDo) "
+                            + "VALUES(SYSDATETIME(),?,?,?,?)")) {
+                lenh.setString(1, taiKhoan.getMaNhanVien());
+                lenh.setString(2, taiKhoan.getMaNhanVien());
+                lenh.setString(3, "Đổi mật khẩu lần đầu");
+                lenh.setString(4, "Người dùng đổi mật khẩu tạm trước khi vào hệ thống");
+                lenh.executeUpdate();
+            }
+
+            TaiKhoan moi = timTaiKhoan(taiKhoan.getMaNhanVien(), ketNoi);
+            ketNoi.commit();
+            taiKhoan.ketThucPhien();
+            return moi;
+        } catch (SQLException ex) {
+            hoanTac(ketNoi);
+            throw loiDuLieu("Không thể đổi mật khẩu lần đầu.", ex);
+        } catch (RuntimeException ex) {
+            hoanTac(ketNoi);
+            throw ex;
         } finally {
             batLaiTuDongLuu(ketNoi);
         }
@@ -316,7 +411,7 @@ public final class TaiKhoanDAO {
 
     /** Tìm một tài khoản bằng kết nối đang tham gia giao dịch. */
     private TaiKhoan timTaiKhoan(String maNhanVien, Connection ketNoi) throws SQLException {
-        String sql = "SELECT MaNhanVien, VaiTro, HoatDong, NgayTao, PhienBan "
+        String sql = "SELECT MaNhanVien,VaiTro,HoatDong,NgayTao,PhienBan,BuocDoiMatKhau "
                 + "FROM dbo.TaiKhoan WHERE MaNhanVien = ?";
         try (PreparedStatement lenh = ketNoi.prepareStatement(sql)) {
             lenh.setString(1, maNhanVien);
@@ -357,7 +452,8 @@ public final class TaiKhoanDAO {
         String maNhanVien = ketQua.getString("MaNhanVien");
         Timestamp ngayTao = ketQua.getTimestamp("NgayTao");
         return new TaiKhoan(maNhanVien, VaiTro.valueOf(ketQua.getString("VaiTro")),
-                ketQua.getBoolean("HoatDong"), ngayTao.toLocalDateTime(), ketQua.getInt("PhienBan"));
+                ketQua.getBoolean("HoatDong"), ngayTao.toLocalDateTime(), ketQua.getInt("PhienBan"),
+                ketQua.getBoolean("BuocDoiMatKhau"));
     }
 
     /** Chuyển một dòng nhân viên thành Entity. */
@@ -368,6 +464,59 @@ public final class TaiKhoanDAO {
                 ketQua.getString("GioiTinh"), ketQua.getString("DiaChi"),
                 BoPhanNhanVien.valueOf(ketQua.getString("BoPhan")),
                 TrangThaiNhanVien.valueOf(ketQua.getString("TrangThai")));
+    }
+
+    private static boolean xacThucMatKhau(ResultSet ketQua, char[] matKhau) throws SQLException {
+        byte[] hashDaLuu = ketQua.getBytes("GiaTriBam");
+        byte[] muoi = ketQua.getBytes("Muoi");
+        if (hashDaLuu != null && muoi != null) {
+            String thuatToan = ketQua.getString("ThuatToan");
+            int soVong = ketQua.getInt("SoVong");
+            if (!THUAT_TOAN.equals(thuatToan) || soVong < SO_VONG || hashDaLuu.length != 32) {
+                throw new SecurityException("Thông tin bảo mật tài khoản không hợp lệ; cần Quản lý đặt lại mật khẩu.");
+            }
+            byte[] hashNhap = taoHash(matKhau, muoi, soVong);
+            try {
+                return MessageDigest.isEqual(hashDaLuu, hashNhap);
+            } finally {
+                Arrays.fill(hashNhap, (byte) 0);
+            }
+        }
+        byte[] nhap = new String(matKhau).getBytes(StandardCharsets.UTF_8);
+        byte[] cu = ketQua.getString("MatKhau").getBytes(StandardCharsets.UTF_8);
+        try {
+            return MessageDigest.isEqual(cu, nhap);
+        } finally {
+            Arrays.fill(nhap, (byte) 0);
+            Arrays.fill(cu, (byte) 0);
+        }
+    }
+
+    private static ThongTinBam bamMatKhau(char[] matKhau) {
+        byte[] muoi = new byte[16];
+        NGAU_NHIEN.nextBytes(muoi);
+        return new ThongTinBam(muoi, taoHash(matKhau, muoi, SO_VONG));
+    }
+
+    private static byte[] taoHash(char[] matKhau, byte[] muoi, int soVong) {
+        PBEKeySpec dacTa = new PBEKeySpec(matKhau, muoi, soVong, DO_DAI_HASH_BIT);
+        try {
+            return SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(dacTa).getEncoded();
+        } catch (GeneralSecurityException ex) {
+            throw new IllegalStateException("Máy chạy không hỗ trợ PBKDF2-HMAC-SHA256.", ex);
+        } finally {
+            dacTa.clearPassword();
+        }
+    }
+
+    private static final class ThongTinBam {
+        private final byte[] muoi;
+        private final byte[] hash;
+
+        private ThongTinBam(byte[] muoi, byte[] hash) {
+            this.muoi = muoi;
+            this.hash = hash;
+        }
     }
 
     /** Kiểm tra lý do thay đổi. */

@@ -1,0 +1,7 @@
+GARAGE_DB_URL=jdbc:sqlserver://localhost:1433;databaseName=QuanLiGarage;encrypt=true;trustServerCertificate=true;
+GARAGE_DB_USER=garage_app
+GARAGE_DB_PASSWORD=thay_bang_mat_khau_bi_mat
+
+Không dùng tài khoản sa cho ứng dụng.
+Tạo một tài khoản SQL chỉ có quyền cần thiết trên database QuanLiGarage.
+Không commit mật khẩu thật vào repository.

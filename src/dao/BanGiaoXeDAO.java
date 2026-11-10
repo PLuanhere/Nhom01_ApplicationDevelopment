@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /** Đọc căn cứ và ghi nhận bàn giao xe cho vai trò tiếp nhận. */
 public final class BanGiaoXeDAO {
@@ -163,12 +162,16 @@ public final class BanGiaoXeDAO {
         if (!hienTai.cungNoiDung(daDoc)) {
             throw new IllegalStateException("Thanh toán/phê duyệt đã thay đổi. Mở lại lệnh để đối chiếu.");
         }
-        LocalDateTime lucLuu = LocalDateTime.now();
-        String ma = taoMaBanGiao(lucLuu.getYear());
-        BanGiaoXe moi = new BanGiaoXe(ma, lenh, bg, hienTai, tk, nguoiNhan, lucGiao, tinhTrang, taiSan, ghiChu,
-                hinhThuc, khachXacNhan, lucLuu);
-        luuBanGiao(moi, token, hienTai);
-        return moi;
+        // Dựng thử entity trước để áp dụng đầy đủ kiểm tra UI/domain; SQL mới là nơi khóa và ghi quyết định cuối.
+        new BanGiaoXe("GX-TAM", lenh, bg, hienTai, tk, nguoiNhan, lucGiao, tinhTrang, taiSan, ghiChu,
+                hinhThuc, khachXacNhan, LocalDateTime.now());
+        luuBanGiaoBangThuTuc(tk, token, maLenh, hienTai, nguoiNhan, lucGiao, tinhTrang, taiSan, ghiChu,
+                hinhThuc);
+        BanGiaoXe daGhi = timGiaoNoiBo(maLenh);
+        if (daGhi == null) {
+            throw new IllegalStateException("Không đọc lại được chứng từ bàn giao vừa lưu.");
+        }
+        return daGhi;
     }
 
     /**
@@ -296,30 +299,32 @@ public final class BanGiaoXeDAO {
     /**
      * Ghi bàn giao cùng mã thao tác để lần bấm lặp chỉ đọc lại chứng từ cũ.
      */
-    private void luuBanGiao(BanGiaoXe giao, String token, CanCuBanGiao canCu) {
-        String sql = "INSERT dbo.BanGiaoXe(MaBanGiao,MaLenh,MaHoaDon,MaPheDuyetNgoaiLe,NguoiGiao,NguoiNhan,"
-                + "ThoiDiemGiao,ThoiDiemGhiNhan,TinhTrang,TaiSanDaTra,GhiChu,HinhThucXacNhan,MaThaoTac) "
-                + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    private void luuBanGiaoBangThuTuc(TaiKhoan tk, String token, String maLenh, CanCuBanGiao canCu,
+            String nguoiNhan, LocalDateTime lucGiao, String tinhTrang, String taiSan, String ghiChu,
+            String hinhThuc) {
+        String sql = "EXEC dbo.usp_BanGiaoXe @MaLenh=?,@NguoiGiao=?,@NguoiNhan=?,@ThoiDiemGiao=?,"
+                + "@TinhTrang=?,@TaiSanDaTra=?,@HinhThucXacNhan=?,@GhiChu=?,@MaThaoTac=?,"
+                + "@MaPheDuyetNgoaiLe=?";
         try (PreparedStatement ps = ketNoi().prepareStatement(sql)) {
-            ps.setString(1, giao.getMaBanGiao());
-            ps.setString(2, giao.getMaLenh());
+            ps.setString(1, maLenh);
+            ps.setString(2, tk.getMaNhanVien());
+            ps.setString(3, chu(nguoiNhan));
+            ps.setTimestamp(4, Timestamp.valueOf(lucGiao));
+            ps.setString(5, chu(tinhTrang));
+            ps.setString(6, chu(taiSan));
+            ps.setString(7, chu(hinhThuc));
+            ps.setString(8, chu(ghiChu));
+            ps.setString(9, token);
             if (canCu.isNgoaiLe()) {
-                ps.setNull(3, java.sql.Types.VARCHAR);
-                ps.setLong(4, maPheDuyet(canCu));
+                ps.setLong(10, maPheDuyet(canCu));
             } else {
-                ps.setString(3, canCu.getMaChungTu());
-                ps.setNull(4, java.sql.Types.BIGINT);
+                ps.setNull(10, java.sql.Types.BIGINT);
             }
-            ps.setString(5, giao.getNguoiGiao());
-            ps.setString(6, giao.getNguoiNhan());
-            ps.setTimestamp(7, Timestamp.valueOf(giao.getThoiDiemGiao()));
-            ps.setTimestamp(8, Timestamp.valueOf(giao.getThoiDiemGhiNhan()));
-            ps.setString(9, giao.getTinhTrang());
-            ps.setString(10, giao.getTaiSanDaTra());
-            ps.setString(11, giao.getGhiChu());
-            ps.setString(12, giao.getHinhThucXacNhan());
-            ps.setString(13, token);
-            ps.executeUpdate();
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next() || rs.getString("MaBanGiao") == null) {
+                    throw new IllegalStateException("SQL không trả về mã bàn giao.");
+                }
+            }
         } catch (SQLException ex) {
             throw loi("Không lưu được bàn giao xe.", ex);
         }
@@ -433,19 +438,6 @@ public final class BanGiaoXeDAO {
             throw new IllegalStateException("Mã phê duyệt ngoại lệ không hợp lệ.");
         try { return Long.parseLong(canCu.getMaChungTu().substring(tienTo.length())); }
         catch (NumberFormatException ex) { throw new IllegalStateException("Mã phê duyệt ngoại lệ không hợp lệ.", ex); }
-    }
-
-    private String taoMaBanGiao(int nam) {
-        String prefix = "GX-" + nam + "-";
-        String sql = "SELECT COALESCE(MAX(TRY_CONVERT(int,RIGHT(MaBanGiao,4))),0)+1 FROM dbo.BanGiaoXe "
-                + "WHERE MaBanGiao LIKE ?";
-        try (PreparedStatement ps = ketNoi().prepareStatement(sql)) {
-            ps.setString(1, prefix + "%");
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                return prefix + String.format(Locale.ROOT, "%04d", rs.getInt(1));
-            }
-        } catch (SQLException ex) { throw loi("Không tạo được mã bàn giao.", ex); }
     }
 
     private Connection ketNoi() {

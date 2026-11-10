@@ -9,6 +9,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
+import java.awt.GridLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
@@ -23,6 +24,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
@@ -263,6 +265,7 @@ public final class LoginFrame extends JFrame {
         try {
             TaiKhoan ketQua = taiKhoanDAO.dangNhap(maNhanVien, matKhau);
             if (ketQua != null && ketQua.isPhienHopLe()) {
+                ketQua = doiMatKhauNeuCan(ketQua);
                 moKhungChinh(ketQua);
             } else {
                 hienThiLoi("Mã nhân viên hoặc mật khẩu không đúng.");
@@ -274,6 +277,49 @@ public final class LoginFrame extends JFrame {
                 matKhau[i] = '\0';
             }
             setDangXuLy(false);
+        }
+    }
+
+    /** Buộc tài khoản mới hoặc vừa được đặt lại đổi mật khẩu trước khi vào hệ thống. */
+    private TaiKhoan doiMatKhauNeuCan(TaiKhoan taiKhoan) {
+        if (!taiKhoan.isBuocDoiMatKhau()) {
+            return taiKhoan;
+        }
+
+        JPasswordField txtMoi = new JPasswordField();
+        JPasswordField txtNhapLai = new JPasswordField();
+        JPanel noiDung = new JPanel(new GridLayout(0, 1, 0, 8));
+
+        noiDung.add(new JLabel("Tài khoản đang dùng mật khẩu tạm. Hãy đổi mật khẩu trước khi tiếp tục."));
+        noiDung.add(new JLabel("Mật khẩu mới:"));
+        noiDung.add(txtMoi);
+        noiDung.add(new JLabel("Nhập lại mật khẩu mới:"));
+        noiDung.add(txtNhapLai);
+
+        int luaChon = JOptionPane.showConfirmDialog(
+                this,
+                noiDung,
+                "Đổi mật khẩu lần đầu",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE);
+
+        char[] matKhauMoi = txtMoi.getPassword();
+        char[] nhapLai = txtNhapLai.getPassword();
+
+        try {
+            if (luaChon != JOptionPane.OK_OPTION) {
+                throw new IllegalStateException(
+                        "Bạn phải đổi mật khẩu tạm trước khi đăng nhập.");
+            }
+
+            if (!Arrays.equals(matKhauMoi, nhapLai)) {
+                throw new IllegalArgumentException("Mật khẩu nhập lại không khớp.");
+            }
+
+            return taiKhoanDAO.doiMatKhauLanDau(taiKhoan, matKhauMoi);
+        } finally {
+            Arrays.fill(matKhauMoi, '\0');
+            Arrays.fill(nhapLai, '\0');
         }
     }
 
