@@ -27,11 +27,12 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 
+import ui.component.KiemTraRoiTrang;
 import ui.component.UiChung;
 import ui.component.UiTheme;
 
 /** Hiển thị danh sách dịch vụ và điều hướng biểu mẫu bảng giá. */
-public final class DichVuPanel extends JPanel implements DocumentListener, ActionListener {
+public final class DichVuPanel extends JPanel implements DocumentListener, ActionListener, KiemTraRoiTrang {
 
     private static final long serialVersionUID = 1L;
 

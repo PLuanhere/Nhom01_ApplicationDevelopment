@@ -12,6 +12,7 @@ import entity.TaiKhoan;
 import entity.TaiKhoan.VaiTro;
 import entity.PhieuTiepNhan;
 import entity.PhieuTiepNhan.TrangThaiTiepNhan;
+import ui.component.KiemTraRoiTrang;
 import ui.component.ScrollablePanel;
 
 import java.awt.BorderLayout;
@@ -67,8 +68,13 @@ import javax.swing.text.JTextComponent;
 import ui.component.UiTheme;
 
 /** Nhập, đối chiếu và lưu phiếu vào kho chung trong phiên tiếp nhận. */
-public final class PhieuTiepNhanPanel extends JPanel {
+public final class PhieuTiepNhanPanel extends JPanel implements KiemTraRoiTrang {
     private static final long serialVersionUID = 1L;
+
+    @Override
+    public boolean choPhepRoiTrang() {
+        return choPhepRoiManHinh();
+    }
     private static final DateTimeFormatter DINH_DANG_NGAY = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm", Locale.ROOT)
             .withResolverStyle(ResolverStyle.STRICT);
     private final KhachHangDAO khachHangDAO;

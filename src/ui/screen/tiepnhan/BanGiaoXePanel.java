@@ -11,6 +11,7 @@ import entity.TaiKhoan.VaiTro;
 import entity.PhieuSuaChua.ChiTietSuaChua;
 import entity.PhieuSuaChua;
 import entity.PhieuTiepNhan;
+import ui.component.KiemTraRoiTrang;
 import ui.component.ScrollablePanel;
 
 import java.awt.BorderLayout;
@@ -61,8 +62,13 @@ import ui.component.UiTheme;
 import ui.dialog.tiepnhan.BanGiaoXeDialog;
 
 /** Tiếp nhận chỉ đọc căn cứ tài chính, ghi sự kiện thực giao sau khi khách xác nhận. */
-public final class BanGiaoXePanel extends JPanel {
+public final class BanGiaoXePanel extends JPanel implements KiemTraRoiTrang {
     private static final long serialVersionUID = 1L;
+
+    @Override
+    public boolean choPhepRoiTrang() {
+        return choPhepRoiManHinh();
+    }
     private static final DateTimeFormatter NGAY_GIO = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm", Locale.ROOT)
             .withResolverStyle(ResolverStyle.STRICT);
     private static final DateTimeFormatter NGAY = DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.ROOT)

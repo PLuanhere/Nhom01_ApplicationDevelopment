@@ -29,11 +29,12 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
+import ui.component.KiemTraRoiTrang;
 import ui.component.UiChung;
 import ui.component.UiTheme;
 
 /** Hiển thị danh sách tài khoản và điều hướng các thao tác quản trị. */
-public final class TaiKhoanPanel extends JPanel implements ActionListener {
+public final class TaiKhoanPanel extends JPanel implements ActionListener, KiemTraRoiTrang {
 
     private static final long serialVersionUID = 1L;
     private final TaiKhoanDAO dao = new TaiKhoanDAO();
