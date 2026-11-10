@@ -265,6 +265,8 @@ BEGIN TRY
         NguoiPhatHanh VARCHAR(20) NOT NULL,
         ThoiDiemPhatHanh DATETIME2(3) NOT NULL,
         ThoiDiemHoanTat DATETIME2(3) NULL,
+        DaThanhToan BIT NOT NULL DEFAULT 0,
+        ThoiDiemThanhToan DATETIME2(3) NULL,
         KetQua0 NVARCHAR(2000) NOT NULL DEFAULT N'',
         KetQua1 NVARCHAR(2000) NOT NULL DEFAULT N'',
         KetQua2 NVARCHAR(2000) NOT NULL DEFAULT N'',
@@ -279,7 +281,9 @@ BEGIN TRY
             (TrangThai = 'HOAN_THANH' AND ThoiDiemHoanTat IS NOT NULL)
             OR
             (TrangThai <> 'HOAN_THANH' AND ThoiDiemHoanTat IS NULL)
-        )
+        ),
+        CHECK ((DaThanhToan = 1 AND ThoiDiemThanhToan IS NOT NULL)
+            OR (DaThanhToan = 0 AND ThoiDiemThanhToan IS NULL))
     );
 
     CREATE TABLE dbo.PhanCong (
@@ -516,6 +520,7 @@ JOIN dbo.BaoCaoKiemTra kt ON kt.MaBaoCao = nbg.MaBaoCao
 JOIN dbo.PhieuTiepNhan tn ON tn.MaPhieu = kt.MaPhieuTiepNhan
 JOIN dbo.ChiTietBaoGia ct ON ct.MaBaoGia = bg.MaBaoGia
 WHERE sc.TrangThai = 'HOAN_THANH'
+  AND sc.DaThanhToan = 0
   AND NOT EXISTS (
       SELECT 1
       FROM dbo.HoaDon hd
@@ -536,7 +541,9 @@ SELECT
     hd.ThoiDiemThanhToan AS ThoiDiem,
     CONVERT(BIT, 0) AS NgoaiLe,
     CONVERT(NVARCHAR(500), N'') AS LyDo
-FROM dbo.HoaDon hd;
+FROM dbo.HoaDon hd
+JOIN dbo.PhieuSuaChua sc ON sc.MaPhieu = hd.MaPhieuSuaChua
+WHERE sc.DaThanhToan = 1;
 GO
 
 -- Tồn kho và trạng thái cảnh báo.
@@ -959,5 +966,8 @@ SELECT hd.MaHoaDon, hd.TongTien, SUM(ct.ThanhTien) AS TongChiTiet
 FROM dbo.HoaDon hd
 JOIN dbo.ChiTietHoaDon ct ON ct.MaHoaDon = hd.MaHoaDon
 GROUP BY hd.MaHoaDon, hd.TongTien
+ORDER BY hd.MaHoaDon;
+GO
+.MaHoaDon, hd.TongTien
 ORDER BY hd.MaHoaDon;
 GO

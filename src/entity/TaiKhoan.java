@@ -90,6 +90,48 @@ public final class TaiKhoan {
         }
     }
 
+    /** Cho biết tài khoản có vai trò Thu ngân hay không. */
+    public boolean laThuNgan() {
+        return vaiTro == VaiTro.THU_NGAN;
+    }
+
+    /** Cho biết tài khoản có vai trò Nhân viên tiếp nhận hay không. */
+    public boolean laNhanVienTiepNhan() {
+        return vaiTro == VaiTro.NHAN_VIEN_TIEP_NHAN;
+    }
+
+    /** Cho biết tài khoản có vai trò Quản lý hay không. */
+    public boolean laQuanLy() {
+        return vaiTro == VaiTro.QUAN_LY;
+    }
+
+    /**
+     * Chặn thao tác nếu phiên hết hiệu lực hoặc người dùng không phải Thu ngân.
+     *
+     * <p>Đây là nơi duy nhất định nghĩa luật "chỉ Thu ngân được thao tác hóa đơn và thanh toán".
+     * Tầng DAO không tự kiểm tra quyền; bên gọi kiểm tra một lần ở ranh giới chức năng.
+     *
+     * @throws SecurityException nếu phiên hết hiệu lực hoặc sai vai trò
+     */
+    public void kiemTraQuyenThuNgan() {
+        kiemTraPhien();
+        if (!laThuNgan()) {
+            throw new SecurityException("Chỉ Thu ngân được thao tác hóa đơn và thanh toán.");
+        }
+    }
+
+    /**
+     * Chặn thao tác nếu phiên hết hiệu lực hoặc người dùng không phải Nhân viên tiếp nhận.
+     *
+     * @throws SecurityException nếu phiên hết hiệu lực hoặc sai vai trò
+     */
+    public void kiemTraQuyenTiepNhan() {
+        kiemTraPhien();
+        if (!laNhanVienTiepNhan()) {
+            throw new SecurityException("Chỉ nhân viên tiếp nhận được quản lý hồ sơ khách hàng.");
+        }
+    }
+
     /** Kiểm tra mật khẩu mới có đủ độ dài, chữ hoa, số và ký tự đặc biệt. */
     public static void kiemTraMatKhauMoi(char[] matKhau) {
         if (matKhau == null) {

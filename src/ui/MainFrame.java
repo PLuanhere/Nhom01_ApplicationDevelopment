@@ -101,6 +101,10 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     private HoaDonDAO thuNganDAO;
     private ThuNganNavigationPanel pnlDieuHuongThuNgan;
+    private PaymentCenterPanel pnlTrungTamThanhToan;
+    private PendingCollectionPanel pnlPhieuChoThu;
+    private PaidInvoicesPanel pnlHoaDonDaThu;
+    private String mucThuNganDangMo = "Trung tâm thanh toán";
 
     private KhachHangDAO khachHangDAO;
     private XeDAO xeDAO;
@@ -762,97 +766,118 @@ public final class MainFrame extends JFrame implements ActionListener {
         dieuHuongThuNgan("Trung tâm thanh toán");
     }
 
-    /** Mở màn Thu ngân theo mục sidebar được chọn. */
+    /** Mở màn Thu ngân theo mục sidebar được chọn; tái dùng panel như các vai trò khác. */
     private void dieuHuongThuNgan(String muc) {
+        getTaiKhoanDangNhap().kiemTraQuyenThuNgan();
         pnlDieuHuongThuNgan.chonMuc(muc);
-        switch (muc) {
-        case "Trung tâm thanh toán": {
-            PaymentCenterPanel.Navigation nav = new PaymentCenterPanel.Navigation();
-            nav.costReconciliation = new ActionListener() {
-                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-                @Override
-                public void actionPerformed(ActionEvent event) {
-                    if (thuNganDAO.timPhieuTheoMa(getTaiKhoanDangNhap(), event.getActionCommand()) != null) {
-                        moDoiChieuChiPhi(event.getActionCommand());
-                    } else {
-                        dieuHuongThuNgan("Đối chiếu chi phí");
-                    }
-                }
-            };
-            nav.pendingInvoices = new ActionListener() {
-                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-                @Override
-                public void actionPerformed(ActionEvent event) {
-                    dieuHuongThuNgan("Phiếu chờ thu");
-                }
-            };
-            nav.paidDocuments = new ActionListener() {
-                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-                @Override
-                public void actionPerformed(ActionEvent event) {
-                    dieuHuongThuNgan("Hoá đơn đã thanh toán");
-                }
-            };
-            nav.documentSearch = new ActionListener() {
-                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-                @Override
-                public void actionPerformed(ActionEvent event) {
-                    dieuHuongThuNgan("Hoá đơn đã thanh toán");
-                }
-            };
-            nav.cashPayment = new ActionListener() {
-                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-                @Override
-                public void actionPerformed(ActionEvent event) {
-                    MainFrame.this.moThanhToanTienMat();
-                }
-            };
-            nav.bankTransfer = new ActionListener() {
-                /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-                @Override
-                public void actionPerformed(ActionEvent event) {
-                    dieuHuongThuNgan("Phiếu chờ thu");
-                    setStatus("Chọn phiếu để đối chiếu và thanh toán chuyển khoản.");
-                }
-            };
-            nav.viewInvoice = new ActionListener() {
-                /** Mở đúng hóa đơn được bấm trên Trang chủ Thu ngân. */
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    moChiTietHoaDon(e.getActionCommand());
-                }
-            };
-            setScreen(new PaymentCenterPanel(thuNganDAO, getTaiKhoanDangNhap(), nav));
+        if ("Trung tâm thanh toán".equals(muc)) {
+            if (pnlTrungTamThanhToan == null) {
+                pnlTrungTamThanhToan = taoTrungTamThanhToan();
+            }
+            setScreen(pnlTrungTamThanhToan);
+            mucThuNganDangMo = muc;
             setStatus("Trung tâm thanh toán");
-        }
-            break;
-        case "Phiếu chờ thu": {
-            setScreen(new PendingCollectionPanel(thuNganDAO, getTaiKhoanDangNhap(), this));
+        } else if ("Phiếu chờ thu".equals(muc)) {
+            if (pnlPhieuChoThu == null) {
+                pnlPhieuChoThu = new PendingCollectionPanel(thuNganDAO, getTaiKhoanDangNhap(), this);
+            } else if (!"Phiếu chờ thu".equals(mucThuNganDangMo) && !"Đối chiếu chi phí".equals(mucThuNganDangMo)) {
+                pnlPhieuChoThu = new PendingCollectionPanel(thuNganDAO, getTaiKhoanDangNhap(), this);
+            }
+            setScreen(pnlPhieuChoThu);
+            mucThuNganDangMo = muc;
             setStatus("Phiếu chờ thu");
-        }
-            break;
-        case "Đối chiếu chi phí": {
-            pnlDieuHuongThuNgan.chonMuc("Phiếu chờ thu");
-            setScreen(new PendingCollectionPanel(thuNganDAO, getTaiKhoanDangNhap(), this));
+        } else if ("Đối chiếu chi phí".equals(muc)) {
+            if (pnlPhieuChoThu == null) {
+                pnlPhieuChoThu = new PendingCollectionPanel(thuNganDAO, getTaiKhoanDangNhap(), this);
+            }
+            setScreen(pnlPhieuChoThu);
+            mucThuNganDangMo = "Phiếu chờ thu";
             setStatus("Đối chiếu chi phí · Chọn phiếu để kiểm tra và lập hóa đơn");
-        }
-            break;
-        case "Hoá đơn đã thanh toán": {
-            setScreen(new PaidInvoicesPanel(thuNganDAO, getTaiKhoanDangNhap(), new ActionListener() {
-                /** Xem/in đúng hóa đơn người dùng chọn trong bảng. */
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    moChiTietHoaDon(e.getActionCommand());
-                }
-            }));
+            pnlDieuHuongThuNgan.chonMuc("Phiếu chờ thu");
+        } else if ("Hoá đơn đã thanh toán".equals(muc)) {
+            if (pnlHoaDonDaThu == null) {
+                pnlHoaDonDaThu = new PaidInvoicesPanel(thuNganDAO, getTaiKhoanDangNhap(), new ActionListener() {
+                    /** Xem/in đúng hóa đơn người dùng chọn trong bảng. */
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        moChiTietHoaDon(e.getActionCommand());
+                    }
+                });
+            } else if (!"Hoá đơn đã thanh toán".equals(mucThuNganDangMo)) {
+                pnlHoaDonDaThu = new PaidInvoicesPanel(thuNganDAO, getTaiKhoanDangNhap(), new ActionListener() {
+                    /** Xem/in đúng hóa đơn người dùng chọn trong bảng. */
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        moChiTietHoaDon(e.getActionCommand());
+                    }
+                });
+            }
+            setScreen(pnlHoaDonDaThu);
+            mucThuNganDangMo = muc;
             setStatus("Hóa đơn đã thanh toán");
-        }
-            break;
-        default:
+        } else {
             setStatus(muc + ": chức năng chưa triển khai.");
-            break;
         }
+    }
 
+    /** Trung tâm thanh toán dựng một lần; các callback trỏ về MainFrame nên không cần tạo lại. */
+    private PaymentCenterPanel taoTrungTamThanhToan() {
+        PaymentCenterPanel.Navigation nav = new PaymentCenterPanel.Navigation();
+        nav.costReconciliation = new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                if (thuNganDAO.timPhieuTheoMa(getTaiKhoanDangNhap(), event.getActionCommand()) != null) {
+                    moDoiChieuChiPhi(event.getActionCommand());
+                } else {
+                    dieuHuongThuNgan("Đối chiếu chi phí");
+                }
+            }
+        };
+        nav.pendingInvoices = new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                dieuHuongThuNgan("Phiếu chờ thu");
+            }
+        };
+        nav.paidDocuments = new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                dieuHuongThuNgan("Hoá đơn đã thanh toán");
+            }
+        };
+        nav.documentSearch = new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                dieuHuongThuNgan("Hoá đơn đã thanh toán");
+            }
+        };
+        nav.cashPayment = new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                MainFrame.this.moThanhToanTienMat();
+            }
+        };
+        nav.bankTransfer = new ActionListener() {
+            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
+            @Override
+            public void actionPerformed(ActionEvent event) {
+                dieuHuongThuNgan("Phiếu chờ thu");
+                setStatus("Chọn phiếu để đối chiếu và thanh toán chuyển khoản.");
+            }
+        };
+        nav.viewInvoice = new ActionListener() {
+            /** Mở đúng hóa đơn được bấm trên Trang chủ Thu ngân. */
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                moChiTietHoaDon(e.getActionCommand());
+            }
+        };
+        return new PaymentCenterPanel(thuNganDAO, getTaiKhoanDangNhap(), nav);
     }
 
     /** Đối chiếu đúng mã được chọn; không tự thay bằng phiếu đầu danh sách. */

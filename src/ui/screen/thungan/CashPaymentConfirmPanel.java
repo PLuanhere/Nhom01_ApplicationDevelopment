@@ -2,6 +2,7 @@ package ui.screen.thungan;
 
 import dao.HoaDonDAO;
 import dao.HoaDonDAO.PhieuChoThu;
+import entity.HoaDon;
 import entity.TaiKhoan;
 
 import java.awt.BorderLayout;
@@ -271,17 +272,38 @@ public final class CashPaymentConfirmPanel extends JPanel {
 
     // ── Logic nghiệp vụ ──────────────────────────────────────────────────────
 
-    /** Thực hiện update change cho thành phần hiện tại. */
+    /**
+     * Cập nhật tiền thối và thông báo lỗi; uỷ quyền luật kiểm tra cho entity.
+     *
+     * <p>Không tự so sánh tiền nhận với tổng phải thu ở đây: {@link HoaDon#kiemTraThanhToan} là nơi
+     * duy nhất định nghĩa luật đó, nên đổi luật chỉ cần sửa entity.
+     */
     private void updateChange() {
         try {
             long nhan = UiChung.docTien(receivedField.getText(), "Số tiền nhận");
             long tong = phieu.getTongTien();
             changeValue.setText(fmt(Math.max(0L, nhan - tong)) + "đ");
             message.setForeground(ERROR);
-            message.setText(nhan < tong ? "Chưa đủ tiền. Vui lòng kiểm tra số tiền khách giao." : "");
+            message.setText(loiThanhToan(nhan));
         } catch (RuntimeException ignored) {
             message.setForeground(ERROR);
             message.setText("Vui lòng nhập số tiền hợp lệ.");
+        }
+    }
+
+    /**
+     * Trả thông báo lỗi do entity quyết định, hoặc chuỗi rỗng khi số tiền hợp lệ.
+     *
+     * @param nhan số tiền khách đưa
+     * @return thông báo lỗi tiếng Việt hoặc {@code ""}
+     */
+    private String loiThanhToan(long nhan) {
+        try {
+            HoaDon.kiemTraThanhToan(phieu.getTongTien(), nhan,
+                    HoaDon.HinhThucThanhToan.TIEN_MAT, "");
+            return "";
+        } catch (IllegalArgumentException ex) {
+            return "Chưa đủ tiền. Vui lòng kiểm tra số tiền khách giao.";
         }
     }
 
@@ -289,13 +311,12 @@ public final class CashPaymentConfirmPanel extends JPanel {
     private void confirmPayment(Consumer<String> onConfirm) {
         try {
             long nhan = UiChung.docTien(receivedField.getText(), "Số tiền nhận");
-            long tong = phieu.getTongTien();
-            if (nhan < tong) {
+            String loi = loiThanhToan(nhan);
+            if (!loi.isEmpty()) {
                 message.setForeground(ERROR);
-                message.setText("Chưa đủ tiền. Vui lòng kiểm tra số tiền khách giao.");
+                message.setText(loi);
                 receivedField.requestFocusInWindow();
                 return;
-
             }
             int choice = JOptionPane.showConfirmDialog(this,
                     "Xác nhận đã nhận " + fmt(nhan) + "đ và lập hóa đơn cho phiếu " + phieu.getMaPhieu() + "?",
