@@ -22,12 +22,14 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
@@ -172,7 +174,14 @@ public final class MainFrame extends JFrame implements ActionListener {
         setTitle(getTitle() + " — " + taiKhoan.getVaiTro().getTenHienThi());
         setUndecorated(false);
         setIconImage(UiTheme.createWindowIcon());
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            /** Xác nhận trước khi đóng ứng dụng để tránh mất dữ liệu chưa lưu. */
+            @Override
+            public void windowClosing(WindowEvent event) {
+                xacNhanThoatUngDung();
+            }
+        });
         setMinimumSize(new Dimension(960, 600));
         setSize(1280, 800);
         setLocationRelativeTo(null);
@@ -315,6 +324,35 @@ public final class MainFrame extends JFrame implements ActionListener {
 
             khiDangXuat.actionPerformed(
                     new ActionEvent(khiDangXuat, ActionEvent.ACTION_PERFORMED, "thaoTac"));
+        }
+    }
+
+    /** Kiểm tra thay đổi chưa lưu và hiển thị xác nhận trước khi thoát hẳn ứng dụng. */
+    private void xacNhanThoatUngDung() {
+        if (!choPhepRoiNhanVien() || !choPhepRoiTaiKhoan() || !choPhepRoiDichVu()
+                || !choPhepRoiKho() || !choPhepRoiTiepNhan() || !choPhepRoiKyThuat()) {
+            return;
+        }
+
+        int luaChon = JOptionPane.showConfirmDialog(
+                this,
+                "Bạn có chắc chắn muốn thoát khỏi hệ thống Garage Đức Dũng?",
+                "Xác nhận thoát",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+
+        if (luaChon == JOptionPane.YES_OPTION) {
+            if (taiKhoanDangNhap != null) {
+                try {
+                    SessionManager.ketThucPhien();
+                    taiKhoanDAO.dangXuat(taiKhoanDangNhap);
+                } catch (Exception ex) {
+                    // Bỏ qua lỗi kết nối khi đang đóng ứng dụng
+                }
+                taiKhoanDangNhap = null;
+            }
+            dispose();
+            System.exit(0);
         }
     }
 
@@ -565,7 +603,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             setScreen(pnlKhachHang);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
-            setStatus("Khách hàng · Dữ liệu trong bộ nhớ, chưa lưu lâu dài");
+            setStatus("Hồ sơ khách hàng · Đồng bộ dữ liệu SQL Server");
         } else if ("Phiếu tiếp nhận".equals(muc)) {
             if (pnlTiepNhan == null) {
                 pnlTiepNhan = new PhieuTiepNhanPanel(
@@ -578,7 +616,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             setScreen(pnlTiepNhan);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
-            setStatus("Tiếp nhận · Phiếu lưu trong bộ nhớ của phiên");
+            setStatus("Phiếu tiếp nhận xe · Đồng bộ dữ liệu SQL Server");
         } else if ("Báo giá".equals(muc)) {
             if (pnlBaoGia == null) {
                 pnlBaoGia = new BaoGiaPanel(
@@ -588,7 +626,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             setScreen(pnlBaoGia);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
-            setStatus("Báo giá · Lưu trong bộ nhớ của phiên");
+            setStatus("Báo giá sửa chữa · Đồng bộ dữ liệu SQL Server");
         } else if ("Phương tiện".equals(muc)) {
             if (pnlXe == null) {
                 pnlXe = new XePanel(
@@ -603,13 +641,13 @@ public final class MainFrame extends JFrame implements ActionListener {
             setScreen(pnlXe);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
-            setStatus("Phương tiện · Lịch sử từ nguồn dữ liệu trong bộ nhớ");
+            setStatus("Hồ sơ phương tiện · Đồng bộ dữ liệu SQL Server");
         } else if ("Tổng quan tiếp nhận".equals(muc)) {
             setScreen(pnlTrangChuTiepNhan);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
             pnlTrangChuTiepNhan.capNhatDuLieu();
-            setStatus("Tổng quan tiếp nhận · Dữ liệu trong bộ nhớ của lần chạy ứng dụng");
+            setStatus("Tổng quan tiếp nhận · Tiến độ xe tại Garage");
         } else if ("Bàn giao xe".equals(muc)) {
             if (pnlBanGiao == null) {
                 pnlBanGiao = new BanGiaoXePanel(banGiaoDAO, MainFrame.this.getTaiKhoanDangNhap());
@@ -620,7 +658,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             setScreen(pnlBanGiao);
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
-            setStatus("Bàn giao xe · Đối chiếu căn cứ thanh toán/phê duyệt từ nguồn phụ trách");
+            setStatus("Bàn giao xe · Kiểm tra căn cứ thanh toán và phê duyệt");
         } else if ("Lệnh sửa chữa".equals(muc)) {
             if (pnlLenhTiepNhan == null) {
                 pnlLenhTiepNhan = new LenhSuaChuaTiepNhanPanel(
@@ -628,7 +666,7 @@ public final class MainFrame extends JFrame implements ActionListener {
             }
 
             setScreen(pnlLenhTiepNhan);
-            setStatus("Lệnh sửa chữa · Lưu trong bộ nhớ của phiên");
+            setStatus("Lệnh sửa chữa · Đồng bộ dữ liệu SQL Server");
             mucTiepNhanDangMo = muc;
             pnlDieuHuongTiepNhan.chonMuc(muc);
         } else {

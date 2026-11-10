@@ -568,7 +568,7 @@ public final class LenhSuaChuaTiepNhanPanel extends JPanel {
             modelDanhSach.addRow(new Object[] { p.getMaPhieu(), p.getBienSo(), tenKyThuat(p.getKyThuatChinh()),
                     p.getHanHoanThanh().format(NGAY), p.getTrangThai().getTenHienThi() });
         }
-        lblDanhSach.setText(modelDanhSach.getRowCount() + " lệnh · lưu trong bộ nhớ của phiên.");
+        lblDanhSach.setText(modelDanhSach.getRowCount() + " lệnh sửa chữa.");
     }
 
     /** Thực hiện ten ky thuat cho thành phần hiện tại. */
