@@ -16,6 +16,8 @@ import java.awt.event.ActionListener;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import ui.dialog.kythuat.HoanPhuTungDialog;
 import ui.component.PhuTungUi;
 import static ui.component.GiaoDienKyThuat.dinhDangCombo;
 import static ui.component.GiaoDienKyThuat.taoCot;
@@ -99,6 +101,17 @@ public final class PhuTungSuDungPanel extends TrangKyThuatPanel {
                         + "hệ thống từ chối ghi nhận và không trừ kho.", true));
         JButton btnGhi = taoNut("Ghi nhận đã sử dụng", "GHI_PHU_TUNG", true, khongGian);
         btnGhi.setEnabled(lenh.getTrangThai() != TrangThaiSuaChua.HOAN_THANH);
+        JButton btnHoan = taoNut("Lịch sử / hoàn phụ tùng", "HOAN", false, new ActionListener() {
+            // Mở chứng từ hoàn và tải lại tồn khi cửa sổ đóng.
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new HoanPhuTungDialog(SwingUtilities.getWindowAncestor(PhuTungSuDungPanel.this),
+                        khongGian.taiKhoan, khongGian.maLenh,
+                        lenh.getTrangThai() != TrangThaiSuaChua.HOAN_THANH).setVisible(true);
+                khongGian.chuyen("PHU_TUNG");
+            }
+        });
+        pnlCot.add(taoHangNut(btnHoan));
         pnlCot.add(taoHangNut(btnGhi));
         khongGian.maLuot = DuLieuGarageDAO.taoMaThaoTac();
         themThanhPhan(pnlTrang, taoThe("Ghi nhận phụ tùng thực tế đã dùng",
