@@ -38,7 +38,7 @@ import entity.TaiKhoan;
  * Màn hình chi tiết hóa đơn đã thanh toán và in lại.
  * Tuân thủ quy định: UI nhận DAO, đọc entity HoaDon.
  */
-public class PaidInvoiceDetailPanel extends JPanel {
+public class ChiTietHoaDonPanel extends JPanel {
     
     private static final Color PAGE = new Color(244, 246, 249);
     private static final Color WHITE = Color.WHITE;
@@ -54,12 +54,12 @@ public class PaidInvoiceDetailPanel extends JPanel {
     private TaiKhoan taiKhoan;
     private final Runnable onBack;
     
-    public PaidInvoiceDetailPanel(HoaDonDAO thuNganDAO, DoiChieuChiPhiDAO doiChieuDAO, 
+    public ChiTietHoaDonPanel(HoaDonDAO thuNganDAO, DoiChieuChiPhiDAO doiChieuDAO, 
                                    String maHoaDon, Runnable onBack) {
         this(thuNganDAO, doiChieuDAO, maHoaDon, onBack, null);
     }
 
-    private PaidInvoiceDetailPanel(HoaDonDAO thuNganDAO, DoiChieuChiPhiDAO doiChieuDAO,
+    private ChiTietHoaDonPanel(HoaDonDAO thuNganDAO, DoiChieuChiPhiDAO doiChieuDAO,
             String maHoaDon, Runnable onBack, TaiKhoan taiKhoan) {
         this.thuNganDAO = thuNganDAO;
         this.doiChieuDAO = doiChieuDAO;
@@ -79,7 +79,7 @@ public class PaidInvoiceDetailPanel extends JPanel {
         content.add(buildInvoiceCard(), BorderLayout.CENTER);
     }
 
-    public PaidInvoiceDetailPanel(HoaDonDAO dao, TaiKhoan taiKhoan, String maHoaDon,
+    public ChiTietHoaDonPanel(HoaDonDAO dao, TaiKhoan taiKhoan, String maHoaDon,
             java.awt.event.ActionListener onBack) {
         this(dao, new DoiChieuChiPhiDAO(dao, taiKhoan), maHoaDon, null, taiKhoan);
         if (onBack != null) {

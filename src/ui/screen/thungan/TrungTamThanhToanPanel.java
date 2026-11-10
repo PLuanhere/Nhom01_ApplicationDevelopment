@@ -34,7 +34,7 @@ import ui.component.UiTheme;
  *
  * <p>Gắn vào vùng làm việc của {@code MainFrame} qua {@code dieuHuongThuNgan()}.</p>
  */
-public final class PaymentCenterPanel extends JPanel {
+public final class TrungTamThanhToanPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
     private static final Color GRID  = new Color(0xDCE3EC);
@@ -49,7 +49,7 @@ public final class PaymentCenterPanel extends JPanel {
      * Tạo màn hình với no-op callback, dùng DAO mặc định.
      * Dùng khi xem trước độc lập.
      */
-    public PaymentCenterPanel() {
+    public TrungTamThanhToanPanel() {
         this(new HoaDonDAO(), new TaiKhoan("NV007", TaiKhoan.VaiTro.THU_NGAN), new Navigation());
     }
 
@@ -59,7 +59,7 @@ public final class PaymentCenterPanel extends JPanel {
      * @param dao nguồn dữ liệu Thu ngân
      * @param nav callback đích cho các nút hành động
      */
-    public PaymentCenterPanel(HoaDonDAO dao, TaiKhoan taiKhoan, Navigation nav) {
+    public TrungTamThanhToanPanel(HoaDonDAO dao, TaiKhoan taiKhoan, Navigation nav) {
         this.taiKhoan = taiKhoan;
         HoaDonDAO d    = dao != null ? dao : new HoaDonDAO();
         Navigation n    = nav != null ? nav  : new Navigation();

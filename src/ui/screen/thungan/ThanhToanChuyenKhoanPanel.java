@@ -22,7 +22,7 @@ import dao.HoaDonDAO.PhieuChoThu;
 import entity.TaiKhoan;
 
 /** Bank transfer / QR payment content; the application shell is supplied by the parent. */
-public class BankTransferPaymentPanel extends JPanel {
+public class ThanhToanChuyenKhoanPanel extends JPanel {
     private static final long serialVersionUID = 1L;
     private static final Color PAGE = new Color(244, 246, 249);
     private static final Color WHITE = Color.WHITE;
@@ -41,11 +41,11 @@ public class BankTransferPaymentPanel extends JPanel {
     private JButton confirmButton;
     private final Consumer<String> onConfirm;
 
-    public BankTransferPaymentPanel() {
+    public ThanhToanChuyenKhoanPanel() {
         this(null, null, null, () -> {}, maHoaDon -> {});
     }
 
-    public BankTransferPaymentPanel(HoaDonDAO dao, PhieuChoThu phieu, TaiKhoan taiKhoan,
+    public ThanhToanChuyenKhoanPanel(HoaDonDAO dao, PhieuChoThu phieu, TaiKhoan taiKhoan,
             Runnable onBack, Consumer<String> onConfirm) {
         this.dao = dao != null ? dao : new HoaDonDAO();
         this.phieu = phieu != null ? phieu : new PhieuChoThu("SC-2026-0108", "Nguyễn Văn An", "51H-246.80", 1270000L, null);
