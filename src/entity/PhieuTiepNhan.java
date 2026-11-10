@@ -5,6 +5,12 @@ import entity.Xe;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 // Phiếu chỉ đọc sau xác nhận; giữ snapshot hồ sơ tại thời điểm tiếp nhận.
 public final class PhieuTiepNhan {
@@ -208,9 +214,9 @@ public final class PhieuTiepNhan {
         private final PhieuTiepNhan phieu;
         private final LocalDate ngayKiemTra;
         private final String boPhan;
-        // Thứ tự: kết quả, hư hỏng, đề xuất, phanh, dầu, điện, mã lỗi.
+        // Giữ nội dung tổng hợp và cấu trúc cũ để các màn hình hiện có vẫn đọc được.
         private final String[] noiDung;
-        private final String[] deXuatTheoVung;
+        private final List<ChiTietKiemTra> chiTiet;
         private final TrangThaiKiemTra trangThai;
         private final LocalDateTime thoiDiemHoanTat;
 
@@ -223,6 +229,14 @@ public final class PhieuTiepNhan {
         // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
         public BaoCaoKiemTra(String maBaoCao, PhieuTiepNhan phieu, LocalDate ngayKiemTra, String boPhan, String[] noiDung,
                 TrangThaiKiemTra trangThai, LocalDateTime thoiDiemHoanTat, String[] deXuatTheoVung) {
+            this(maBaoCao, phieu, ngayKiemTra, boPhan, noiDung, trangThai, thoiDiemHoanTat,
+                    chuyenChiTietCu(noiDung, deXuatTheoVung));
+        }
+
+        // Khởi tạo báo cáo với danh sách khu vực do kỹ thuật viên thực tế kiểm tra.
+        public BaoCaoKiemTra(String maBaoCao, PhieuTiepNhan phieu, LocalDate ngayKiemTra, String boPhan,
+                String[] noiDung, TrangThaiKiemTra trangThai, LocalDateTime thoiDiemHoanTat,
+                List<ChiTietKiemTra> chiTiet) {
             if (maBaoCao == null || phieu == null || ngayKiemTra == null || boPhan == null || noiDung == null
                     || noiDung.length != 7 || trangThai == null) {
                 throw new IllegalArgumentException("Thông tin báo cáo không hợp lệ.");
@@ -235,12 +249,12 @@ public final class PhieuTiepNhan {
             if ((trangThai == TrangThaiKiemTra.HOAN_TAT) != (thoiDiemHoanTat != null)) {
                 throw new IllegalArgumentException("Thời điểm hoàn tất không khớp trạng thái.");
             }
-            if (deXuatTheoVung == null || deXuatTheoVung.length != 3) {
-                throw new IllegalArgumentException("Cần ba đề xuất theo khu vực kiểm tra.");
+            if (chiTiet == null) {
+                throw new IllegalArgumentException("Thiếu danh sách hạng mục kiểm tra.");
             }
-            for (String deXuat : deXuatTheoVung) {
-                if (deXuat == null) {
-                    throw new IllegalArgumentException("Đề xuất theo khu vực không được null.");
+            for (ChiTietKiemTra dong : chiTiet) {
+                if (dong == null) {
+                    throw new IllegalArgumentException("Chi tiết kiểm tra không được null.");
                 }
             }
             this.maBaoCao = maBaoCao;
@@ -248,9 +262,55 @@ public final class PhieuTiepNhan {
             this.ngayKiemTra = ngayKiemTra;
             this.boPhan = boPhan;
             this.noiDung = noiDung.clone();
-            this.deXuatTheoVung = deXuatTheoVung.clone();
+            this.chiTiet = Collections.unmodifiableList(new ArrayList<>(chiTiet));
             this.trangThai = trangThai;
             this.thoiDiemHoanTat = thoiDiemHoanTat;
+        }
+
+        // Đọc danh sách chỉ đọc để không sửa trực tiếp báo cáo đã tải.
+        public List<ChiTietKiemTra> getChiTiet() {
+            return chiTiet;
+        }
+
+        // Kiểm tra hạng mục linh hoạt; không bắt nhập đề xuất khi không cần sửa chữa.
+        public void kiemTraChiTiet(boolean hoanTat) {
+            if (hoanTat && chiTiet.isEmpty()) {
+                throw new IllegalArgumentException("Cần ít nhất một hạng mục đã kiểm tra.");
+            }
+            Set<String> daCo = new HashSet<>();
+            for (ChiTietKiemTra dong : chiTiet) {
+                if (dong.getTenKhuVuc().isBlank() || dong.getTenHangMuc().isBlank()) {
+                    throw new IllegalArgumentException("Cần tên khu vực và tên hạng mục cho từng dòng.");
+                }
+                String khoa = dong.getTenKhuVuc().toLowerCase(Locale.ROOT) + "\n"
+                        + dong.getTenHangMuc().toLowerCase(Locale.ROOT);
+                if (!daCo.add(khoa)) {
+                    throw new IllegalArgumentException("Trùng hạng mục trong khu vực: " + dong.getTenHangMuc());
+                }
+                if (hoanTat && (dong.getKetQua().isBlank() || dong.getMucDo().isBlank()
+                        || dong.getMucDo().equalsIgnoreCase("Chưa đánh giá")
+                        || dong.getMucDo().equalsIgnoreCase("Đang kiểm tra"))) {
+                    throw new IllegalArgumentException("Cần kết quả và mức độ đã đánh giá: " + dong.getTenHangMuc());
+                }
+            }
+        }
+
+        // Chuyển dữ liệu ba vùng cũ cho các màn hình chưa đổi constructor.
+        private static List<ChiTietKiemTra> chuyenChiTietCu(String[] noiDung, String[] deXuat) {
+            List<ChiTietKiemTra> ketQua = new ArrayList<>();
+            if (noiDung == null || noiDung.length != 7 || deXuat == null || deXuat.length != 3) {
+                throw new IllegalArgumentException("Dữ liệu báo cáo cũ không hợp lệ.");
+            }
+            String[] ten = {"Phanh", "Khoang máy / dầu", "Điện – điều hòa"};
+            for (int i = 0; i < 3; i++) {
+                if (noiDung[i + 3] == null || deXuat[i] == null) {
+                    throw new IllegalArgumentException("Nội dung khu vực không được null.");
+                }
+                if (!noiDung[i + 3].isBlank() || !deXuat[i].isBlank()) {
+                    ketQua.add(new ChiTietKiemTra(ten[i], ten[i], noiDung[i + 3], "Chưa đánh giá", deXuat[i]));
+                }
+            }
+            return ketQua;
         }
 
         // Trả về ma bao cao.
@@ -280,7 +340,11 @@ public final class PhieuTiepNhan {
 
         // Trả về de xuat theo vung.
         public String[] getDeXuatTheoVung() {
-            return deXuatTheoVung.clone();
+            String[] deXuat = new String[chiTiet.size()];
+            for (int i = 0; i < chiTiet.size(); i++) {
+                deXuat[i] = chiTiet.get(i).getDeXuat();
+            }
+            return deXuat;
         }
 
         // Trả về trang thai.

@@ -557,6 +557,16 @@ public final class BaoGiaPanel extends JPanel {
         PhieuTiepNhan phieu = bc.getPhieu();
         lblCanCu.setText(phieu.getMaPhieu() + " · " + phieu.getTenKhach() + " · " + phieu.getBienSo());
         txtDeXuat.setText("Kết quả: " + bc.getNoiDung()[0] + "\nĐề xuất: " + bc.getNoiDung()[2]);
+        // Hiển thị thêm các hạng mục kiểm tra linh hoạt để Tiếp nhận có đủ căn cứ lập báo giá.
+        StringBuilder chiTietKiemTra = new StringBuilder();
+        for (entity.ChiTietKiemTra dong : bc.getChiTiet()) {
+            chiTietKiemTra.append("\n\nKhu vực: ").append(dong.getTenKhuVuc());
+            chiTietKiemTra.append(" · Hạng mục: ").append(dong.getTenHangMuc());
+            chiTietKiemTra.append("\nKết quả: ").append(dong.getKetQua());
+            chiTietKiemTra.append("\nMức độ: ").append(dong.getMucDo());
+            chiTietKiemTra.append("\nĐề xuất: ").append(dong.getDeXuat());
+        }
+        txtDeXuat.append(chiTietKiemTra.toString());
         if (dangXem != null) {
             String lichSu = "\nNgười lập: " + dangXem.getNguoiLap() + " · " + dangXem.getNgayLap().format(NGAY);
             if (dangXem.getNgayGui() != null) {

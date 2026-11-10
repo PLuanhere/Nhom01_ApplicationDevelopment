@@ -1,5 +1,7 @@
 package dao;
 
+import entity.ChiTietKiemTra;
+
 import connectDB.ConnectDB;
 import entity.PhieuTiepNhan;
 import entity.PhieuTiepNhan.BaoCaoKiemTra;
@@ -11,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -130,16 +133,10 @@ public final class BaoCaoKiemTraDAO {
                     || ban.getNgayKiemTra().isAfter(homNay)) {
                 throw new IllegalArgumentException("Ngày kiểm tra phải từ ngày tiếp nhận đến hôm nay.");
             }
-            String[] nd = ban.getNoiDung(), dx = ban.getDeXuatTheoVung();
-            if (ban.getBoPhan().isBlank() || nd[0].isBlank() || nd[2].isBlank()) {
-                throw new IllegalArgumentException("Cần bộ phận, kết quả và đề xuất kiểm tra.");
-            }
-            if (hoanTat) {
-                for (int i = 0; i < 3; i++) {
-                    if (nd[i + 3].isBlank() || dx[i].isBlank()) {
-                        throw new IllegalArgumentException("Cần đủ kết quả và đề xuất của ba khu vực.");
-                    }
-                }
+            String[] nd = ban.getNoiDung();
+            ban.kiemTraChiTiet(hoanTat);
+            if (ban.getBoPhan().isBlank() || nd[0].isBlank()) {
+                throw new IllegalArgumentException("Cần bộ phận và kết luận kiểm tra.");
             }
             BaoCaoKiemTra cu = timBaoCao(c, p.getMaPhieu());
             if (cu != null && (!cu.getMaBaoCao().equals(ban.getMaBaoCao())
@@ -166,10 +163,10 @@ public final class BaoCaoKiemTraDAO {
                 ps.setDate(1, java.sql.Date.valueOf(ban.getNgayKiemTra()));
                 ps.setString(2, ban.getBoPhan().trim());
                 for (int i = 0; i < nd.length; i++) {
-                    ps.setString(i + 3, nd[i].trim());
+                    ps.setString(i + 3, i >= 3 && i <= 5 ? "" : nd[i].trim());
                 }
-                for (int i = 0; i < dx.length; i++) {
-                    ps.setString(i + 10, dx[i].trim());
+                for (int i = 0; i < 3; i++) {
+                    ps.setString(i + 10, "");
                 }
                 ps.setString(13, tt.name());
                 ps.setTimestamp(14, luc == null ? null : Timestamp.valueOf(luc));
@@ -181,8 +178,11 @@ public final class BaoCaoKiemTraDAO {
                     throw new IllegalStateException("Báo cáo đã thay đổi. Hãy tải lại.");
                 }
             }
+            List<ChiTietKiemTra> chiTiet = ghiNhanNguoiNhap(ban.getChiTiet(), cu, tk);
+            luuChiTiet(c, ma, chiTiet);
             c.commit();
-            return new BaoCaoKiemTra(ma, p, ban.getNgayKiemTra(), ban.getBoPhan().trim(), nd, tt, luc, dx);
+            return new BaoCaoKiemTra(ma, p, ban.getNgayKiemTra(), ban.getBoPhan().trim(), nd, tt, luc,
+                    chiTiet);
         } catch (SQLException | RuntimeException ex) {
             hoanTac(c);
             if (ex instanceof RuntimeException) {
@@ -205,6 +205,15 @@ public final class BaoCaoKiemTraDAO {
             c = ConnectDB.getInstance().getConnection();
             c.setAutoCommit(false);
             kiemTraPhieu(c, tk, b.getPhieu().getMaPhieu(), true);
+            BaoCaoKiemTra cu = timBaoCao(c, b.getPhieu().getMaPhieu());
+            if (cu == null || !cu.getMaBaoCao().equals(b.getMaBaoCao())
+                    || cu.getTrangThai() != TrangThaiKiemTra.NHAP) {
+                throw new IllegalStateException("Chỉ được xóa báo cáo nháp còn tồn tại.");
+            }
+            try (PreparedStatement ps = c.prepareStatement("DELETE dbo.ChiTietKiemTra WHERE MaBaoCao=?")) {
+                ps.setString(1, b.getMaBaoCao());
+                ps.executeUpdate();
+            }
             try (PreparedStatement ps = c.prepareStatement("DELETE dbo.BaoCaoKiemTra "
                     + "WHERE MaBaoCao=? AND MaPhieuTiepNhan=? AND TrangThai='NHAP'")) {
                 ps.setString(1, b.getMaBaoCao());
@@ -259,6 +268,60 @@ public final class BaoCaoKiemTraDAO {
         throw new SecurityException("Phiếu chưa hợp lệ hoặc không thuộc phân công.");
     }
 
+    // Ghi danh tính từ phiên đăng nhập; giữ audit cũ cho dòng không thay đổi.
+    private List<ChiTietKiemTra> ghiNhanNguoiNhap(List<ChiTietKiemTra> danhSach, BaoCaoKiemTra cu, TaiKhoan tk) {
+        List<ChiTietKiemTra> ketQua = new ArrayList<>();
+        LocalDateTime luc = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        for (ChiTietKiemTra dong : danhSach) {
+            ChiTietKiemTra daCo = null;
+            if (cu != null) {
+                for (ChiTietKiemTra truoc : cu.getChiTiet()) {
+                    if (dong.cungNoiDung(truoc)) {
+                        daCo = truoc;
+                        break;
+                    }
+                }
+            }
+            if (daCo != null && daCo.getThoiDiemGhi() != null) {
+                ketQua.add(daCo);
+            } else {
+                ketQua.add(new ChiTietKiemTra(dong.getTenKhuVuc(), dong.getTenHangMuc(), dong.getKetQua(),
+                        dong.getMucDo(), dong.getDeXuat(), tk.getMaNhanVien(), luc));
+            }
+        }
+        return ketQua;
+    }
+
+    // Thay danh sách chi tiết trong cùng transaction với báo cáo để không lưu dở dang.
+    private void luuChiTiet(Connection c, String ma, List<ChiTietKiemTra> chiTiet) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("DELETE dbo.ChiTietKiemTra WHERE MaBaoCao=?")) {
+            ps.setString(1, ma);
+            ps.executeUpdate();
+        }
+        String sql = "INSERT dbo.ChiTietKiemTra(MaBaoCao,ViTri,TenKhuVuc,TenHangMuc,"
+                + "KetQua,MucDo,DeXuat,NguoiGhi,ThoiDiemGhi) VALUES(?,?,?,?,?,?,?,?,?)";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            for (int i = 0; i < chiTiet.size(); i++) {
+                ChiTietKiemTra dong = chiTiet.get(i);
+                ps.setString(1, ma);
+                ps.setInt(2, i);
+                ps.setString(3, dong.getTenKhuVuc());
+                ps.setString(4, dong.getTenHangMuc());
+                ps.setString(5, dong.getKetQua());
+                ps.setString(6, dong.getMucDo());
+                ps.setString(7, dong.getDeXuat());
+                if (dong.getNguoiGhi() == null) {
+                    ps.setNull(8, Types.VARCHAR);
+                } else {
+                    ps.setString(8, dong.getNguoiGhi());
+                }
+                ps.setTimestamp(9, Timestamp.valueOf(dong.getThoiDiemGhi()));
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
     // Tìm báo cáo theo mã phiếu trên cùng kết nối JDBC.
     private BaoCaoKiemTra timBaoCao(Connection c, String maPhieu) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement("SELECT * FROM dbo.BaoCaoKiemTra WHERE MaPhieuTiepNhan=?")) {
@@ -272,12 +335,22 @@ public final class BaoCaoKiemTraDAO {
     // Khôi phục báo cáo kiểm tra từ ResultSet, dùng chung khi đọc báo giá.
     static BaoCaoKiemTra docBaoCao(Connection c, ResultSet rs) throws SQLException {
         String ma = rs.getString("MaBaoCao");
-        String[] nd = new String[7], dx = new String[3];
+        String[] nd = new String[7];
         for (int i = 0; i < nd.length; i++) {
             nd[i] = rs.getString("NoiDung" + i);
         }
-        for (int i = 0; i < dx.length; i++) {
-            dx[i] = rs.getString("DeXuat" + i);
+        List<ChiTietKiemTra> chiTiet = new ArrayList<>();
+        try (PreparedStatement ps = c.prepareStatement(
+                "SELECT TenKhuVuc,TenHangMuc,KetQua,MucDo,DeXuat,NguoiGhi,ThoiDiemGhi "
+                        + "FROM dbo.ChiTietKiemTra WHERE MaBaoCao=? ORDER BY ViTri")) {
+            ps.setString(1, ma);
+            try (ResultSet dong = ps.executeQuery()) {
+                while (dong.next()) {
+                    chiTiet.add(new ChiTietKiemTra(dong.getString("TenKhuVuc"), dong.getString("TenHangMuc"),
+                            dong.getString("KetQua"), dong.getString("MucDo"), dong.getString("DeXuat"),
+                            dong.getString("NguoiGhi"), dong.getTimestamp("ThoiDiemGhi").toLocalDateTime()));
+                }
+            }
         }
         Timestamp t = rs.getTimestamp("ThoiDiemHoanTat");
         PhieuTiepNhan p;
@@ -290,8 +363,15 @@ public final class BaoCaoKiemTraDAO {
                 p = docPhieu(phieu);
             }
         }
+        if (chiTiet.isEmpty()) {
+            String[] deXuatCu = {rs.getString("DeXuat0"), rs.getString("DeXuat1"), rs.getString("DeXuat2")};
+            BaoCaoKiemTra baoCaoCu = new BaoCaoKiemTra(ma, p, rs.getDate("NgayKiemTra").toLocalDate(),
+                    rs.getString("BoPhan"), nd, TrangThaiKiemTra.valueOf(rs.getString("TrangThai")),
+                    t == null ? null : t.toLocalDateTime(), deXuatCu);
+            chiTiet.addAll(baoCaoCu.getChiTiet());
+        }
         return new BaoCaoKiemTra(ma, p, rs.getDate("NgayKiemTra").toLocalDate(), rs.getString("BoPhan"),
-                nd, TrangThaiKiemTra.valueOf(rs.getString("TrangThai")), t == null ? null : t.toLocalDateTime(), dx);
+                nd, TrangThaiKiemTra.valueOf(rs.getString("TrangThai")), t == null ? null : t.toLocalDateTime(), chiTiet);
     }
 
     // Khôi phục snapshot phiếu tiếp nhận từ ResultSet.

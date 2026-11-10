@@ -4,6 +4,11 @@ import dao.BaoCaoKiemTraDAO;
 import entity.PhieuTiepNhan.BaoCaoKiemTra;
 import entity.PhieuTiepNhan.TrangThaiKiemTra;
 import entity.TaiKhoan;
+import entity.ChiTietKiemTra;
+import java.util.ArrayList;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+import ui.component.GiaoDienKyThuat;
 import entity.PhieuTiepNhan;
 
 import java.awt.BorderLayout;
@@ -55,10 +60,21 @@ public final class BaoCaoKiemTraDialog extends JDialog implements ActionListener
     private final JTextArea txaDeXuat = new JTextArea(3, 20);
     private final JLabel lblThongBao = KiemTraUi.taoNhan("", false);
 
+    private final DefaultTableModel modelChiTiet = new DefaultTableModel(
+            new String[] {"Khu vực", "Hạng mục", "Kết quả", "Mức độ", "Đề xuất", "Người ghi", "Thời điểm ghi"}, 0) {
+        private static final long serialVersionUID = 1L;
+
+        // Chặn chỉnh sửa khi dialog chỉ dùng để xem báo cáo.
+        @Override
+        public boolean isCellEditable(int dong, int cot) {
+            return !chiDoc && cot < 5;
+        }
+    };
+    private final JTable tblChiTiet = GiaoDienKyThuat.taoBang(modelChiTiet);
     private String dauVetBanDau;
     private BaoCaoKiemTra ketQua;
 
-    /** Khởi tạo dữ liệu và thành phần cần dùng của lớp. */
+    // Khởi tạo dữ liệu và thành phần cần dùng của lớp.
     public BaoCaoKiemTraDialog(JFrame winChu, BaoCaoKiemTraDAO baoCaoDAO, TaiKhoan taiKhoan, BaoCaoKiemTra baoCaoCu,
             boolean chiDoc) {
         super(winChu, chiDoc ? "Chi tiết báo cáo kiểm tra"
@@ -95,6 +111,27 @@ public final class BaoCaoKiemTraDialog extends JDialog implements ActionListener
             txaHuHong.setText("Lọc gió bẩn");
             txaDeXuat.setText("Vệ sinh và kiểm tra lại");
         }
+        cmbBoPhan.setEditable(!chiDoc);
+        txtNgay.setText(baoCaoCu == null ? LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                : txtNgay.getText());
+        JComboBox<String> cmbMucDo = new JComboBox<>(new String[] {
+                "Chưa đánh giá", "Đang kiểm tra", "Bình thường", "Cần theo dõi", "Cần xử lý"});
+        cmbMucDo.setEditable(true);
+        GiaoDienKyThuat.dinhDangCombo(cmbMucDo);
+        tblChiTiet.getColumnModel().getColumn(3).setCellEditor(new javax.swing.DefaultCellEditor(cmbMucDo));
+        if (baoCaoCu != null) {
+            for (ChiTietKiemTra dong : baoCaoCu.getChiTiet()) {
+                modelChiTiet.addRow(new Object[] {dong.getTenKhuVuc(), dong.getTenHangMuc(), dong.getKetQua(),
+                        dong.getMucDo(), dong.getDeXuat(), dong.getNguoiGhi(), dong.getThoiDiemGhi()});
+            }
+        }
+        if (baoCaoCu == null) {
+            txaKetQua.setText("");
+            txaHuHong.setText("");
+            txaDeXuat.setText("");
+            modelChiTiet.addRow(new Object[] {"", "", "", "Chưa đánh giá", "", "", ""});
+        }
         setUndecorated(true);
         getRootPane().setBorder(BorderFactory.createLineBorder(UiTheme.BORDER));
         setLayout(new BorderLayout());
@@ -114,19 +151,35 @@ public final class BaoCaoKiemTraDialog extends JDialog implements ActionListener
         }
         add(pnlNut, BorderLayout.SOUTH);
         dauVetBanDau = layDauVet();
-        setSize(760, chiDoc ? 376 : 500);
+        setSize(1120, 740);
         setLocationRelativeTo(winChu);
     }
 
-    /** Trả về ket qua. */
+    // Trả về ket qua.
     public BaoCaoKiemTra getKetQua() {
         return ketQua;
     }
 
-    /** {@inheritDoc} */
-    // Lưu báo cáo qua DAO hoặc xác nhận trước khi bỏ những thay đổi chưa lưu.
+        // Lưu báo cáo qua DAO hoặc xác nhận trước khi bỏ những thay đổi chưa lưu.
     @Override
     public void actionPerformed(ActionEvent suKien) {
+        if (!chiDoc && "THEM_DONG".equals(suKien.getActionCommand())) {
+            if (tblChiTiet.isEditing() && !tblChiTiet.getCellEditor().stopCellEditing()) {
+                return;
+            }
+            modelChiTiet.addRow(new Object[] {"", "", "", "Chưa đánh giá", "", "", ""});
+            return;
+        }
+        if (!chiDoc && "XOA_DONG".equals(suKien.getActionCommand())) {
+            if (tblChiTiet.isEditing() && !tblChiTiet.getCellEditor().stopCellEditing()) {
+                return;
+            }
+            int dong = tblChiTiet.getSelectedRow();
+            if (dong >= 0) {
+                modelChiTiet.removeRow(tblChiTiet.convertRowIndexToModel(dong));
+            }
+            return;
+        }
         if ("HUY".equals(suKien.getActionCommand())) {
             if (chiDoc || dauVetBanDau.equals(layDauVet())
                     || KiemTraUi.xacNhan(winChu, "Bỏ thay đổi chưa lưu?",
@@ -145,9 +198,20 @@ public final class BaoCaoKiemTraDialog extends JDialog implements ActionListener
             noiDung[0] = txaKetQua.getText().trim();
             noiDung[1] = txaHuHong.getText().trim();
             noiDung[2] = txaDeXuat.getText().trim();
+            if (tblChiTiet.isEditing() && !tblChiTiet.getCellEditor().stopCellEditing()) {
+                return;
+            }
+            List<ChiTietKiemTra> chiTiet = new ArrayList<>();
+            for (int i = 0; i < modelChiTiet.getRowCount(); i++) {
+                String ten = docO(i, 0), hangMuc = docO(i, 1), kq = docO(i, 2);
+                String mucDo = docO(i, 3), dx = docO(i, 4);
+                if (!ten.isBlank() || !hangMuc.isBlank() || !kq.isBlank() || !dx.isBlank()) {
+                    chiTiet.add(new ChiTietKiemTra(ten, hangMuc, kq, mucDo, dx));
+                }
+            }
             BaoCaoKiemTra banNhap = new BaoCaoKiemTra(baoCaoCu == null ? "" : baoCaoCu.getMaBaoCao(),
                     (PhieuTiepNhan) cmbPhieu.getSelectedItem(), ngayKiemTra,
-                    String.valueOf(cmbBoPhan.getSelectedItem()), noiDung, TrangThaiKiemTra.NHAP, null);
+                    String.valueOf(cmbBoPhan.getSelectedItem()), noiDung, TrangThaiKiemTra.NHAP, null, chiTiet);
             ketQua = baoCaoDAO.luu(taiKhoan, banNhap, false);
             dispose();
         } catch (RuntimeException loi) {
@@ -163,7 +227,6 @@ public final class BaoCaoKiemTraDialog extends JDialog implements ActionListener
     }
 
     // Tạo các hàng thông tin, trường nhập và thông báo lỗi ngay trên biểu mẫu.
-    /** Tạo bieu mau cho giao diện. */
     private JPanel taoBieuMau() {
         JPanel pnlNoiDung = new JPanel(new BorderLayout(0, 12));
         pnlNoiDung.setBorder(BorderFactory.createEmptyBorder(16, 16, 8, 16));
@@ -175,7 +238,7 @@ public final class BaoCaoKiemTraDialog extends JDialog implements ActionListener
         pnlHang.setOpaque(false);
         JTextField txtMa = new JTextField(baoCaoCu == null ? "Tự sinh khi lưu" : baoCaoCu.getMaBaoCao());
         txtMa.setEditable(false);
-        JTextField txtKyThuat = new JTextField("Chung Ngô Minh Hoàng");
+        JTextField txtKyThuat = new JTextField(taiKhoan.getMaNhanVien());
         txtKyThuat.setEditable(false);
         JPanel pnlHang0 = new JPanel(new GridLayout(1, 2, 12, 0));
         pnlHang0.setOpaque(false);
@@ -205,10 +268,19 @@ public final class BaoCaoKiemTraDialog extends JDialog implements ActionListener
         JPanel pnlHang3 = new JPanel(new GridLayout(1, 2, 12, 0));
         pnlHang3.setOpaque(false);
         pnlHang3.add(KiemTraUi.taoTruong("Hư hỏng phát hiện", taoO(txaHuHong)));
-        pnlHang3.add(KiemTraUi.taoTruong("Đề xuất sửa chữa *", taoO(txaDeXuat)));
+        pnlHang3.add(KiemTraUi.taoTruong("Đề xuất chung (nếu có)", taoO(txaDeXuat)));
         pnlHang3.setPreferredSize(new Dimension(0, chiDoc ? 40 : 92));
         pnlHang.add(pnlHang3);
-        pnlNoiDung.add(pnlHang, BorderLayout.CENTER);
+        JPanel pnlChiTiet = new JPanel(new BorderLayout(0, 8));
+        pnlChiTiet.add(pnlHang, BorderLayout.NORTH);
+        pnlChiTiet.add(GiaoDienKyThuat.bocBang(tblChiTiet), BorderLayout.CENTER);
+        if (!chiDoc) {
+            JPanel pnlNutDong = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            pnlNutDong.add(GiaoDienKyThuat.taoNut("Thêm hạng mục", "THEM_DONG", false, this));
+            pnlNutDong.add(GiaoDienKyThuat.taoNut("Xóa dòng đã chọn", "XOA_DONG", false, this));
+            pnlChiTiet.add(pnlNutDong, BorderLayout.SOUTH);
+        }
+        pnlNoiDung.add(new javax.swing.JScrollPane(pnlChiTiet), BorderLayout.CENTER);
         JTextArea txaQuyTac = KiemTraUi.taoVanBan(KiemTraUi.QUY_TAC);
         txaQuyTac.setFont(UiTheme.CAPTION_FONT);
         txaQuyTac.setPreferredSize(new Dimension(0, 32));
@@ -217,7 +289,6 @@ public final class BaoCaoKiemTraDialog extends JDialog implements ActionListener
     }
 
     // Chọn vùng cuộn cho nhập nhiều dòng hoặc hiển thị văn bản khi xem chi tiết.
-    /** Tạo o cho giao diện. */
     private JComponent taoO(JTextArea txaNoiDung) {
         txaNoiDung.setFont(UiTheme.SHELL_FONT);
         txaNoiDung.setLineWrap(true);
@@ -225,10 +296,19 @@ public final class BaoCaoKiemTraDialog extends JDialog implements ActionListener
         return chiDoc ? KiemTraUi.taoVanBan(txaNoiDung.getText()) : KiemTraUi.taoVungCuon(txaNoiDung);
     }
 
+    // Đọc nội dung ô và giữ chuỗi rỗng cho giá trị chưa nhập.
+    private String docO(int dong, int cot) {
+        Object giaTri = modelChiTiet.getValueAt(dong, cot);
+        return giaTri == null ? "" : giaTri.toString().trim();
+    }
+
     // Lấy dấu vết biểu mẫu để chỉ hỏi bỏ thay đổi khi dữ liệu thực sự đã khác.
-    /** Đọc dau vet từ dữ liệu hiện tại. */
     private String layDauVet() {
-        return cmbPhieu.getSelectedIndex() + "|" + cmbBoPhan.getSelectedIndex() + "|" + txtNgay.getText() + "|"
+        if (tblChiTiet.isEditing()) {
+            tblChiTiet.getCellEditor().stopCellEditing();
+        }
+        return modelChiTiet.getDataVector().toString() + "|" + cmbPhieu.getSelectedIndex() + "|"
+                + cmbBoPhan.getSelectedIndex() + "|" + txtNgay.getText() + "|"
                 + txaKetQua.getText() + "|" + txaHuHong.getText() + "|" + txaDeXuat.getText();
     }
 }
