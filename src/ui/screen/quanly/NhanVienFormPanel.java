@@ -352,7 +352,7 @@ public final class NhanVienFormPanel extends QuanLyFormPanel implements Document
             manHinh.luuNhanVien(moi, nhanVien == null);
             giaTriBanDau = layGiaTriNhap();
             dangSua = false;
-        } catch (IllegalArgumentException | SecurityException ex) {
+        } catch (RuntimeException ex) {
             lblThongBao.setText(ex.getMessage());
             lblThongBao.setToolTipText(ex.getMessage());
             lblThongBao.setVisible(true);

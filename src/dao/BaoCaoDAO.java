@@ -1,5 +1,6 @@
 package dao;
 
+import connectDB.ConnectDB;
 import dao.DuLieuGarageDAO;
 import dao.NhanVienDAO;
 import dao.TaiKhoanDAO;
@@ -20,15 +21,18 @@ import entity.PhieuTiepNhan;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 /** Tổng hợp nguồn chung bằng vòng lặp; chỉ Quản lý được đọc và lưu báo cáo. */
 public final class BaoCaoDAO {
     private final DuLieuGarageDAO nguon;
-    private final List<BaoCao> daLuu = new ArrayList<>();
-    private final List<BaoCao> banGoc = new ArrayList<>();
-    private int soTiepTheo = 1;
     private static final DateTimeFormatter NGAY = DateTimeFormatter.ofPattern("dd/MM/uuuu");
     private static final DateTimeFormatter GIO = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm");
 
@@ -42,7 +46,10 @@ public final class BaoCaoDAO {
 
     /** Kiểm tra vai trò và phiên ngay tại thao tác báo cáo. */
     public void kiemTraQuyen(TaiKhoan tk) {
-        if (tk == null || tk.getVaiTro() != VaiTro.QUAN_LY) {
+        if (tk == null || !new TaiKhoanDAO().phienConHopLe(tk)) {
+            throw new SecurityException("Cần phiên đăng nhập còn hiệu lực.");
+        }
+        if (tk.getVaiTro() != VaiTro.QUAN_LY) {
             throw new SecurityException("Chỉ Quản lý được xem báo cáo.");
         }
         tk.kiemTraPhien();
@@ -120,24 +127,46 @@ public final class BaoCaoDAO {
         throw new IllegalArgumentException("Không tìm thấy hóa đơn.");
     }
 
-    /** Tính doanh thu từ hóa đơn, không cộng tiền khách đưa hoặc tiền thừa. */
+    /** Tính doanh thu từ số tiền ròng đã xác minh, có tính điều chỉnh và hoàn tiền. */
     private BaoCao lapDoanhThu(TaiKhoan tk, LocalDate tu, LocalDate den) {
-        long tong = 0, tienMat = 0, chuyenKhoan = 0;
+        long tong = 0;
+        long tienMat = 0;
+        long chuyenKhoan = 0;
         List<String[]> dong = new ArrayList<>();
-        for (HoaDon hd : layHoaDon(tk, tu, den)) {
-            tong = congTien(tong, hd.getTongTien());
-            if (hd.getHinhThucThanhToan() == HinhThucThanhToan.TIEN_MAT) {
-                tienMat = congTien(tienMat, hd.getTongTien());
-            } else {
-                chuyenKhoan = congTien(chuyenKhoan, hd.getTongTien());
+        String sql = "SELECT d.MaHoaDon, d.ThoiDiemThanhToan, h.HinhThucThanhToan, "
+                + "d.TienThucNhanConLai FROM dbo.vw_DoanhThuDaThu d "
+                + "JOIN dbo.HoaDon h ON h.MaHoaDon = d.MaHoaDon "
+                + "WHERE d.ThoiDiemThanhToan >= ? AND d.ThoiDiemThanhToan < ? "
+                + "ORDER BY d.ThoiDiemThanhToan DESC, d.MaHoaDon DESC";
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql)) {
+            lenh.setDate(1, Date.valueOf(tu));
+            lenh.setDate(2, Date.valueOf(den.plusDays(1)));
+            try (ResultSet ketQua = lenh.executeQuery()) {
+                while (ketQua.next()) {
+                    long soTien = ketQua.getLong("TienThucNhanConLai");
+                    tong = congTien(tong, soTien);
+                    HinhThucThanhToan hinhThuc = HinhThucThanhToan.valueOf(
+                            ketQua.getString("HinhThucThanhToan"));
+                    if (hinhThuc == HinhThucThanhToan.TIEN_MAT) {
+                        tienMat = congTien(tienMat, soTien);
+                    } else {
+                        chuyenKhoan = congTien(chuyenKhoan, soTien);
+                    }
+                    dong.add(new String[] {
+                            ketQua.getString("MaHoaDon"),
+                            ketQua.getTimestamp("ThoiDiemThanhToan").toLocalDateTime().format(GIO),
+                            hinhThuc.getTenHienThi(),
+                            String.valueOf(soTien)
+                    });
+                }
             }
-            dong.add(new String[] { hd.getMaHoaDon(), hd.getThoiDiemThanhToan().format(GIO),
-                    hd.getHinhThucThanhToan().getTenHienThi(), String.valueOf(hd.getTongTien()) });
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể lập báo cáo doanh thu.", ex);
         }
         return tao(tk, BaoCao.DOANH_THU, tu, den,
-                new String[] { "Doanh thu đã thu", "Số hóa đơn", "Tiền mặt", "Chuyển khoản" },
+                new String[] { "Thu ròng đã xác minh", "Số hóa đơn", "Tiền mặt", "Chuyển khoản" },
                 new long[] { tong, dong.size(), tienMat, chuyenKhoan },
-                new String[] { "Mã hóa đơn", "Ngày thanh toán", "Hình thức", "Số tiền (đ)" }, dong);
+                new String[] { "Mã hóa đơn", "Ngày thanh toán", "Hình thức", "Thu ròng (đ)" }, dong);
     }
 
     /** Lấy lệnh phát hành trong kỳ; tiến độ là trạng thái hiện tại lúc lập báo cáo. */
@@ -331,40 +360,41 @@ public final class BaoCaoDAO {
         return new BaoCao("", loai, tu, den, LocalDateTime.now(), tk.getTenDangNhap(), ten, giaTri, cot, dong);
     }
 
-    /** Lưu đúng bản chụp đã xem; bấm lặp cùng kết quả không tạo báo cáo khác. */
+    /** Lưu nguyên bản báo cáo đã xem bằng procedure có transaction và idempotency. */
     public BaoCao luu(TaiKhoan tk, BaoCao ketQua) {
         kiemTraQuyen(tk);
         if (ketQua == null || !ketQua.getNguoiLap().equals(tk.getTenDangNhap())) {
             throw new IllegalArgumentException("Hãy lập báo cáo trước khi lưu.");
         }
-        for (int i = 0; i < daLuu.size(); i++) {
-            if (banGoc.get(i) == ketQua || daLuu.get(i) == ketQua) {
-                return daLuu.get(i);
+        String maThaoTac = taoMaThaoTacBaoCao(ketQua);
+        String sql = "{call dbo.usp_LuuBaoCao(?, ?, ?, ?, ?, ?, ?, ?, ?)}";
+        String maBaoCao;
+        try (CallableStatement lenh = ketNoi().prepareCall(sql)) {
+            lenh.setString(1, tk.getMaNhanVien());
+            lenh.setString(2, ketQua.getLoai());
+            lenh.setDate(3, Date.valueOf(ketQua.getTuNgay()));
+            lenh.setDate(4, Date.valueOf(ketQua.getDenNgay()));
+            lenh.setString(5, "Bản chụp báo cáo đã lưu từ ứng dụng");
+            lenh.setString(6, jsonChiSo(ketQua));
+            lenh.setString(7, jsonMang(ketQua.getTenCot()));
+            lenh.setString(8, jsonDong(ketQua.getCacDong()));
+            lenh.setString(9, maThaoTac);
+            try (ResultSet ketQuaSql = lenh.executeQuery()) {
+                if (!ketQuaSql.next()) {
+                    throw new IllegalStateException("SQL không trả mã báo cáo.");
+                }
+                maBaoCao = ketQuaSql.getString("MaBaoCao");
             }
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể lưu báo cáo.", ex);
         }
-        String ma = "BC-" + LocalDate.now().getYear() + "-" + String.format("%04d", soTiepTheo);
-        BaoCao baoCao = new BaoCao(ma, ketQua.getLoai(), ketQua.getTuNgay(), ketQua.getDenNgay(), ketQua.getNgayLap(),
-                ketQua.getNguoiLap(), ketQua.getTenChiSo(), ketQua.getGiaTri(), ketQua.getTenCot(),
-                ketQua.getCacDong());
-        daLuu.add(baoCao);
-        banGoc.add(ketQua);
-        soTiepTheo++;
-        return baoCao;
+        return timBaoCaoTheoMa(tk, maBaoCao);
     }
 
-    /** Tìm và lọc báo cáo đã lưu, mới nhất trước; không tính lại bản cũ. */
+    /** Tìm các snapshot đã lưu trong database, mới nhất trước. */
     public List<BaoCao> timDaLuu(TaiKhoan tk, String chu, String loai) {
         kiemTraQuyen(tk);
-        String khoa = chu == null ? "" : chu.trim().toLowerCase();
-        List<BaoCao> ketQua = new ArrayList<>();
-        for (int i = daLuu.size() - 1; i >= 0; i--) {
-            BaoCao bc = daLuu.get(i);
-            String noiDung = bc.getMaBaoCao() + " " + bc.getLoai() + " " + bc.getNguoiLap();
-            if (noiDung.toLowerCase().contains(khoa) && (loai == null || loai.equals(bc.getLoai()))) {
-                ketQua.add(bc);
-            }
-        }
-        return ketQua;
+        return docBaoCaoDaLuu(chu, loai, null);
     }
 
     /** Lấy bảy ngày doanh thu để vẽ biểu đồ; mỗi cột dùng cùng nguồn với báo cáo. */
@@ -374,14 +404,241 @@ public final class BaoCaoDAO {
             throw new IllegalArgumentException("Thiếu ngày biểu đồ.");
         }
         long[] ketQua = new long[7];
-        for (HoaDon hd : layHoaDon(tk, den.minusDays(6), den)) {
-            for (int i = 0; i < 7; i++) {
-                if (hd.getThoiDiemThanhToan().toLocalDate().equals(den.minusDays(6 - i))) {
-                    ketQua[i] = congTien(ketQua[i], hd.getTongTien());
+        LocalDate tu = den.minusDays(6);
+        String sql = "SELECT CAST(ThoiDiemThanhToan AS DATE) AS Ngay, "
+                + "SUM(CONVERT(DECIMAL(38, 0), TienThucNhanConLai)) AS Tong "
+                + "FROM dbo.vw_DoanhThuDaThu "
+                + "WHERE ThoiDiemThanhToan >= ? AND ThoiDiemThanhToan < ? "
+                + "GROUP BY CAST(ThoiDiemThanhToan AS DATE)";
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql)) {
+            lenh.setDate(1, Date.valueOf(tu));
+            lenh.setDate(2, Date.valueOf(den.plusDays(1)));
+            try (ResultSet duLieu = lenh.executeQuery()) {
+                while (duLieu.next()) {
+                    LocalDate ngay = duLieu.getDate("Ngay").toLocalDate();
+                    int viTri = (int) java.time.temporal.ChronoUnit.DAYS.between(tu, ngay);
+                    if (viTri >= 0 && viTri < ketQua.length) {
+                        ketQua[viTri] = duLieu.getLong("Tong");
+                    }
                 }
             }
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc doanh thu bảy ngày.", ex);
         }
         return ketQua;
+    }
+
+    /** Đọc một snapshot theo mã, không tính lại số liệu hiện tại. */
+    private BaoCao timBaoCaoTheoMa(TaiKhoan tk, String maBaoCao) {
+        kiemTraQuyen(tk);
+        List<BaoCao> danhSach = docBaoCaoDaLuu("", null, maBaoCao);
+        if (danhSach.isEmpty()) {
+            throw new IllegalArgumentException("Không tìm thấy báo cáo đã lưu.");
+        }
+        return danhSach.get(0);
+    }
+
+    /** Đọc header, chỉ số, cột và ô bằng bốn truy vấn cố định, không N+1. */
+    private List<BaoCao> docBaoCaoDaLuu(String chu, String loai, String maChinhXac) {
+        String khoa = "%" + (chu == null ? "" : chu.trim()) + "%";
+        String dieuKien = " WHERE (b.MaBaoCao LIKE ? OR b.LoaiBaoCao LIKE ? OR b.NguoiLap LIKE ?) "
+                + "AND (? IS NULL OR b.LoaiBaoCao = ?) "
+                + "AND (? IS NULL OR b.MaBaoCao = ?) ";
+        List<BaoCaoDangDoc> cacBaoCao = new ArrayList<>();
+        String sqlHeader = "SELECT b.MaBaoCao, b.LoaiBaoCao, b.TuNgay, b.DenNgay, "
+                + "b.NgayLap, b.NguoiLap FROM dbo.BaoCao b "
+                + dieuKien + "ORDER BY b.NgayLap DESC, b.MaBaoCao DESC";
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sqlHeader)) {
+            ganDieuKienBaoCao(lenh, khoa, loai, maChinhXac);
+            try (ResultSet ketQua = lenh.executeQuery()) {
+                while (ketQua.next()) {
+                    cacBaoCao.add(new BaoCaoDangDoc(
+                            ketQua.getString("MaBaoCao"),
+                            ketQua.getString("LoaiBaoCao"),
+                            ketQua.getDate("TuNgay").toLocalDate(),
+                            ketQua.getDate("DenNgay").toLocalDate(),
+                            ketQua.getTimestamp("NgayLap").toLocalDateTime(),
+                            ketQua.getString("NguoiLap")));
+                }
+            }
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc báo cáo đã lưu.", ex);
+        }
+        if (cacBaoCao.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        String sqlChiSo = "SELECT c.MaBaoCao, c.TenChiSo, c.GiaTri "
+                + "FROM dbo.ChiSoBaoCao c JOIN dbo.BaoCao b ON b.MaBaoCao = c.MaBaoCao "
+                + dieuKien + "ORDER BY c.MaBaoCao, c.ViTri";
+        docChiSo(cacBaoCao, sqlChiSo, khoa, loai, maChinhXac);
+
+        String sqlCot = "SELECT c.MaBaoCao, c.TenCot "
+                + "FROM dbo.CotBaoCao c JOIN dbo.BaoCao b ON b.MaBaoCao = c.MaBaoCao "
+                + dieuKien + "ORDER BY c.MaBaoCao, c.ViTri";
+        docCot(cacBaoCao, sqlCot, khoa, loai, maChinhXac);
+
+        String sqlO = "SELECT o.MaBaoCao, o.Dong, o.Cot, o.GiaTri "
+                + "FROM dbo.OBaoCao o JOIN dbo.BaoCao b ON b.MaBaoCao = o.MaBaoCao "
+                + dieuKien + "ORDER BY o.MaBaoCao, o.Dong, o.Cot";
+        docO(cacBaoCao, sqlO, khoa, loai, maChinhXac);
+
+        List<BaoCao> ketQua = new ArrayList<>();
+        for (BaoCaoDangDoc baoCao : cacBaoCao) {
+            ketQua.add(baoCao.taoBaoCao());
+        }
+        return ketQua;
+    }
+
+    private void docChiSo(List<BaoCaoDangDoc> cacBaoCao, String sql,
+            String khoa, String loai, String maChinhXac) {
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql)) {
+            ganDieuKienBaoCao(lenh, khoa, loai, maChinhXac);
+            try (ResultSet ketQua = lenh.executeQuery()) {
+                while (ketQua.next()) {
+                    BaoCaoDangDoc baoCao = timDangDoc(cacBaoCao, ketQua.getString("MaBaoCao"));
+                    baoCao.tenChiSo.add(ketQua.getString("TenChiSo"));
+                    baoCao.giaTri.add(ketQua.getLong("GiaTri"));
+                }
+            }
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc chỉ số báo cáo.", ex);
+        }
+    }
+
+    private void docCot(List<BaoCaoDangDoc> cacBaoCao, String sql,
+            String khoa, String loai, String maChinhXac) {
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql)) {
+            ganDieuKienBaoCao(lenh, khoa, loai, maChinhXac);
+            try (ResultSet ketQua = lenh.executeQuery()) {
+                while (ketQua.next()) {
+                    BaoCaoDangDoc baoCao = timDangDoc(cacBaoCao, ketQua.getString("MaBaoCao"));
+                    baoCao.tenCot.add(ketQua.getString("TenCot"));
+                }
+            }
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc cột báo cáo.", ex);
+        }
+    }
+
+    private void docO(List<BaoCaoDangDoc> cacBaoCao, String sql,
+            String khoa, String loai, String maChinhXac) {
+        try (PreparedStatement lenh = ketNoi().prepareStatement(sql)) {
+            ganDieuKienBaoCao(lenh, khoa, loai, maChinhXac);
+            try (ResultSet ketQua = lenh.executeQuery()) {
+                while (ketQua.next()) {
+                    BaoCaoDangDoc baoCao = timDangDoc(cacBaoCao, ketQua.getString("MaBaoCao"));
+                    int dong = ketQua.getInt("Dong");
+                    int cot = ketQua.getInt("Cot");
+                    while (baoCao.cacDong.size() <= dong) {
+                        baoCao.cacDong.add(new String[baoCao.tenCot.size()]);
+                    }
+                    baoCao.cacDong.get(dong)[cot] = ketQua.getString("GiaTri");
+                }
+            }
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể đọc nội dung báo cáo.", ex);
+        }
+    }
+
+    private void ganDieuKienBaoCao(PreparedStatement lenh, String khoa,
+            String loai, String maChinhXac) throws SQLException {
+        lenh.setString(1, khoa);
+        lenh.setString(2, khoa);
+        lenh.setString(3, khoa);
+        if (loai == null) {
+            lenh.setNull(4, java.sql.Types.NVARCHAR);
+            lenh.setNull(5, java.sql.Types.NVARCHAR);
+        } else {
+            lenh.setString(4, loai);
+            lenh.setString(5, loai);
+        }
+        if (maChinhXac == null) {
+            lenh.setNull(6, java.sql.Types.VARCHAR);
+            lenh.setNull(7, java.sql.Types.VARCHAR);
+        } else {
+            lenh.setString(6, maChinhXac);
+            lenh.setString(7, maChinhXac);
+        }
+    }
+
+    private BaoCaoDangDoc timDangDoc(List<BaoCaoDangDoc> danhSach, String maBaoCao) {
+        for (BaoCaoDangDoc baoCao : danhSach) {
+            if (baoCao.maBaoCao.equals(maBaoCao)) {
+                return baoCao;
+            }
+        }
+        throw new IllegalStateException("Dữ liệu chi tiết không có header báo cáo.");
+    }
+
+    private String taoMaThaoTacBaoCao(BaoCao baoCao) {
+        String thoiDiem = baoCao.getNgayLap().toString()
+                .replace(":", "")
+                .replace(".", "");
+        return "BC-" + baoCao.getNguoiLap() + "-" + thoiDiem;
+    }
+
+    private String jsonChiSo(BaoCao baoCao) {
+        String[] ten = baoCao.getTenChiSo();
+        long[] giaTri = baoCao.getGiaTri();
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < ten.length; i++) {
+            if (i > 0) {
+                json.append(',');
+            }
+            json.append("{\"TenChiSo\":\"");
+            json.append(thoatJson(ten[i]));
+            json.append("\",\"GiaTri\":");
+            json.append(giaTri[i]);
+            json.append('}');
+        }
+        json.append(']');
+        return json.toString();
+    }
+
+    private String jsonMang(String[] cacChu) {
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < cacChu.length; i++) {
+            if (i > 0) {
+                json.append(',');
+            }
+            json.append('\"');
+            json.append(thoatJson(cacChu[i]));
+            json.append('\"');
+        }
+        json.append(']');
+        return json.toString();
+    }
+
+    private String jsonDong(List<String[]> cacDong) {
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < cacDong.size(); i++) {
+            if (i > 0) {
+                json.append(',');
+            }
+            json.append(jsonMang(cacDong.get(i)));
+        }
+        json.append(']');
+        return json.toString();
+    }
+
+    private String thoatJson(String chu) {
+        return chu.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n");
+    }
+
+    private Connection ketNoi() {
+        try {
+            return ConnectDB.getInstance().getConnection();
+        } catch (SQLException ex) {
+            throw loiDuLieu("Không thể kết nối database QuanLiGarage.", ex);
+        }
+    }
+
+    private static IllegalStateException loiDuLieu(String thongBao, SQLException ex) {
+        return new IllegalStateException(thongBao + " " + ex.getMessage(), ex);
     }
 
     /** Đọc lệnh còn trong xưởng hoặc xe đã thu tiền còn chờ giao. */
@@ -415,6 +672,57 @@ public final class BaoCaoDAO {
             }
         }
         return ketQua;
+    }
+
+    /** Bộ chứa đơn giản để ghép bốn result set thành một entity báo cáo. */
+    private static final class BaoCaoDangDoc {
+        private final String maBaoCao;
+        private final String loai;
+        private final LocalDate tuNgay;
+        private final LocalDate denNgay;
+        private final LocalDateTime ngayLap;
+        private final String nguoiLap;
+        private final List<String> tenChiSo = new ArrayList<>();
+        private final List<Long> giaTri = new ArrayList<>();
+        private final List<String> tenCot = new ArrayList<>();
+        private final List<String[]> cacDong = new ArrayList<>();
+
+        private BaoCaoDangDoc(String maBaoCao, String loai, LocalDate tuNgay,
+                LocalDate denNgay, LocalDateTime ngayLap, String nguoiLap) {
+            this.maBaoCao = maBaoCao;
+            this.loai = loai;
+            this.tuNgay = tuNgay;
+            this.denNgay = denNgay;
+            this.ngayLap = ngayLap;
+            this.nguoiLap = nguoiLap;
+        }
+
+        private BaoCao taoBaoCao() {
+            String[] cacTenChiSo = tenChiSo.toArray(new String[0]);
+            long[] cacGiaTri = new long[giaTri.size()];
+            for (int i = 0; i < giaTri.size(); i++) {
+                cacGiaTri[i] = giaTri.get(i);
+            }
+            String[] cacTenCot = tenCot.toArray(new String[0]);
+            for (String[] dong : cacDong) {
+                for (int i = 0; i < dong.length; i++) {
+                    if (dong[i] == null) {
+                        dong[i] = "";
+                    }
+                }
+            }
+            return new BaoCao(
+                    maBaoCao,
+                    loai,
+                    tuNgay,
+                    denNgay,
+                    ngayLap,
+                    nguoiLap,
+                    cacTenChiSo,
+                    cacGiaTri,
+                    cacTenCot,
+                    cacDong);
+        }
     }
 
     /** Định dạng khoảng kỳ cho nhãn trên giao diện và bản xuất. */

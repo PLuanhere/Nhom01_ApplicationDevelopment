@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -61,6 +62,7 @@ public final class NhapKhoPanel extends QuanLyFormPanel implements ActionListene
             new String[] { "Mã PT", "Tên phụ tùng", "Đơn vị", "Số lượng", "Đơn giá nhập (đ)", "Thành tiền (đ)" }, 0);
     private final JTable tblHang = UiChung.taoBang(model, 120, 300, 110, 130, 180, 180);
     private boolean daLuu;
+    private final String maThaoTac = "NK-" + UUID.randomUUID();
 
     /** Tạo biểu mẫu nhập nhiều mặt hàng hoặc xem lại phiếu đã lưu. */
     public NhapKhoPanel(PhuTungPanel manHinh, TaiKhoan taiKhoan, PhuTungDAO kho, PhieuNhapKho phieu) {
@@ -86,7 +88,7 @@ public final class NhapKhoPanel extends QuanLyFormPanel implements ActionListene
         txtNgay.setText((phieu == null ? LocalDate.now() : phieu.getNgayNhap().toLocalDate())
                 .format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         txtMa.setText(phieu == null ? dao.maTiepTheo(taiKhoan) : phieu.getMaPhieu());
-        dong(pnl, UiChung.taoHang(UiChung.taoTruong("Mã lần nhập · tự sinh · chỉ đọc", txtMa),
+        dong(pnl, UiChung.taoHang(UiChung.taoTruong("Mã lần nhập dự kiến · SQL cấp khi lưu", txtMa),
                 UiChung.taoTruong("Ngày nhập · tự động · chỉ đọc", txtNgay)));
         dong(pnl, UiChung.taoHang(UiChung.taoTruong("Nguồn hàng / diễn giải *", txtNguon),
                 UiChung.taoTruong("Mã hóa đơn / biên nhận · nếu có", txtChungTu)));
@@ -239,7 +241,7 @@ public final class NhapKhoPanel extends QuanLyFormPanel implements ActionListene
                     lblNhapLoi.setForeground(new Color(0xB42318));
                 }
             }
-        } catch (IllegalArgumentException | SecurityException ex) {
+        } catch (RuntimeException ex) {
             loi(ex.getMessage());
         }
     }
@@ -306,12 +308,17 @@ public final class NhapKhoPanel extends QuanLyFormPanel implements ActionListene
                     JOptionPane.QUESTION_MESSAGE) != JOptionPane.OK_OPTION) {
                 return;
             }
-            PhieuNhapKho phieu = dao.ghiNhan(taiKhoan, txtMa.getText(), txtNguon.getText(), txtChungTu.getText(),
-                    cacDong);
+            PhieuNhapKho phieu = dao.ghiNhan(
+                    taiKhoan,
+                    txtMa.getText(),
+                    txtNguon.getText(),
+                    txtChungTu.getText(),
+                    cacDong,
+                    maThaoTac);
             daLuu = true;
             manHinh.moDanhSach();
             manHinh.thongBao("Đã nhập kho " + phieu.getMaPhieu() + ", cộng tồn và ghi nhật ký.");
-        } catch (IllegalArgumentException | SecurityException ex) {
+        } catch (RuntimeException ex) {
             loi(ex.getMessage());
             if (ex.getMessage().startsWith("Mã lần nhập")) {
                 txtMa.setText(dao.maTiepTheo(taiKhoan));
