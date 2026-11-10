@@ -90,6 +90,7 @@ public final class PhieuTiepNhanPanel extends JPanel implements KiemTraRoiTrang 
     private final TaiKhoan phien;
     private final CardLayout boCuc = new CardLayout();
     private final JPanel pnlThe = new JPanel(boCuc);
+    private final PhieuTiepNhanFormPanel formPanel;
     private final JTextField txtLoc = new JTextField();
     private final JComboBox<String> cboTrangThai = new JComboBox<>(
             new String[] { "Tất cả trạng thái", "Chờ kiểm tra" });
@@ -144,9 +145,17 @@ public final class PhieuTiepNhanPanel extends JPanel implements KiemTraRoiTrang 
         kiemTraPhien();
         setOpaque(false);
         pnlThe.setOpaque(false);
+        formPanel = new PhieuTiepNhanFormPanel(txtTraCuu, tblHoSo, lblHoSo, txtKhach, txtXe, txtKm, txtNgay,
+                txtTinhTrang, txtTaiSan, txtYeuCau, lblLoi, txtDoiChieu, chkXacNhan, btnHoanTat, lblXacNhan,
+                e -> { if (choPhepRoiManHinh()) moDanhSach(); }, e -> traHoSo(), e -> chonHoSo(),
+                e -> quanLyHoSo(true), e -> quanLyHoSo(false), e -> moDoiChieu(), e -> luuPhieu());
+        theoDoiThayDoi(txtKm);
+        theoDoiThayDoi(txtNgay);
+        theoDoiThayDoi(txtTinhTrang);
+        theoDoiThayDoi(txtTaiSan);
+        theoDoiThayDoi(txtYeuCau);
         pnlThe.add(taoDanhSach(), "DANH_SACH");
-        pnlThe.add(taoForm(), "FORM");
-        pnlThe.add(taoDoiChieu(), "DOI_CHIEU");
+        pnlThe.add(formPanel, "FORM");
         add(pnlThe);
         locDanhSach();
     }
@@ -303,184 +312,6 @@ public final class PhieuTiepNhanPanel extends JPanel implements KiemTraRoiTrang 
         return pnl;
     }
 
-    /** Tạo form cho giao diện. */
-    private JPanel taoForm() {
-        JPanel pnl = nen(new BorderLayout(0, 16));
-        pnl.add(tieuDe("Lập phiếu tiếp nhận xe", "1. Tra cứu hồ sơ → 2. Thông tin tiếp nhận → 3. Đối chiếu",
-                nut("Danh sách / quay lại", false, new ActionListener() {
-                    /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-                    @Override
-                    public void actionPerformed(ActionEvent event) {
-
-                        if (choPhepRoiManHinh()) {
-                            moDanhSach();
-                        }
-
-                    }
-                })), BorderLayout.NORTH);
-        JPanel noiDung = nen(new BorderLayout(0, 16));
-        JPanel tra = khung(new BorderLayout(0, 10));
-        JPanel tim = nen(new BorderLayout(8, 0));
-        txtTraCuu.setBorder(BorderFactory.createTitledBorder("Số điện thoại / biển số"));
-        txtTraCuu.addActionListener(new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                traHoSo();
-            }
-        });
-        tim.add(txtTraCuu);
-        tim.add(nut("Tra cứu", false, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                PhieuTiepNhanPanel.this.traHoSo();
-            }
-        }), BorderLayout.EAST);
-        tra.add(tim, BorderLayout.NORTH);
-        JScrollPane ketQua = cuonBang(tblHoSo);
-        ketQua.setPreferredSize(new Dimension(0, 150));
-        tra.add(ketQua);
-        JPanel duoi = nen(new BorderLayout(0, 10));
-        duoi.add(lblHoSo, BorderLayout.NORTH);
-        JPanel tacVu = nen(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        tacVu.add(nut("Chọn xe", true, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                PhieuTiepNhanPanel.this.chonHoSo();
-            }
-        }));
-        tacVu.add(nut("Quản lý khách hàng", false, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                quanLyHoSo(true);
-            }
-        }));
-        tacVu.add(nut("Quản lý phương tiện", false, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                quanLyHoSo(false);
-            }
-        }));
-        duoi.add(tacVu);
-        tra.add(duoi, BorderLayout.SOUTH);
-        noiDung.add(tra, BorderLayout.NORTH);
-        JPanel nhap = khung(new BorderLayout(0, 14));
-        JPanel thongTin = nen(new GridLayout(2, 2, 14, 14));
-        thongTin.add(truong("Khách hàng đã chọn · chỉ đọc", txtKhach));
-        thongTin.add(truong("Phương tiện đã chọn · chỉ đọc", txtXe));
-        txtKhach.setEditable(false);
-        txtXe.setEditable(false);
-        thongTin.add(truong("Số kilomet * · số nguyên không âm", txtKm));
-        thongTin.add(truong("Thời gian nhận * · dd/MM/yyyy HH:mm", txtNgay));
-        nhap.add(thongTin, BorderLayout.NORTH);
-        JPanel moTa = nen(new GridLayout(3, 1, 0, 14));
-        moTa.add(truong("Tình trạng ban đầu *", txtTinhTrang));
-        moTa.add(truong("Tài sản khách để lại · tùy chọn", txtTaiSan));
-        moTa.add(truong("Yêu cầu sửa chữa / bảo dưỡng *", txtYeuCau));
-        nhap.add(moTa);
-        JPanel chan = nen(new BorderLayout(0, 10));
-        lblLoi.setForeground(UiTheme.ERROR);
-        chan.add(lblLoi, BorderLayout.NORTH);
-        chan.add(nut("Xem lại & ghi nhận", true, new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent event) {
-                PhieuTiepNhanPanel.this.moDoiChieu();
-            }
-        }));
-        nhap.add(chan, BorderLayout.SOUTH);
-        noiDung.add(nhap);
-        pnl.add(cuonNoiDung(noiDung));
-        theoDoiThayDoi(txtKm);
-        theoDoiThayDoi(txtNgay);
-        theoDoiThayDoi(txtTinhTrang);
-        theoDoiThayDoi(txtTaiSan);
-        theoDoiThayDoi(txtYeuCau);
-        return pnl;
-    }
-
-    /** Tạo doi chieu cho giao diện. */
-    private JPanel taoDoiChieu() {
-        JPanel pnl = nen(new BorderLayout(0, 16));
-        pnl.add(tieuDe("Đối chiếu phiếu tiếp nhận", "Đọc lại hiện trạng và yêu cầu cùng khách trước khi xác nhận.",
-                nut("Quay lại chỉnh sửa", false, new ActionListener() {
-                    /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-                    @Override
-                    public void actionPerformed(ActionEvent event) {
-
-                        chkXacNhan.setSelected(false);
-                        xeDoiChieu = null;
-                        boCuc.show(pnlThe, "FORM");
-
-                    }
-                })), BorderLayout.NORTH);
-        JPanel hang = nen(new GridLayout(1, 2, 16, 0));
-        JPanel thongTin = khung(new BorderLayout(0, 12));
-        thongTin.add(nhan("Thông tin tiếp nhận · chưa lưu", true), BorderLayout.NORTH);
-        txtDoiChieu.setEditable(false);
-        txtDoiChieu.setRows(16);
-        thongTin.add(new JScrollPane(txtDoiChieu));
-        hang.add(thongTin);
-        JPanel xacNhan = khung(new BorderLayout(0, 16));
-        JPanel chu = nen(new GridLayout(0, 1, 0, 8));
-        chu.setPreferredSize(new Dimension(0, 320));
-        chu.add(nhan("Khách hàng xác nhận nội dung", true));
-        JLabel huongDan = nhan(
-                "<html>Đối chiếu tên khách, xe, kilomet, hiện trạng,<br>tài sản và yêu cầu.<br>Không mặc định khách đã đồng ý.</html>",
-                false);
-        chu.add(huongDan);
-        chkXacNhan.setOpaque(false);
-        chkXacNhan.setFont(UiTheme.APP_FONT);
-        chkXacNhan.setText("<html>Khách đã xem và đồng ý thông tin tiếp nhận</html>");
-        chkXacNhan.addItemListener(new ItemListener() {
-            /** Thực hiện item state changed cho thành phần hiện tại. */
-            @Override
-            public void itemStateChanged(ItemEvent e) {
-                btnHoanTat.setEnabled(chkXacNhan.isSelected());
-                lblXacNhan.setText(chkXacNhan.isSelected() ? "Đã chọn xác nhận · chưa lưu phiếu."
-                        : "Chưa xác nhận · chưa lưu phiếu.");
-            }
-        });
-        chu.add(chkXacNhan);
-        chu.add(lblXacNhan);
-        JLabel gioiHan = nhan("<html>Phiếu được lưu trên SQL Server.<br>Có thể phân công kiểm tra cho kỹ thuật viên.</html>",
-                false);
-        chu.add(gioiHan);
-        xacNhan.add(chu, BorderLayout.NORTH);
-        btnHoanTat.setEnabled(false);
-        btnHoanTat.setPreferredSize(new Dimension(0, 40));
-        btnHoanTat.addActionListener(new ActionListener() {
-            /** Xử lý thao tác được gắn với nút hoặc lựa chọn này. */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                luuPhieu();
-            }
-        });
-        xacNhan.add(btnHoanTat, BorderLayout.SOUTH);
-        hang.add(xacNhan);
-        hang.setPreferredSize(new Dimension(600, 440));
-        JScrollPane cuon = cuonNoiDung(hang);
-        cuon.getViewport().addComponentListener(new ComponentAdapter() {
-            /** Thực hiện component resized cho thành phần hiện tại. */
-            @Override
-            public void componentResized(ComponentEvent e) {
-                boolean hep = cuon.getViewport().getWidth() < 850;
-                GridLayout layout = (GridLayout) hang.getLayout();
-                layout.setRows(hep ? 2 : 1);
-                layout.setColumns(hep ? 1 : 2);
-                layout.setVgap(16);
-                hang.setPreferredSize(new Dimension(600, hep ? 900 : 440));
-                hang.revalidate();
-            }
-        });
-        pnl.add(cuon);
-        return pnl;
-    }
-
     /** Mở phieu moi khi người dùng yêu cầu. */
     private void moPhieuMoi() {
         kiemTraPhien();
@@ -502,6 +333,7 @@ public final class PhieuTiepNhanPanel extends JPanel implements KiemTraRoiTrang 
         chkXacNhan.setSelected(false);
         daThayDoi = false;
         dangNap = false;
+        formPanel.hienThiForm();
         boCuc.show(pnlThe, "FORM");
     }
 
@@ -597,7 +429,8 @@ public final class PhieuTiepNhanPanel extends JPanel implements KiemTraRoiTrang 
             chkXacNhan.setSelected(false);
             btnHoanTat.setEnabled(false);
             lblXacNhan.setText("Chưa xác nhận · chưa lưu phiếu.");
-            boCuc.show(pnlThe, "DOI_CHIEU");
+            formPanel.hienThiDoiChieu();
+            boCuc.show(pnlThe, "FORM");
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
             lblLoi.setText(e.getMessage());
         }
