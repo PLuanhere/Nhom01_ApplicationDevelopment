@@ -72,7 +72,9 @@ public final class BaoGiaFormPanel extends JPanel {
         txtDeXuat.setLineWrap(true);
         txtDeXuat.setWrapStyleWord(true);
         txtDeXuat.setFont(UiTheme.APP_FONT);
-        dau.add(new JScrollPane(txtDeXuat));
+        JScrollPane noiDungKiemTra = new JScrollPane(txtDeXuat);
+        noiDungKiemTra.setPreferredSize(new Dimension(0, 180));
+        dau.add(noiDungKiemTra);
         dau.add(truong("Ngày hẹn dự kiến * · dd/MM/yyyy HH:mm", txtHen));
         epCot(dau);
         khung.add(dau, BorderLayout.NORTH);
@@ -148,7 +150,7 @@ public final class BaoGiaFormPanel extends JPanel {
     }
 
     private static JPanel truong(String ten, JComponent component) { JPanel pnl = nen(new BorderLayout(0, 6)); pnl.add(nhan(ten, true), BorderLayout.NORTH); pnl.add(component); return pnl; }
-    private static void epCot(JPanel pnl) { Component[] ds = pnl.getComponents(); pnl.removeAll(); pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS)); for (Component component : ds) { JComponent c = (JComponent) component; int cao = c instanceof JComboBox ? 36 : c.getPreferredSize().height; if (c instanceof JScrollPane) cao = 65; c.setAlignmentX(Component.LEFT_ALIGNMENT); c.setMaximumSize(new Dimension(Integer.MAX_VALUE, cao)); c.setPreferredSize(new Dimension(0, cao)); pnl.add(c); pnl.add(Box.createVerticalStrut(8)); } }
+    private static void epCot(JPanel pnl) { Component[] ds = pnl.getComponents(); pnl.removeAll(); pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS)); for (Component component : ds) { JComponent c = (JComponent) component; int cao = c instanceof JComboBox ? 36 : c.getPreferredSize().height; if (c instanceof JScrollPane) cao = Math.max(65, cao); c.setAlignmentX(Component.LEFT_ALIGNMENT); c.setMaximumSize(new Dimension(Integer.MAX_VALUE, cao)); c.setPreferredSize(new Dimension(0, cao)); pnl.add(c); pnl.add(Box.createVerticalStrut(8)); } }
     private static JPanel nen(LayoutManager layout) { JPanel pnl = new JPanel(layout); pnl.setOpaque(false); return pnl; }
     private static JPanel khung(LayoutManager layout) { JPanel pnl = UiTheme.roundedPanel(layout, Color.WHITE, 8); pnl.setBorder(UiTheme.roundedBorder(UiTheme.APP_BORDER, 8, 16, 16)); return pnl; }
     private static JLabel nhan(String chu, boolean dam) { JLabel lbl = new JLabel(chu); lbl.setFont(dam ? UiTheme.APP_BOLD_FONT : UiTheme.APP_FONT); lbl.setForeground(dam ? UiTheme.APP_TEXT : UiTheme.APP_MUTED); return lbl; }
