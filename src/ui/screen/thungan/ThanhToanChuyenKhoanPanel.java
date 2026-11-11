@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridLayout;
-import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -20,6 +19,7 @@ import javax.swing.event.DocumentListener;
 import dao.HoaDonDAO;
 import dao.HoaDonDAO.PhieuChoThu;
 import entity.TaiKhoan;
+import ui.component.UiTheme;
 
 /** Bank transfer / QR payment content; the application shell is supplied by the parent. */
 public class ThanhToanChuyenKhoanPanel extends JPanel {
@@ -133,7 +133,7 @@ public class ThanhToanChuyenKhoanPanel extends JPanel {
         fields.setOpaque(false);
 
         receivedAmountField = new JTextField();
-        receivedAmountField.setToolTipText("Nhập số tiền đã thực nhận sau khi đối soát");
+        receivedAmountField.setToolTipText("Nhập số đồng nguyên, ví dụ 250000 hoặc 250.000");
 
         referenceField = new JTextField();
         referenceField.setToolTipText("Nhập mã tham chiếu giao dịch sau khi đối chiếu");
@@ -173,21 +173,7 @@ public class ThanhToanChuyenKhoanPanel extends JPanel {
         confirmButton.setFocusPainted(false);
         confirmButton.setBorder(BorderFactory.createEmptyBorder(11, 14, 11, 14));
         confirmButton.setEnabled(false);
-        confirmButton.addActionListener(e -> {
-            try {
-                long soTienNhan = parseAmount(receivedAmountField.getText());
-                String maGiaoDich = referenceField.getText().trim();
-                String nguoiDuyet = taiKhoan != null ? taiKhoan.getTenDangNhap() : "thungan";
-                
-                String maHoaDon = dao.xacNhanThanhToanChuyenKhoan(
-                    taiKhoan, phieu.getMaPhieu(), soTienNhan, maGiaoDich);
-                
-                if (onConfirm != null) onConfirm.accept(maHoaDon);
-            } catch (IllegalStateException ex) {
-                javax.swing.JOptionPane.showMessageDialog(this, ex.getMessage(),
-                        "Lỗi xác nhận thanh toán", javax.swing.JOptionPane.ERROR_MESSAGE);
-            }
-        });
+        confirmButton.addActionListener(e -> xacNhanThanhToan());
 
         actions.add(confirmButton, BorderLayout.EAST);
         bottom.add(actions, BorderLayout.SOUTH);
@@ -240,28 +226,69 @@ public class ThanhToanChuyenKhoanPanel extends JPanel {
         return panel;
     }
 
-    private void refreshValidation() {
-        long received = parseAmount(receivedAmountField.getText());
-        boolean hasReference = !referenceField.getText().trim().isEmpty();
-        boolean valid = received >= amountDue && hasReference;
-
-        confirmButton.setEnabled(valid);
-
-        if (received <= 0) {
-            statusLabel.setText("Chờ xác minh đã nhận đủ tiền");
-        } else if (received < amountDue) {
-            statusLabel.setText("Chưa nhận đủ tiền · còn thiếu " + money(amountDue - received));
-        } else if (!hasReference) {
-            statusLabel.setText("Đủ số tiền · cần mã tham chiếu");
-        } else {
-            statusLabel.setText("Đủ số tiền · chờ xác nhận đối soát");
+    private void xacNhanThanhToan() {
+        String maHoaDon;
+        try {
+            long soTien = parseAmount(receivedAmountField.getText());
+            String thamChieu = referenceField.getText().trim();
+            kiemTraDuLieu(soTien, thamChieu);
+            maHoaDon = dao.xacNhanThanhToanChuyenKhoan(taiKhoan, phieu.getMaPhieu(), soTien, thamChieu);
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
+            hienTrangThai(ex.getMessage(), true);
+            return;
+        }
+        if (onConfirm != null) {
+            onConfirm.accept(maHoaDon);
         }
     }
 
+    private void refreshValidation() {
+        confirmButton.setEnabled(false);
+        if (receivedAmountField.getText().isBlank()) {
+            hienTrangThai("Nhập số tiền thực nhận.", false);
+            return;
+        }
+        try {
+            long soTien = parseAmount(receivedAmountField.getText());
+            kiemTraDuLieu(soTien, referenceField.getText().trim());
+            hienTrangThai("Đủ số tiền · chờ xác nhận đối soát", false);
+            confirmButton.setEnabled(true);
+        } catch (IllegalArgumentException ex) {
+            hienTrangThai(ex.getMessage(), true);
+        }
+    }
+
+    private void kiemTraDuLieu(long soTien, String thamChieu) {
+        if (soTien <= 0) {
+            throw new IllegalArgumentException("Số tiền phải lớn hơn 0.");
+        }
+        if (soTien < amountDue) {
+            throw new IllegalArgumentException("Còn thiếu " + money(amountDue - soTien) + ".");
+        }
+        if (soTien > amountDue) {
+            throw new IllegalArgumentException("Số tiền vượt mức phải thu.");
+        }
+        if (thamChieu.isEmpty()) {
+            throw new IllegalArgumentException("Cần nhập mã tham chiếu.");
+        }
+    }
+
+    private void hienTrangThai(String thongBao, boolean loi) {
+        statusLabel.setForeground(loi ? UiTheme.ERROR : MUTED);
+        statusLabel.setText(thongBao);
+        statusLabel.setToolTipText(thongBao);
+    }
+
     private static long parseAmount(String value) {
-        String digits = value == null ? "" : value.replaceAll("[^0-9]", "");
-        if (digits.isEmpty()) return 0;
-        try { return Long.parseLong(digits); } catch (NumberFormatException e) { return Long.MAX_VALUE; }
+        String soTien = value.trim();
+        if (!soTien.matches("[0-9]+") && !soTien.matches("[0-9]{1,3}(\\.[0-9]{3})+")) {
+            throw new IllegalArgumentException("Nhập số đồng nguyên, ví dụ 250.000.");
+        }
+        try {
+            return Long.parseLong(soTien.replace(".", ""));
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Số tiền vượt giới hạn cho phép.");
+        }
     }
 
     private static String money(long amount) {

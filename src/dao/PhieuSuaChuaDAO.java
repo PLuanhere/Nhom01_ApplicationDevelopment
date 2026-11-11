@@ -388,7 +388,7 @@ public final class PhieuSuaChuaDAO {
                 if (dong != null && !dong.getMaPhuTung().isEmpty()) {
                     try (PreparedStatement ps = c.prepareStatement("SELECT 1 FROM dbo.PhuTungSuDung s "
                             + "WHERE MaLenhSuaChua=? AND ViTriHangMuc=? AND MaPhuTung=? AND TrangThai='DA_GHI_NHAN' "
-                            + "AND s.SoLuong-" + HoanPhuTungDAO.sqlDaHoan("s") + ">0")) {
+                            + "AND s.SoLuong-" + HoanPhuTungDAO.sqlDaHoan("s") + ">=0")) {
                         ps.setString(1, ma);
                         ps.setInt(2, i);
                         ps.setString(3, dong.getMaPhuTung());

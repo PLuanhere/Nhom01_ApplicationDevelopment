@@ -29,10 +29,11 @@ import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
-import dao.DoiChieuChiPhiDAO;
 import dao.HoaDonDAO;
+import entity.ChiTietHoaDon;
 import entity.HoaDon;
 import entity.TaiKhoan;
+import ui.component.ScrollablePanel;
 
 /**
  * Màn hình chi tiết hóa đơn đã thanh toán và in lại.
@@ -49,21 +50,11 @@ public class ChiTietHoaDonPanel extends JPanel {
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     
     private final HoaDonDAO thuNganDAO;
-    private final DoiChieuChiPhiDAO doiChieuDAO;
-    private final String maHoaDon;
-    private TaiKhoan taiKhoan;
+    private final TaiKhoan taiKhoan;
     private final Runnable onBack;
-    
-    public ChiTietHoaDonPanel(HoaDonDAO thuNganDAO, DoiChieuChiPhiDAO doiChieuDAO, 
-                                   String maHoaDon, Runnable onBack) {
-        this(thuNganDAO, doiChieuDAO, maHoaDon, onBack, null);
-    }
 
-    private ChiTietHoaDonPanel(HoaDonDAO thuNganDAO, DoiChieuChiPhiDAO doiChieuDAO,
-            String maHoaDon, Runnable onBack, TaiKhoan taiKhoan) {
+    public ChiTietHoaDonPanel(HoaDonDAO thuNganDAO, TaiKhoan taiKhoan, String maHoaDon, Runnable onBack) {
         this.thuNganDAO = thuNganDAO;
-        this.doiChieuDAO = doiChieuDAO;
-        this.maHoaDon = maHoaDon;
         this.onBack = onBack;
         this.taiKhoan = taiKhoan;
         
@@ -71,21 +62,13 @@ public class ChiTietHoaDonPanel extends JPanel {
         setBackground(PAGE);
         setBorder(BorderFactory.createEmptyBorder(20, 26, 18, 26));
         
-        JPanel content = new JPanel(new BorderLayout(0, 14));
-        content.setOpaque(false);
-        add(content, BorderLayout.NORTH);
-        
-        content.add(buildHeading(), BorderLayout.NORTH);
-        content.add(buildInvoiceCard(), BorderLayout.CENTER);
-    }
-
-    public ChiTietHoaDonPanel(HoaDonDAO dao, TaiKhoan taiKhoan, String maHoaDon,
-            java.awt.event.ActionListener onBack) {
-        this(dao, new DoiChieuChiPhiDAO(dao, taiKhoan), maHoaDon, null, taiKhoan);
-        if (onBack != null) {
-            // Constructor chính đã dựng UI; callback quay lại được xử lý bởi shell.
-            // Không tham chiếu this trong lời gọi this(...).
-        }
+        add(buildHeading(), BorderLayout.NORTH);
+        JPanel content = new ScrollablePanel();
+        content.add(buildInvoiceCard(maHoaDon), BorderLayout.NORTH);
+        JScrollPane scroll = new JScrollPane(content);
+        scroll.setBorder(BorderFactory.createEmptyBorder(14, 0, 0, 0));
+        scroll.getVerticalScrollBar().setUnitIncrement(20);
+        add(scroll, BorderLayout.CENTER);
     }
     
     private JPanel buildHeading() {
@@ -100,18 +83,30 @@ public class ChiTietHoaDonPanel extends JPanel {
         titles.add(label("Tra cứu hóa đơn đã lưu và hỗ trợ xem/in lại, không cho sửa hoặc xóa hóa đơn đã thanh toán.", 12, Font.PLAIN, MUTED), BorderLayout.SOUTH);
         left.add(titles, BorderLayout.CENTER);
         heading.add(left, BorderLayout.CENTER);
-        JButton back = secondaryButton("Trở về tổng quan");
-        back.addActionListener(e -> { if (onBack != null) onBack.run(); });
+        JButton back = secondaryButton("Quay lại");
+        back.setEnabled(onBack != null);
+        back.addActionListener(e -> {
+            if (onBack != null) {
+                onBack.run();
+            }
+        });
         heading.add(back, BorderLayout.EAST);
         heading.setBorder(BorderFactory.createEmptyBorder(0, 0, 3, 0));
         return heading;
     }
     
-    private JPanel buildInvoiceCard() {
-        HoaDon hoaDon = thuNganDAO.layHoaDonDaThu(taiKhoan).stream()
-                .filter(hd -> hd.getMaHoaDon().equals(maHoaDon))
-                .findFirst().orElse(null);
-        if (hoaDon == null) return taoManHinhLoi("Không tìm thấy hóa đơn " + maHoaDon);
+    private JPanel buildInvoiceCard(String maHoaDon) {
+        HoaDon hoaDon;
+        List<ChiTietHoaDon> chiTiet;
+        try {
+            hoaDon = thuNganDAO.timHoaDonTheoMa(taiKhoan, maHoaDon);
+            if (hoaDon == null) {
+                return taoManHinhLoi("Không tìm thấy hóa đơn " + maHoaDon);
+            }
+            chiTiet = thuNganDAO.layChiTietHoaDon(taiKhoan, maHoaDon);
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException ex) {
+            return taoManHinhLoi("Không tải được hóa đơn " + maHoaDon + ". " + ex.getMessage());
+        }
         
         JPanel card = new JPanel(new BorderLayout(0, 12));
         card.setBackground(WHITE);
@@ -139,31 +134,28 @@ public class ChiTietHoaDonPanel extends JPanel {
         factGroup.add(factsTwo);
         top.add(factGroup, BorderLayout.SOUTH);
         card.add(top, BorderLayout.NORTH);
-        card.add(buildChiTietTable(hoaDon), BorderLayout.CENTER);
-        card.add(buildBottom(hoaDon), BorderLayout.SOUTH);
+        card.add(buildChiTietTable(chiTiet), BorderLayout.CENTER);
+        card.add(buildBottom(hoaDon, chiTiet), BorderLayout.SOUTH);
         return card;
     }
     
-    private JPanel buildChiTietTable(HoaDon hoaDon) {
+    private JPanel buildChiTietTable(List<ChiTietHoaDon> chiTiet) {
         JPanel middle = new JPanel(new BorderLayout(0, 8));
         middle.setOpaque(false);
         middle.add(label("Chi tiết dịch vụ và phụ tùng", 15, Font.BOLD, INK), BorderLayout.NORTH);
-        List<DoiChieuChiPhiDAO.DongChiPhi> chiTiet = null;
-        try {
-            DoiChieuChiPhiDAO.KetQuaDoiChieu kq = doiChieuDAO.layKetQuaDoiChieu(hoaDon.getMaPhieuSuaChua());
-            chiTiet = kq.getDanhSachChiPhi();
-        } catch (IllegalArgumentException e) { }
-        
         DefaultTableModel model = new DefaultTableModel(new Object[]{"Hạng mục", "SL", "Đơn giá", "Thành tiền"}, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         
-        if (chiTiet != null && !chiTiet.isEmpty()) {
-            for (DoiChieuChiPhiDAO.DongChiPhi dong : chiTiet) {
-                model.addRow(new Object[]{dong.getHangMuc(), dong.getSlDvt(), dong.getDonGia(), dong.getThanhTien()});
-            }
-        } else {
-            model.addRow(new Object[]{"(Không có chi tiết)", "—", 0L, 0L});
+        for (ChiTietHoaDon dong : chiTiet) {
+            model.addRow(new Object[]{
+                    dong.getTenHangMuc(), dong.getSoLuong() + " " + dong.getDonVi(),
+                    dong.getDonGia(), dong.getThanhTien()
+            });
+        }
+        if (chiTiet.isEmpty()) {
+            middle.add(label("Hóa đơn chưa có dòng chi tiết lưu trong hệ thống.", 13, Font.PLAIN, MUTED),
+                    BorderLayout.SOUTH);
         }
         
         JTable table = new JTable(model);
@@ -199,7 +191,7 @@ public class ChiTietHoaDonPanel extends JPanel {
         return middle;
     }
     
-    private JPanel buildBottom(HoaDon hoaDon) {
+    private JPanel buildBottom(HoaDon hoaDon, List<ChiTietHoaDon> chiTiet) {
         JPanel bottom = new JPanel(new BorderLayout(0, 10));
         bottom.setOpaque(false);
         JPanel totals = new JPanel(new GridLayout(1, 2, 12, 0));
@@ -216,12 +208,12 @@ public class ChiTietHoaDonPanel extends JPanel {
         actions.setOpaque(false);
         actions.add(label("Bản xem trước → Hộp thoại in hệ điều hành", 12, Font.PLAIN, MUTED), BorderLayout.CENTER);
         JButton print = primaryButton("In hóa đơn");
-        print.addActionListener(e -> inHoaDon(hoaDon));
+        print.addActionListener(e -> inHoaDon(hoaDon, chiTiet));
         actions.add(print, BorderLayout.EAST);
         bottom.add(actions, BorderLayout.SOUTH);
         return bottom;
     }
-    private void inHoaDon(HoaDon hoaDon) {
+    private void inHoaDon(HoaDon hoaDon, List<ChiTietHoaDon> chiTietHoaDon) {
         if (hoaDon == null) {
             JOptionPane.showMessageDialog(this, "Không có dữ liệu hóa đơn để in.",
                     "Không thể in", JOptionPane.WARNING_MESSAGE);
@@ -282,9 +274,7 @@ public class ChiTietHoaDonPanel extends JPanel {
                 g2d.drawLine(x, y, x + 450, y);
                 y += 15;
                 
-                // Chi tiết lấy từ snapshot hóa đơn đã thanh toán, không đọc lại phiếu chờ thu.
-                var chiTietHoaDon = thuNganDAO.layChiTietHoaDon(taiKhoan, hoaDon.getMaHoaDon());
-                if (chiTietHoaDon != null && !chiTietHoaDon.isEmpty()) {
+                if (!chiTietHoaDon.isEmpty()) {
                     g2d.setFont(new Font("Dialog", Font.BOLD, 11));
                     g2d.drawString("Mô tả", x, y);
                     g2d.drawString("Đơn vị", x + 250, y);
@@ -295,7 +285,7 @@ public class ChiTietHoaDonPanel extends JPanel {
                     g2d.setFont(new Font("Dialog", Font.PLAIN, 10));
                     
                     // Danh sách chi phí
-                    for (var cp : chiTietHoaDon) {
+                    for (ChiTietHoaDon cp : chiTietHoaDon) {
                         g2d.drawString(cp.getTenHangMuc(), x, y);
                         g2d.drawString(cp.getSoLuong() + " " + cp.getDonVi(), x + 250, y);
                         g2d.drawString(formatMoney(cp.getDonGia()), x + 350, y);

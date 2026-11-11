@@ -46,6 +46,7 @@ public final class PhatSinhSuaChuaDialog extends JDialog implements ActionListen
     private final JButton btnTuChoi = nut("Khách từ chối", "TU_CHOI", false);
     private DeXuatPhatSinh dangXem;
     private boolean daSua;
+    private boolean dangNapDanhSach;
 
     public PhatSinhSuaChuaDialog(Window chu, TaiKhoan phien, String maLenh) {
         super(chu, "Phát sinh sửa chữa · " + maLenh, ModalityType.APPLICATION_MODAL);
@@ -57,6 +58,26 @@ public final class PhatSinhSuaChuaDialog extends JDialog implements ActionListen
         JPanel dau = new JPanel(new BorderLayout(8, 0));
         dau.setOpaque(false);
         GiaoDienKyThuat.dinhDangCombo(cmbDanhSach);
+        cmbDanhSach.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (dangNapDanhSach) return;
+                DeXuatPhatSinh moi = (DeXuatPhatSinh) cmbDanhSach.getSelectedItem();
+                if (moi == dangXem) return;
+                if (daSua && JOptionPane.showConfirmDialog(PhatSinhSuaChuaDialog.this,
+                        "Bỏ phụ lục đang sửa để chuyển sang phát sinh khác?", "Chuyển phát sinh",
+                        JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
+                    dangNapDanhSach = true;
+                    try {
+                        cmbDanhSach.setSelectedItem(dangXem);
+                    } finally {
+                        dangNapDanhSach = false;
+                    }
+                    return;
+                }
+                hienThiDeXuat(moi);
+            }
+        });
         dau.add(cmbDanhSach, BorderLayout.CENTER);
         dau.add(nut("Mở / tải lại phát sinh", "MO", false), BorderLayout.EAST);
         pnl.add(dau, BorderLayout.NORTH);
@@ -120,14 +141,24 @@ public final class PhatSinhSuaChuaDialog extends JDialog implements ActionListen
 
     // Tải lại danh sách và mở đúng đề xuất vừa lưu hoặc vừa ghi phản hồi.
     private void taiDanhSach(Long ma) {
-        cmbDanhSach.removeAllItems();
-        DeXuatPhatSinh chon = null;
-        for (DeXuatPhatSinh d : dao.docDanhSach(phien, maLenh)) {
-            cmbDanhSach.addItem(d);
-            if (ma != null && d.getMaPhatSinh() == ma) chon = d;
+        dangNapDanhSach = true;
+        try {
+            cmbDanhSach.removeAllItems();
+            DeXuatPhatSinh chon = null;
+            for (DeXuatPhatSinh d : dao.docDanhSach(phien, maLenh)) {
+                cmbDanhSach.addItem(d);
+                if (ma != null && d.getMaPhatSinh() == ma) chon = d;
+            }
+            if (chon != null) cmbDanhSach.setSelectedItem(chon);
+        } finally {
+            dangNapDanhSach = false;
         }
-        if (chon != null) cmbDanhSach.setSelectedItem(chon);
-        dangXem = (DeXuatPhatSinh) cmbDanhSach.getSelectedItem();
+        hienThiDeXuat((DeXuatPhatSinh) cmbDanhSach.getSelectedItem());
+    }
+
+    // Hiển thị nội dung, phụ lục giá và phản hồi của đề xuất đang chọn.
+    private void hienThiDeXuat(DeXuatPhatSinh deXuat) {
+        dangXem = deXuat;
         banNhap.clear();
         if (dangXem != null) banNhap.addAll(dangXem.getChiTiet());
         hienGia();

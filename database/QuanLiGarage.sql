@@ -1696,9 +1696,20 @@ BEGIN
         SELECT @Ma,CONVERT(INT,j.[key]),x.TenChiSo,x.GiaTri
         FROM OPENJSON(@ChiSo) j CROSS APPLY OPENJSON(j.value) WITH(TenChiSo NVARCHAR(200),GiaTri BIGINT) x;
         INSERT dbo.CotBaoCao(MaBaoCao,ViTri,TenCot) SELECT @Ma,CONVERT(INT,[key]),value FROM OPENJSON(@Cot);
-        INSERT dbo.OBaoCao(MaBaoCao,Dong,Cot,GiaTri)
-        SELECT @Ma,CONVERT(INT,d.[key]),CONVERT(INT,c.[key]),COALESCE(c.value,N'')
+        -- Tách bung JSON khỏi bước ghi bảng có khóa. Bước ghi dùng số ô thực tế
+        -- thay cho ước lượng nhân lên qua hai OPENJSON với giá trị NVARCHAR(MAX).
+        CREATE TABLE #OBaoCaoNhap (
+            Dong INT NOT NULL,
+            Cot INT NOT NULL,
+            GiaTri NVARCHAR(MAX) NOT NULL
+        );
+        INSERT #OBaoCaoNhap(Dong,Cot,GiaTri)
+        SELECT CONVERT(INT,d.[key]),CONVERT(INT,c.[key]),COALESCE(c.value,N'')
         FROM OPENJSON(@Dong) d CROSS APPLY OPENJSON(d.value) c;
+        INSERT dbo.OBaoCao(MaBaoCao,Dong,Cot,GiaTri)
+        SELECT @Ma,Dong,Cot,GiaTri
+        FROM #OBaoCaoNhap
+        OPTION (RECOMPILE);
         COMMIT; SELECT @Ma AS MaBaoCao;
     END TRY
     BEGIN CATCH

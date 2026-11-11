@@ -370,6 +370,7 @@ public final class BaoCaoDAO {
         String sql = "{call dbo.usp_LuuBaoCao(?, ?, ?, ?, ?, ?, ?, ?, ?)}";
         String maBaoCao;
         try (CallableStatement lenh = ketNoi().prepareCall(sql)) {
+            lenh.setQueryTimeout(30);
             lenh.setString(1, tk.getMaNhanVien());
             lenh.setString(2, ketQua.getLoai());
             lenh.setDate(3, Date.valueOf(ketQua.getTuNgay()));
@@ -385,6 +386,9 @@ public final class BaoCaoDAO {
                 }
                 maBaoCao = ketQuaSql.getString("MaBaoCao");
             }
+        } catch (java.sql.SQLTimeoutException ex) {
+            throw new IllegalStateException(
+                    "SQL Server chưa trả kết quả lưu báo cáo. Hãy thử lưu lại cùng báo cáo này.", ex);
         } catch (SQLException ex) {
             throw loiDuLieu("Không thể lưu báo cáo.", ex);
         }

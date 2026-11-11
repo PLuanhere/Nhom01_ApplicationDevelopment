@@ -57,6 +57,23 @@ public final class ConnectDB {
         return ketNoiTheoLuong.get();
     }
 
+    /** Dọn kết nối của tác vụ nền đã xong, giữ kết nối các luồng khác. */
+    public void dongKetNoiHienTai() {
+        Connection ketNoi = ketNoiTheoLuong.get();
+        ketNoiTheoLuong.remove();
+        if (ketNoi == null) {
+            return;
+        }
+        synchronized (cacKetNoiDaMo) {
+            cacKetNoiDaMo.remove(ketNoi);
+        }
+        try {
+            ketNoi.close();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
     /** Đóng tất cả kết nối khi ứng dụng kết thúc. */
     public void disconnect() {
         synchronized (cacKetNoiDaMo) {
