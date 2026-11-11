@@ -508,13 +508,19 @@ public final class PhieuTiepNhanPanel extends JPanel implements KiemTraRoiTrang 
             for (PhieuTiepNhan phieu : phieuDAO.timKiem(tk, txtLoc.getText(), trangThai)) {
                 String hienThi = tienDoDAO == null ? phieu.getTrangThai().getTenHienThi()
                         : tienDoDAO.trangThaiPhieu(phien, phieu.getMaPhieu());
+
                 if (tienDoDAO != null && cboTrangThai.getSelectedIndex() > 0
                         && !hienThi.equals(cboTrangThai.getSelectedItem())) {
                     continue;
                 }
+
+                String kyThuatVien = phieu.getTaiKhoanKyThuat();
+                if (kyThuatVien == null || kyThuatVien.isBlank()) {
+                    kyThuatVien = "Chưa phân công";
+                }
+
                 cacDong.add(new Object[] { phieu.getMaPhieu(), phieu.getBienSo(), phieu.getTenKhach(),
-                        phieu.getThoiGianNhan().format(DINH_DANG_NGAY), phieu.getYeuCau(),
-                        phieu.getTaiKhoanKyThuat().isBlank() ? "Chưa phân công" : phieu.getTaiKhoanKyThuat(), hienThi });
+                        phieu.getThoiGianNhan().format(DINH_DANG_NGAY), phieu.getYeuCau(), kyThuatVien, hienThi });
             }
             // Chỉ thay bảng sau khi đã đọc đủ trạng thái; lỗi nguồn không để lại danh sách bị nạp dở.
             modelDanhSach.setRowCount(0);
