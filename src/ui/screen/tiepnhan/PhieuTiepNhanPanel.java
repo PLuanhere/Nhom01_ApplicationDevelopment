@@ -95,7 +95,7 @@ public final class PhieuTiepNhanPanel extends JPanel implements KiemTraRoiTrang 
     private final JComboBox<String> cboTrangThai = new JComboBox<>(
             new String[] { "Tất cả trạng thái", "Chờ kiểm tra" });
     private final DefaultTableModel modelDanhSach = model("Mã phiếu", "Biển số", "Khách hàng", "Ngày nhận", "Yêu cầu",
-            "Trạng thái");
+            "Kỹ thuật kiểm tra", "Trạng thái");
     private final JTable tblDanhSach = bang(modelDanhSach);
     private final JLabel lblDanhSach = nhan(" ", false);
     private final JTextField txtTraCuu = new JTextField();
@@ -197,7 +197,9 @@ public final class PhieuTiepNhanPanel extends JPanel implements KiemTraRoiTrang 
         }
         try {
             phieuDAO.giaoKiemTra(tk, phieuDAO.timTheoMa(tk, ma), chon.getTaiKhoan().getTenDangNhap());
-            lblDanhSach.setText("Đã giao kiểm tra: " + phieuDAO.docPhanCongKiemTra(tk, ma));
+            String phanCong = phieuDAO.docPhanCongKiemTra(tk, ma);
+            locDanhSach();
+            lblDanhSach.setText("Đã giao kiểm tra: " + phanCong);
         } catch (IllegalArgumentException | IllegalStateException e) {
             lblDanhSach.setText(e.getMessage());
         }
@@ -511,7 +513,8 @@ public final class PhieuTiepNhanPanel extends JPanel implements KiemTraRoiTrang 
                     continue;
                 }
                 cacDong.add(new Object[] { phieu.getMaPhieu(), phieu.getBienSo(), phieu.getTenKhach(),
-                        phieu.getThoiGianNhan().format(DINH_DANG_NGAY), phieu.getYeuCau(), hienThi });
+                        phieu.getThoiGianNhan().format(DINH_DANG_NGAY), phieu.getYeuCau(),
+                        phieu.getTaiKhoanKyThuat().isBlank() ? "Chưa phân công" : phieu.getTaiKhoanKyThuat(), hienThi });
             }
             // Chỉ thay bảng sau khi đã đọc đủ trạng thái; lỗi nguồn không để lại danh sách bị nạp dở.
             modelDanhSach.setRowCount(0);
