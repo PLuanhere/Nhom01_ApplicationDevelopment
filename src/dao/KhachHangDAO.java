@@ -108,7 +108,7 @@ public final class KhachHangDAO {
         String sql = "SELECT COALESCE(MAX(TRY_CONVERT(int,SUBSTRING(MaKH,3,20))),0)+1 AS SoThuTu FROM dbo.KhachHang WITH (UPDLOCK,HOLDLOCK) WHERE MaKH LIKE 'KH%'";
         try (PreparedStatement ps = c.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             rs.next();
-            return String.format(Locale.ROOT, "KH%04d", rs.getInt("SoThuTu"));
+            return String.format(Locale.ROOT, "KH%03d", rs.getInt("SoThuTu"));
         }
     }
 

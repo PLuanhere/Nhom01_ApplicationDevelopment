@@ -70,6 +70,21 @@ public final class BanGiaoXeDAO {
         return docCanCuMoRong(ma);
     }
 
+    /** Lấy giờ garage cùng độ chính xác với thời điểm lưu trên phiếu bàn giao. */
+    public LocalDateTime docGioGarage(TaiKhoan tk) {
+        quyen(tk);
+        String sql = "SELECT dbo.fn_ThoiDiemGarage()";
+        try (PreparedStatement ps = ketNoi().prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getTimestamp(1).toLocalDateTime();
+            }
+            throw new IllegalStateException("Không đọc được giờ garage.");
+        } catch (SQLException ex) {
+            throw loi("Không đọc được giờ garage.", ex);
+        }
+    }
+
     /**
      * Thực hiện tim theo lenh cho thành phần hiện tại.
      */

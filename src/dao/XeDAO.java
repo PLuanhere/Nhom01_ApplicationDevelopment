@@ -116,9 +116,9 @@ public final class XeDAO {
     }
 
     private String taoMaMoi(Connection c) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement("SELECT COALESCE(MAX(TRY_CONVERT(int,REPLACE(MaXe,'XE-',''))),0)+1 FROM dbo.Xe WITH (UPDLOCK,HOLDLOCK)"); ResultSet rs = ps.executeQuery()) {
+        try (PreparedStatement ps = c.prepareStatement("SELECT COALESCE(MAX(TRY_CONVERT(int,REPLACE(REPLACE(MaXe,'XE-',''),'XE',''))),0)+1 FROM dbo.Xe WITH (UPDLOCK,HOLDLOCK) WHERE MaXe LIKE 'XE%'"); ResultSet rs = ps.executeQuery()) {
             rs.next();
-            return String.format(Locale.ROOT, "XE-%04d", rs.getInt(1));
+            return String.format(Locale.ROOT, "XE%03d", rs.getInt(1));
         }
     }
 

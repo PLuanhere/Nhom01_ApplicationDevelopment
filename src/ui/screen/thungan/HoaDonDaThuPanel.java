@@ -66,11 +66,11 @@ public class HoaDonDaThuPanel extends JPanel {
         toolbar.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(0, 14, 0, 14)));
         searchField = new PlaceholderTextField("Tìm mã hóa đơn, biển số hoặc khách hàng");
         searchField.setPreferredSize(new Dimension(380, 36));
-        JButton refresh = secondaryButton("Lam moi");
+        JButton refresh = secondaryButton("Làm mới");
         toolbar.add(searchField);
         toolbar.add(refresh);
         center.add(toolbar, BorderLayout.NORTH);
-        model = new DefaultTableModel(new Object[]{"Ma hoa don", "Phieu sua chua", "Khach hang", "Bien so", "Ngay thanh toan", "Phuong thuc", "Tong tien"}, 0) {
+        model = new DefaultTableModel(new Object[]{"Mã hóa đơn", "Phiếu sửa chữa", "Khách hàng", "Biển số", "Ngày thanh toán", "Phương thức", "Tổng tiền"}, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         table = new JTable(model);
@@ -116,8 +116,8 @@ public class HoaDonDaThuPanel extends JPanel {
         cardHeader.setBorder(BorderFactory.createEmptyBorder(14, 17, 14, 17));
         JPanel headingStack = new JPanel(new BorderLayout(0, 4));
         headingStack.setOpaque(false);
-        headingStack.add(label("Danh sach hoa don da thanh toan", 15, Font.BOLD, INK), BorderLayout.NORTH);
-        headingStack.add(label("Chon mot dong de xem, loc hoac mo tac vu lien quan.", 11, Font.PLAIN, MUTED), BorderLayout.SOUTH);
+        headingStack.add(label("Danh sách hóa đơn đã thanh toán", 15, Font.BOLD, INK), BorderLayout.NORTH);
+        headingStack.add(label("Chọn một dòng để xem, lọc hoặc mở tác vụ liên quan.", 11, Font.PLAIN, MUTED), BorderLayout.SOUTH);
         cardHeader.add(headingStack, BorderLayout.WEST);
         cardHeader.add(resultLabel, BorderLayout.EAST);
         card.add(cardHeader, BorderLayout.NORTH);
@@ -176,10 +176,10 @@ public class HoaDonDaThuPanel extends JPanel {
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 14));
         toolbar.setBackground(WHITE);
         toolbar.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(0, 14, 0, 14)));
-        JButton refresh = secondaryButton("Lam moi");
+        JButton refresh = secondaryButton("Làm mới");
         toolbar.add(searchField); toolbar.add(refresh);
         center.add(toolbar, BorderLayout.NORTH);
-        model = new DefaultTableModel(new Object[]{"Ma hoa don", "Phieu sua chua", "Khach hang", "Bien so", "Ngay thanh toan", "Phuong thuc", "Tong tien"}, 0) { public boolean isCellEditable(int r, int c) { return false; }};
+        model = new DefaultTableModel(new Object[]{"Mã hóa đơn", "Phiếu sửa chữa", "Khách hàng", "Biển số", "Ngày thanh toán", "Phương thức", "Tổng tiền"}, 0) { public boolean isCellEditable(int r, int c) { return false; }};
         table = new JTable(model);
         table.setRowHeight(52);
         table.setFont(new Font("Dialog", Font.PLAIN, 12));
@@ -247,7 +247,7 @@ public class HoaDonDaThuPanel extends JPanel {
                 hd.getTongTien()
             });
         }
-        footerLabel.setText("Hien thi " + model.getRowCount() + " / " + model.getRowCount() + " ho so");
+        footerLabel.setText("Hiển thị " + model.getRowCount() + " / " + model.getRowCount() + " hồ sơ");
         refreshRows();
     }
 
@@ -259,18 +259,18 @@ public class HoaDonDaThuPanel extends JPanel {
         } else {
             sorter.setRowFilter(RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(query), 0, 1, 2, 3, 4, 5, 6));
         }
-        footerLabel.setText("Hien thi " + table.getRowCount() + " / " + model.getRowCount() + " ho so");
+        footerLabel.setText("Hiển thị " + table.getRowCount() + " / " + model.getRowCount() + " hồ sơ");
     }
 
     private JPanel buildHeading() {
         JPanel heading = new JPanel(new BorderLayout(0, 5));
         heading.setOpaque(false);
 
-        heading.add(label("Thu ngân  /  Nghiệp vụ  /  Hoá đơn đã thanh toán", 11, Font.PLAIN, MUTED), BorderLayout.NORTH);
+        heading.add(label("Thu ngân  /  Nghiệp vụ  /  Hóa đơn đã thanh toán", 11, Font.PLAIN, MUTED), BorderLayout.NORTH);
 
         JPanel titleBlock = new JPanel(new BorderLayout(0, 5));
         titleBlock.setOpaque(false);
-        titleBlock.add(label("Hoá đơn đã thanh toán", 24, Font.BOLD, INK), BorderLayout.NORTH);
+        titleBlock.add(label("Hóa đơn đã thanh toán", 24, Font.BOLD, INK), BorderLayout.NORTH);
         titleBlock.add(label("Chứng từ đã phát hành chỉ được xem và in lại, không xóa/sửa trực tiếp.", 12, Font.PLAIN, MUTED), BorderLayout.SOUTH);
         heading.add(titleBlock, BorderLayout.CENTER);
 

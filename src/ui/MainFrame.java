@@ -1012,16 +1012,11 @@ public final class MainFrame extends JFrame implements ActionListener {
 
     /** Mở chi tiết hóa đơn hợp lệ trong nguồn chung, không tự lấy chứng từ khác. */
     private void moChiTietHoaDon(String ma) {
-        if (thuNganDAO.timHoaDonTheoMa(getTaiKhoanDangNhap(), ma) == null) {
-            setStatus("Không tìm thấy hóa đơn " + ma);
-            return;
-        }
-
         pnlDieuHuongThuNgan.chonMuc("Hoá đơn đã thanh toán");
 
         setScreen(new ChiTietHoaDonPanel(
                 thuNganDAO, getTaiKhoanDangNhap(), ma,
-                suKien -> dieuHuongThuNgan("Hoá đơn đã thanh toán")));
+                () -> dieuHuongThuNgan("Trung tâm thanh toán")));
 
         setStatus("Chi tiết hóa đơn · " + ma);
     }
@@ -1034,10 +1029,9 @@ public final class MainFrame extends JFrame implements ActionListener {
                 return;
             }
             pnlDieuHuongThuNgan.chonMuc("Hoá đơn đã thanh toán");
-            System.out.println("[UI] Mở chi tiết hóa đơn: " + ma);
             setScreen(new ChiTietHoaDonPanel(
                     thuNganDAO, getTaiKhoanDangNhap(), ma,
-                    suKien -> dieuHuongThuNgan("Hoá đơn đã thanh toán")));
+                    () -> dieuHuongThuNgan("Hoá đơn đã thanh toán")));
             setStatus("Đã thanh toán · Chi tiết hóa đơn " + ma);
         } catch (RuntimeException ex) {
             ex.printStackTrace();

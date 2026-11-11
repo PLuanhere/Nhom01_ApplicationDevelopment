@@ -71,6 +71,9 @@ public final class BanGiaoXePanel extends JPanel implements KiemTraRoiTrang {
     }
     private static final DateTimeFormatter NGAY_GIO = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm", Locale.ROOT)
             .withResolverStyle(ResolverStyle.STRICT);
+    private static final DateTimeFormatter GIO_BAN_GIAO =
+            DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm:ss.SSS", Locale.ROOT)
+                    .withResolverStyle(ResolverStyle.STRICT);
     private static final DateTimeFormatter NGAY = DateTimeFormatter.ofPattern("dd/MM/uuuu", Locale.ROOT)
             .withResolverStyle(ResolverStyle.STRICT);
     private final BanGiaoXeDAO dao;
@@ -112,6 +115,7 @@ public final class BanGiaoXePanel extends JPanel implements KiemTraRoiTrang {
     private BaoGia baoGiaDangMo;
     private CanCuBanGiao canCuDaDoc;
     private String maThaoTac;
+    private String gioGiaoTuDong;
     private boolean chiDoc, dangNap, daThayDoi, coTheBanGiao;
     private JScrollPane cuonForm;
 
@@ -312,7 +316,7 @@ public final class BanGiaoXePanel extends JPanel implements KiemTraRoiTrang {
         txtNguoiGiao.setEditable(false);
         them(truong, hang(truong("Người giao xe * · tài khoản đang đăng nhập", txtNguoiGiao),
                 truong("Người nhận xe *", txtNguoiNhan)), 68);
-        them(truong, hang(truong("Thời điểm giao thực tế * · dd/MM/yyyy HH:mm", txtGioGiao),
+        them(truong, hang(truong("Thời điểm giao thực tế * · dd/MM/yyyy HH:mm:ss.SSS", txtGioGiao),
                 truong("Tình trạng khi bàn giao *", txtTinhTrang)), 85);
         them(truong, hang(truong("Tài sản/phụ kiện đã đối chiếu và trả", txtTaiSan),
                 truong("Hình thức khách xác nhận *", cboHinhThuc)), 85);
@@ -403,6 +407,8 @@ public final class BanGiaoXePanel extends JPanel implements KiemTraRoiTrang {
         } else {
             canCuDaDoc = dao.docCanCu(phien, ma);
         }
+        LocalDateTime lucGiao = chiDoc ? giao.getThoiDiemGiao() : dao.docGioGarage(phien);
+        gioGiaoTuDong = lucGiao.format(GIO_BAN_GIAO);
         dangNap = true;
         maThaoTac = DuLieuGarageDAO.taoMaThaoTac();
         lblTieuDeForm.setText(chiDoc ? "Chi tiết bàn giao đã lưu" : "Xác nhận bàn giao xe");
@@ -418,7 +424,7 @@ public final class BanGiaoXePanel extends JPanel implements KiemTraRoiTrang {
         }
         txtNguoiGiao.setText(chiDoc ? giao.getNguoiGiao() : phien.getTenDangNhap());
         txtNguoiNhan.setText(chiDoc ? giao.getNguoiNhan() : "");
-        txtGioGiao.setText((chiDoc ? giao.getThoiDiemGiao() : LocalDateTime.now()).format(NGAY_GIO));
+        txtGioGiao.setText(gioGiaoTuDong);
         txtTinhTrang.setText(chiDoc ? giao.getTinhTrang() : "");
         txtTaiSan.setText(chiDoc ? giao.getTaiSanDaTra() : "");
         txtGhiChu.setText(chiDoc ? giao.getGhiChu() : "");
@@ -481,6 +487,10 @@ public final class BanGiaoXePanel extends JPanel implements KiemTraRoiTrang {
             canCuDaDoc = dao.docCanCu(phien, lenhDangMo.getMaPhieu());
             String lyDo = dao.lyDoChuaDu(phien, lenhDangMo.getMaPhieu());
             coTheBanGiao = lyDo.isEmpty();
+            if (coTheBanGiao && txtGioGiao.getText().trim().equals(gioGiaoTuDong)) {
+                gioGiaoTuDong = dao.docGioGarage(phien).format(GIO_BAN_GIAO);
+                txtGioGiao.setText(gioGiaoTuDong);
+            }
             hienCanCu();
             chkKhachXacNhan.setSelected(false);
             daThayDoi = true;
@@ -505,7 +515,7 @@ public final class BanGiaoXePanel extends JPanel implements KiemTraRoiTrang {
             return;
         }
         try {
-            LocalDateTime lucGiao = LocalDateTime.parse(txtGioGiao.getText().trim(), NGAY_GIO);
+            LocalDateTime lucGiao = LocalDateTime.parse(txtGioGiao.getText().trim(), GIO_BAN_GIAO);
             if (txtNguoiNhan.getText().isBlank() || txtTinhTrang.getText().isBlank()
                     || cboHinhThuc.getSelectedIndex() <= 0 || !chkKhachXacNhan.isSelected()) {
                 throw new IllegalArgumentException("Cần người nhận, tình trạng xe, hình thức và xác nhận của khách.");
@@ -520,14 +530,14 @@ public final class BanGiaoXePanel extends JPanel implements KiemTraRoiTrang {
                             (canCuDaDoc.isNgoaiLe() ? "Ngoại lệ quản lý" : "Đã thanh toán đủ") + " · "
                                     + canCuDaDoc.getMaChungTu() },
                     { "Người giao", phien.getTenDangNhap() }, { "Người nhận", txtNguoiNhan.getText().trim() },
-                    { "Thời điểm giao thực tế", txtGioGiao.getText().trim() },
+                    { "Thời điểm giao thực tế", lucGiao.format(GIO_BAN_GIAO) },
                     { "Tình trạng xe", txtTinhTrang.getText().trim() },
                     { "Tài sản / phụ kiện đã trả", txtTaiSan.getText().trim() },
                     { "Khách xác nhận", (String) cboHinhThuc.getSelectedItem() },
                     { "Ghi chú", txtGhiChu.getText().trim() },
                     { "Căn cứ xác nhận",
                             canCuDaDoc.getNguoiXacNhan().getTenDangNhap() + " · "
-                                    + canCuDaDoc.getThoiDiem().format(NGAY_GIO)
+                                    + canCuDaDoc.getThoiDiem().format(GIO_BAN_GIAO)
                                     + (canCuDaDoc.isNgoaiLe() ? " · " + canCuDaDoc.getLyDo() : "") } };
             String actor = phien.getTenDangNhap(), token = maThaoTac, maLenh = lenhDangMo.getMaPhieu();
             String nhan = txtNguoiNhan.getText(), tinhTrang = txtTinhTrang.getText(), taiSan = txtTaiSan.getText(),
@@ -554,7 +564,7 @@ public final class BanGiaoXePanel extends JPanel implements KiemTraRoiTrang {
                 }
             }).setVisible(true);
         } catch (DateTimeParseException e) {
-            lblLoi.setText("Giờ giao không hợp lệ; dùng dd/MM/yyyy HH:mm.");
+            lblLoi.setText("Giờ giao không hợp lệ. Nhập dd/MM/yyyy HH:mm:ss.SSS.");
             txtGioGiao.requestFocusInWindow();
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
             lblLoi.setText(e.getMessage());

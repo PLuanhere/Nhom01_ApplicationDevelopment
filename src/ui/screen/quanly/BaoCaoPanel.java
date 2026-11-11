@@ -1,5 +1,6 @@
 package ui.screen.quanly;
 
+import connectDB.ConnectDB;
 import dao.BaoCaoDAO;
 import entity.BaoCao;
 import entity.TaiKhoan;
@@ -14,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -22,6 +24,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JTable;
 import javax.swing.JScrollPane;
+import javax.swing.SwingWorker;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -43,6 +46,7 @@ public final class BaoCaoPanel extends JPanel implements ActionListener, Documen
     private final JLabel lblThongBao = UiChung.taoNhan("", 12, false, UiTheme.APP_MUTED);
     private final JButton btnLuu = UiChung.taoNut("Lưu báo cáo", false);
     private BaoCao ketQua;
+    private boolean dangLuu;
     private JScrollPane scrTrang;
     private String tuNgayTruocTon;
     private String denNgayTruocTon;
@@ -153,7 +157,7 @@ public final class BaoCaoPanel extends JPanel implements ActionListener, Documen
             LocalDate tu = tonKho ? LocalDate.now() : docNgay(txtTuNgay);
             LocalDate den = tonKho ? LocalDate.now() : docNgay(txtDenNgay);
             ketQua = dao.lap(taiKhoan, (String) cmbLoai.getSelectedItem(), tu, den);
-            btnLuu.setEnabled(true);
+            btnLuu.setEnabled(!dangLuu);
             btnXuat.setEnabled(true);
             hienKetQua();
             scrTrang.getVerticalScrollBar().setValue(0);
@@ -263,6 +267,48 @@ public final class BaoCaoPanel extends JPanel implements ActionListener, Documen
         lblThongBao.setToolTipText(chu);
     }
 
+    /** Lưu bản chụp được chọn ở luồng nền và trả kết quả về Swing. */
+    private void luuBaoCao() {
+        if (dangLuu || ketQua == null) {
+            return;
+        }
+        BaoCao banChup = ketQua;
+        dangLuu = true;
+        btnLuu.setEnabled(false);
+        btnLuu.setText("Đang lưu…");
+        thongBao("Đang lưu báo cáo " + banChup.getLoai() + "…", false);
+
+        new SwingWorker<BaoCao, Void>() {
+            @Override
+            protected BaoCao doInBackground() {
+                try {
+                    return dao.luu(taiKhoan, banChup);
+                } finally {
+                    ConnectDB.getInstance().dongKetNoiHienTai();
+                }
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    BaoCao baoCaoDaLuu = get();
+                    thongBao("Đã lưu " + baoCaoDaLuu.getMaBaoCao(), false);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    thongBao("Không nhận được kết quả lưu báo cáo.", true);
+                } catch (ExecutionException ex) {
+                    Throwable loi = ex.getCause();
+                    String noiDung = loi == null ? null : loi.getMessage();
+                    thongBao(noiDung == null ? "Không thể lưu báo cáo." : noiDung, true);
+                } finally {
+                    dangLuu = false;
+                    btnLuu.setText("Lưu báo cáo");
+                    btnLuu.setEnabled(ketQua != null);
+                }
+            }
+        }.execute();
+    }
+
     /** Điều khiển bộ lọc, lưu bản chụp và mở danh sách đã lưu. */
     @Override
     public void actionPerformed(ActionEvent event) {
@@ -292,12 +338,7 @@ public final class BaoCaoPanel extends JPanel implements ActionListener, Documen
                 thongBao(ex.getMessage(), true);
             }
         } else if (ma.equals("luu")) {
-            try {
-                BaoCao bc = dao.luu(taiKhoan, ketQua);
-                thongBao("Đã lưu " + bc.getMaBaoCao(), false);
-            } catch (RuntimeException ex) {
-                thongBao(ex.getMessage(), true);
-            }
+            luuBaoCao();
         } else if (ma.equals("locBang")) {
             locBang();
         } else {
